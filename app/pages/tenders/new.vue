@@ -21,12 +21,26 @@
       </div>
     </header>
 
-    <div class="grid items-start gap-5 lg:grid-cols-[17rem_minmax(0,1fr)]">
+    <div
+      class="grid items-start gap-5 transition-[grid-template-columns] duration-200"
+      :class="setupSidebarCollapsed ? 'lg:grid-cols-[4.5rem_minmax(0,1fr)]' : 'lg:grid-cols-[17rem_minmax(0,1fr)]'"
+    >
       <aside class="card card-border sticky top-24 hidden bg-base-100 lg:block">
-        <div class="card-body gap-5 p-4">
-          <p class="text-sm font-semibold">Tender setup</p>
+        <div class="card-body gap-5 p-4" :class="{ 'items-center px-2': setupSidebarCollapsed }">
+          <div class="flex w-full items-center" :class="setupSidebarCollapsed ? 'justify-center' : 'justify-between gap-3'">
+            <p v-if="!setupSidebarCollapsed" class="text-sm font-semibold">Tender setup</p>
+            <button
+              type="button"
+              class="btn btn-ghost btn-circle btn-sm"
+              :aria-label="setupSidebarCollapsed ? 'Expand tender setup sidebar' : 'Collapse tender setup sidebar'"
+              :title="setupSidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'"
+              @click="toggleSetupSidebar"
+            >
+              <Icon :name="setupSidebarCollapsed ? 'lucide:panel-left-open' : 'lucide:panel-left-close'" class="h-4 w-4" />
+            </button>
+          </div>
 
-          <ul class="steps steps-vertical w-full text-sm">
+          <ul v-if="!setupSidebarCollapsed" class="steps steps-vertical w-full text-sm">
             <li
               v-for="(wizardStep, index) in wizardSteps"
               :key="wizardStep.id"
@@ -39,7 +53,20 @@
             </li>
           </ul>
 
-          <div v-if="tenderUuid" class="rounded-box border border-base-300 bg-base-200/40 p-3">
+          <div v-else class="flex flex-col items-center gap-2" aria-label="Tender setup progress">
+            <span
+              v-for="(wizardStep, index) in wizardSteps"
+              :key="`compact-${wizardStep.id}`"
+              class="badge badge-sm h-7 w-7 rounded-full p-0"
+              :class="index < currentStepIndex ? 'badge-success' : index === currentStepIndex ? 'badge-primary' : 'badge-ghost'"
+              :aria-label="`${wizardStep.label}: step ${index + 1}`"
+              :title="wizardStep.label"
+            >
+              {{ index < currentStepIndex ? '✓' : index + 1 }}
+            </span>
+          </div>
+
+          <div v-if="tenderUuid && !setupSidebarCollapsed" class="rounded-box border border-base-300 bg-base-200/40 p-3">
             <div class="flex items-center gap-2 text-xs font-semibold text-success">
               <Icon name="lucide:cloud-check" class="h-4 w-4" />
               Draft saved
@@ -76,22 +103,39 @@
         </div>
 
         <section class="card card-border bg-base-100">
-          <div class="card-body flex-row items-start gap-3 p-4 sm:p-5">
-            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-box bg-primary/10 text-primary">
-              <Icon :name="currentStep.icon" class="h-5 w-5" />
-            </span>
-            <div class="flex min-w-0 flex-wrap items-center gap-2">
-              <h2 class="font-bold">{{ currentStepLabel }}</h2>
-              <span class="badge badge-ghost badge-sm">{{ currentStepIndex + 1 }}/{{ wizardSteps.length }}</span>
+          <div class="card-body flex-row flex-wrap items-center gap-3 p-4 sm:p-5">
+            <div class="flex min-w-0 flex-1 items-center gap-3">
+              <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-box bg-primary/10 text-primary">
+                <Icon :name="currentStep.icon" class="h-5 w-5" />
+              </span>
+              <div class="flex min-w-0 flex-wrap items-center gap-2">
+                <h2 class="font-bold">{{ currentStepTitle }}</h2>
+                <span class="badge badge-ghost badge-sm">{{ currentStepIndex + 1 }}/{{ wizardSteps.length }}</span>
+              </div>
+            </div>
+            <div v-if="currentStepId === 'items'" class="ml-auto flex shrink-0 flex-nowrap items-center gap-2">
+              <button class="btn btn-ghost btn-sm" type="button" @click="onStep2Back">
+                <Icon name="lucide:arrow-left" class="h-4 w-4" />
+                Back
+              </button>
+              <button
+                class="btn btn-success btn-sm"
+                type="button"
+                :disabled="!canAddLineItem"
+                @click="openAddLineItem"
+              >
+                <Icon name="lucide:plus" class="h-4 w-4" />
+                Add line item
+              </button>
             </div>
           </div>
         </section>
 
         <TendersAppItemsStep
           v-if="currentStepId === 'items'"
+          ref="appItemsStepRef"
           :tender-uuid="tenderUuid"
           @saved="onStep2Saved"
-          @back="onStep2Back"
         />
 
         <TendersEligibilityCriteriaStep
@@ -207,6 +251,8 @@ const route = useRoute()
 const currentStepId = ref('request')
 const tenderUuid = ref('')
 const tender = ref(null)
+const setupSidebarCollapsed = ref(false)
+const appItemsStepRef = ref(null)
 const eoiRequired = ref(false)
 const eoiStatus = ref('NOT_STARTED')
 const { getTender, getTenderConsultancyEoi } = useTenderHelper()
@@ -219,6 +265,13 @@ const wizardSteps = computed(() => {
 const currentStepIndex = computed(() => Math.max(0, wizardSteps.value.findIndex(item => item.id === currentStepId.value)))
 const currentStepLabel = computed(() => wizardSteps.value[currentStepIndex.value]?.label ?? 'Tender step')
 const currentStep = computed(() => wizardSteps.value[currentStepIndex.value] ?? BASE_STEPS[0])
+const currentStepTitle = computed(() => {
+  if (currentStepId.value !== 'items') return currentStepLabel.value
+  return tender.value?.procurementgroup?.code === 'CONSULTANCY'
+    ? 'Consultancy budget & Terms of Reference'
+    : 'Line items & breakdown'
+})
+const canAddLineItem = computed(() => Boolean(appItemsStepRef.value?.canAddMore) && !appItemsStepRef.value?.loading)
 const completionPercent = computed(() => Math.round(((currentStepIndex.value + 1) / wizardSteps.value.length) * 100))
 
 const getDraftStorageKey = (uuid) => `peclient:tenders:draft:${uuid}:step`
@@ -241,6 +294,20 @@ async function onStep2Saved(payload) {
 function onStep2Back() {
   currentStepId.value = 'request'
   persistDraftStep()
+}
+
+function openAddLineItem() {
+  appItemsStepRef.value?.openAdd()
+}
+
+function toggleSetupSidebar() {
+  setupSidebarCollapsed.value = !setupSidebarCollapsed.value
+  if (!process.client) return
+  try {
+    window.localStorage.setItem('peclient:tenders:wizard-sidebar-collapsed', String(setupSidebarCollapsed.value))
+  } catch {
+    // ignore localStorage failures
+  }
 }
 
 function onStep3Saved() {
@@ -388,5 +455,14 @@ async function restoreDraftFromQuery() {
 
 watch(currentStepId, () => persistDraftStep())
 
-onMounted(() => restoreDraftFromQuery())
+onMounted(() => {
+  if (process.client) {
+    try {
+      setupSidebarCollapsed.value = window.localStorage.getItem('peclient:tenders:wizard-sidebar-collapsed') === 'true'
+    } catch {
+      setupSidebarCollapsed.value = false
+    }
+  }
+  restoreDraftFromQuery()
+})
 </script>

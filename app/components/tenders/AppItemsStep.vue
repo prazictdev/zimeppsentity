@@ -1,24 +1,5 @@
 <template>
   <div class="w-full space-y-4">
-    <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-      <h2 class="text-lg font-semibold">{{ isConsultancy ? 'Consultancy budget & Terms of Reference' : 'Line items & breakdown' }}</h2>
-      <div class="flex shrink-0 flex-nowrap items-center justify-end gap-2">
-        <button class="btn btn-ghost btn-sm" type="button" @click="emit('back')">
-          <Icon name="lucide:arrow-left" class="h-4 w-4" />
-          Back
-        </button>
-        <button
-          class="btn btn-success btn-sm"
-          type="button"
-          :disabled="!canAddMore || loading"
-          @click="openAdd"
-        >
-          <Icon name="lucide:plus" class="h-4 w-4" />
-          Add line item
-        </button>
-      </div>
-    </div>
-
     <div v-if="errorMessage" class="alert alert-error border border-error/30 bg-error/10">
       <Icon name="lucide:alert-triangle" class="h-5 w-5 shrink-0" />
       <span>{{ errorMessage }}</span>
@@ -234,7 +215,7 @@ const props = defineProps({
   tenderUuid: { type: String, default: '' },
 })
 
-const emit = defineEmits(['saved', 'back'])
+const emit = defineEmits(['saved'])
 
 const {
   getTender,
@@ -656,4 +637,10 @@ function formatMoney(value) {
 }
 
 onMounted(() => loadAll())
+
+defineExpose({
+  canAddMore,
+  loading,
+  openAdd,
+})
 </script>
