@@ -67,6 +67,14 @@ const uploadTargetGroup = ref(null)
 const groups = ref([])
 const groupErrors = reactive({})
 const rowErrors = reactive({})
+const { clearDraft, restoreDraft, schedulePersist, start: startDrafting } = useTenderStepDraft({
+  tenderUuid: toRef(props, 'tenderUuid'),
+  step: 'eligibility-form',
+  snapshot: () => ({ groups: groups.value }),
+  restore: (state) => {
+    if (Array.isArray(state.groups)) groups.value = state.groups
+  },
+})
 const questionCount = computed(() => groups.value.reduce((total, group) => total + group.questions.length, 0))
 const key = () => crypto.randomUUID?.() ?? `${Date.now()}-${Math.random()}`
 const newQuestion = (question = '', responseType = 'YES_NO') => ({ _key: key(), question, response_type: responseType })
@@ -178,6 +186,7 @@ async function saveAndContinue() {
     errorMessage.value = apiErrors ? Object.values(apiErrors).flat().join(' ') : error?.value?.data?.message || data?.value?.message || 'Failed to save eligibility form.'
     return false
   }
+  clearDraft()
   toast.success({ title: 'Saved', message: 'Form eligibility saved.', position: 'topRight', layout: 2 })
   if (!props.embedded) emit('saved')
   return true
@@ -196,9 +205,12 @@ async function load() {
     grouped.get(mapKey).group.questions.push(newQuestion(row.question ?? '', row.response_type ?? 'YES_NO'))
   }
   groups.value = [...grouped.values()].sort((a, b) => a.order - b.order).map(entry => entry.group)
+  await restoreDraft()
+  startDrafting()
   loading.value = false
 }
 
+watch(groups, schedulePersist, { deep: true })
 onMounted(load)
 defineExpose({ save: saveAndContinue })
 </script>

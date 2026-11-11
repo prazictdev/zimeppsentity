@@ -468,6 +468,15 @@ const fieldSchema = ref([]);
 const autoBound = ref([]);
 const values = reactive({});
 const customSections = ref([]);
+const { clearDraft, restoreDraft, schedulePersist, start: startDrafting } = useTenderStepDraft({
+  tenderUuid: toRef(props, 'tenderUuid'),
+  step: 'bidding-document',
+  snapshot: () => ({ field_values: { ...values }, custom_sections: plainSections() }),
+  restore: (state) => {
+    if (state.field_values && typeof state.field_values === 'object') Object.assign(values, state.field_values);
+    if (Array.isArray(state.custom_sections)) customSections.value = state.custom_sections.map(normalizeSection);
+  },
+});
 
 const previewDialog = ref(null);
 const previewHtml = ref('');
@@ -762,6 +771,7 @@ async function persist() {
     errorMessage.value = errData?.message || 'Failed to save the bidding document details.';
     return false;
   }
+  clearDraft();
   errorMessage.value = '';
   return true;
 }
@@ -797,9 +807,12 @@ async function load() {
     return;
   }
   applyPayload(data.value?.data ?? {});
+  await restoreDraft();
+  startDrafting();
   loading.value = false;
 }
 
+watch([values, customSections], schedulePersist, { deep: true });
 onMounted(() => load());
 </script>
 

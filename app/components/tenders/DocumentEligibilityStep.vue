@@ -152,6 +152,17 @@ const documentPickerDialog = ref(null);
 const pickerSelection = ref([]);
 /** @type {Record<string, { selected: boolean, file_disk?: string|null, file_path?: string|null, original_filename?: string|null, mime_type?: string|null, file_size?: number|null }>} */
 const selection = reactive({});
+const { clearDraft, restoreDraft, schedulePersist, start: startDrafting } = useTenderStepDraft({
+  tenderUuid: toRef(props, 'tenderUuid'),
+  step: 'document-eligibility',
+  snapshot: () => ({ selection: { ...selection } }),
+  restore: (state) => {
+    if (!state.selection || typeof state.selection !== 'object') return;
+    for (const [uuid, value] of Object.entries(state.selection)) {
+      selection[uuid] = value;
+    }
+  },
+});
 
 const catalog = computed(() =>
   (catalogStore.items ?? []).filter((d) => d.status === 'ACTIVE'),
@@ -270,6 +281,7 @@ async function onFile(uuid, e) {
     position: 'topRight',
     layout: 2,
   });
+  clearDraft();
 }
 
 function buildPayload() {
@@ -297,6 +309,7 @@ async function saveAndContinue() {
       error?.value?.data?.message || data?.value?.message || 'Failed to save document requirements.';
     return false;
   }
+  clearDraft();
   toast.success({
     title: 'Saved',
     message: 'Document eligibility saved.',
@@ -320,9 +333,12 @@ async function load() {
   }
   const rows = data.value?.data ?? [];
   initSelectionFromSaved(rows);
+  await restoreDraft();
+  startDrafting();
   loading.value = false;
 }
 
+watch(selection, schedulePersist, { deep: true });
 onMounted(() => load());
 
 defineExpose({ save: saveAndContinue });

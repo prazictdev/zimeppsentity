@@ -174,6 +174,14 @@ const form = reactive({
   closing_time: '10:00',
   opening_at: '',
 });
+const { clearDraft, restoreDraft, schedulePersist, start: startDrafting } = useTenderStepDraft({
+  tenderUuid: toRef(props, 'tenderUuid'),
+  step: 'dates',
+  snapshot: () => ({ form: { ...form } }),
+  restore: (state) => {
+    if (state.form && typeof state.form === 'object') Object.assign(form, state.form);
+  },
+});
 
 const closingIsAuto = computed(() => timeline.value?.minimum_advertising_days != null);
 const minimumOpeningAt = computed(() => {
@@ -294,6 +302,7 @@ async function saveAndContinue() {
     return;
   }
 
+  clearDraft();
   toast.success({
     title: 'Saved',
     message: 'Tender dates saved.',
@@ -326,8 +335,11 @@ async function load() {
     return;
   }
   applyPayload(data.value?.data ?? {});
+  await restoreDraft();
+  startDrafting();
   loading.value = false;
 }
 
+watch(form, schedulePersist, { deep: true });
 onMounted(() => load());
 </script>

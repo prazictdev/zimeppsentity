@@ -293,6 +293,15 @@ const form = reactive({
   methodology_requirements: [methodologyRow('Technical approach and methodology'), methodologyRow('Work plan and implementation schedule'), methodologyRow('Quality assurance and risk management')],
   pe_inputs: [], reporting_arrangements: '', confidentiality_requirements: '', intellectual_property_requirements: '', pricing_basis: 'LUMP_SUM', allow_reimbursables: false,
 })
+const { clearDraft, restoreDraft, schedulePersist, start: startDrafting } = useTenderStepDraft({
+  tenderUuid: toRef(props, 'tenderUuid'),
+  step: `consultancy-brief:${props.itemId}`,
+  snapshot: () => ({ active_tab: activeTab.value, form: payload() }),
+  restore: (state) => {
+    if (state.form && typeof state.form === 'object') hydrate(state.form)
+    if (tabs.some(tab => tab.id === state.active_tab)) activeTab.value = state.active_tab
+  },
+})
 const paymentTotal = computed(() => Math.round(form.deliverables.reduce((sum, row) => sum + Number(row.payment_percentage || 0), 0) * 100) / 100)
 
 function openTaskDialog(index = null) {
@@ -460,6 +469,7 @@ async function save() {
       return false
     }
     hydrate(data.value?.data)
+    clearDraft()
     savedMessage.value = 'Terms of Reference saved.'
     emit('saved')
     return true
@@ -470,8 +480,11 @@ onMounted(async () => {
   const { data, error } = await getTenderConsultancyBrief(props.tenderUuid, props.itemId)
   if (error.value) errorMessage.value = error.value?.data?.message ?? 'Could not load the Terms of Reference.'
   else hydrate(data.value?.data)
+  await restoreDraft()
+  startDrafting()
   loading.value = false
 })
 
+watch([form, activeTab], schedulePersist, { deep: true })
 defineExpose({ save })
 </script>

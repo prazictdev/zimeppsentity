@@ -111,6 +111,27 @@ const products = ref([])
 const activeProductId = ref(null)
 const groupsByProduct = ref({})
 const evaluation = reactive({ technical_weight: 80, technical_threshold: 56, weighting_justification: '' })
+const { clearDraft, restoreDraft, schedulePersist, start: startDrafting } = useTenderStepDraft({
+  tenderUuid: toRef(props, 'tenderUuid'),
+  step: 'technical-evaluation',
+  snapshot: () => ({
+    active_product_id: activeProductId.value,
+    evaluation: { ...evaluation },
+    groups_by_product: groupsByProduct.value,
+  }),
+  restore: (state) => {
+    if (state.evaluation && typeof state.evaluation === 'object') Object.assign(evaluation, state.evaluation)
+    if (state.groups_by_product && typeof state.groups_by_product === 'object') {
+      const restored = {}
+      for (const product of products.value) {
+        const rows = state.groups_by_product[String(product.id)]
+        restored[String(product.id)] = Array.isArray(rows) ? rows : groupsByProduct.value[String(product.id)] ?? []
+      }
+      groupsByProduct.value = restored
+    }
+    if (products.value.some(product => Number(product.id) === Number(state.active_product_id))) activeProductId.value = state.active_product_id
+  },
+})
 const groupErrors = reactive({})
 const rowErrors = reactive({})
 const activeProduct = computed(() => products.value.find(product => Number(product.id) === Number(activeProductId.value)) ?? null)
@@ -245,7 +266,30 @@ function validate() {
 }
 
 function buildPayload() {
-  return products.value.flatMap(product => (groupsByProduct.value[String(product.id)] ?? []).flatMap((group, groupIndex) => group.questions.map(row => ({ procurementrequestitem_id: product.procurementrequestitem_id, procurementrequestitem_product_id: product.procurementrequestitem_product_id, group_title: group.title.trim(), group_sort_order: groupIndex + 1, question: row.question.trim(), response_type: row.response_type, ...(isConsultancy.value ? { group_weight: Number(group.weight), question_weight: Number(row.weight), scoring_bands: row.bands.map(band => ({ label: band.label.trim(), percentage: Number(band.percentage) })) } : {}) }))))
+  return products.value.flatMap(product => {
+    const scope = isConsultancy.value
+      ? {
+          procurementrequestitem_id: product.procurementrequestitem_id ?? product.id,
+          procurementrequestitem_product_id: null,
+        }
+      : {
+          procurementrequestitem_id: product.procurementrequestitem_id,
+          procurementrequestitem_product_id: product.procurementrequestitem_product_id,
+        }
+
+    return (groupsByProduct.value[String(product.id)] ?? []).flatMap((group, groupIndex) => group.questions.map(row => ({
+      ...scope,
+      group_title: group.title.trim(),
+      group_sort_order: groupIndex + 1,
+      question: row.question.trim(),
+      response_type: row.response_type,
+      ...(isConsultancy.value ? {
+        group_weight: Number(group.weight),
+        question_weight: Number(row.weight),
+        scoring_bands: row.bands.map(band => ({ label: band.label.trim(), percentage: Number(band.percentage) })),
+      } : {}),
+    })))
+  })
 }
 
 async function saveAndContinue() {
@@ -255,6 +299,7 @@ async function saveAndContinue() {
   const { data, status, error } = await syncTenderTechnicalEligibilityQuestions(props.tenderUuid, payload)
   saving.value = false
   if (!status?.value) { const errors = error?.value?.data?.errors; errorMessage.value = errors ? Object.values(errors).flat().join(' ') : error?.value?.data?.message || data?.value?.message || 'Failed to save technical eligibility.'; return }
+  clearDraft()
   toast.success({ title: 'Saved', message: 'Technical response requirements saved.', position: 'topRight', layout: 2 })
   emit('saved')
 }
@@ -295,9 +340,12 @@ async function load() {
   if (legacy.length && products.value[0]) grouped[String(products.value[0].id)].push(...groupRows(legacy))
   groupsByProduct.value = grouped
   activeProductId.value = products.value[0]?.id ?? null
+  await restoreDraft()
+  startDrafting()
   loading.value = false
 }
 
+watch([groupsByProduct, evaluation, activeProductId], schedulePersist, { deep: true })
 onMounted(load)
 
 watch(errorMessage, async message => {
