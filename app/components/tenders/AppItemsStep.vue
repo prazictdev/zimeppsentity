@@ -44,22 +44,18 @@
             <p class="mt-1 text-sm text-base-content/60">Allocated budget: <strong class="font-mono">{{ formatMoney(row.total) }}</strong></p>
           </div>
           <div class="flex gap-2">
-            <button type="button" class="btn btn-sm" :class="Number(activeBriefItemId) === Number(row.id) ? 'btn-primary' : 'btn-outline'" @click="toggleBrief(row.id)">
-              <Icon :name="row.consultancy_brief ? 'lucide:file-check-2' : 'lucide:file-plus-2'" class="h-4 w-4" />
-              {{ Number(activeBriefItemId) === Number(row.id) ? 'Close Terms of Reference' : row.consultancy_brief ? 'Edit Terms of Reference' : 'Add Terms of Reference' }}
-            </button>
             <button type="button" class="btn btn-ghost btn-sm" @click="openEdit(row)"><Icon name="lucide:pencil" class="h-4 w-4" /> Edit budget</button>
             <button type="button" class="btn btn-ghost btn-sm text-error" @click="confirmDelete(row)"><Icon name="lucide:trash-2" class="h-4 w-4" /></button>
           </div>
         </div>
-        <div v-if="Number(activeBriefItemId) === Number(row.id)" class="mt-4 border-t border-base-200 pt-4">
+        <div class="mt-4 border-t border-base-200 pt-4">
           <TendersConsultancyBriefStep
             :key="row.id"
-            :ref="setConsultancyBriefRef"
+            :ref="instance => setConsultancyBriefRef(row.id, instance)"
             :tender-uuid="tenderUuid"
             :item-id="row.id"
             :item-description="row.description"
-            @saved="loadAll"
+            @saved="markBriefSaved(row.id)"
           />
         </div>
       </div>
@@ -235,8 +231,7 @@ const tender = ref(null)
 const requestItems = ref([])
 const supplierCategories = ref([])
 const feesPanel = ref(null)
-const consultancyBrief = ref(null)
-const activeBriefItemId = ref(null)
+const consultancyBriefRefs = new Map()
 
 const consultancyEoi = computed(() => tender.value?.consultancy_eoi ?? null)
 
@@ -353,9 +348,6 @@ async function loadAll() {
     }
     tender.value = tenderRes.data.value?.data ?? null
     requestItems.value = itemsRes.data.value?.data ?? []
-    if (activeBriefItemId.value && !requestItems.value.some(row => Number(row.id) === Number(activeBriefItemId.value))) {
-      activeBriefItemId.value = null
-    }
     supplierCategories.value = categoriesRes.data.value?.data ?? []
     nextTick(() => feesPanel.value?.reload?.())
   } finally {
@@ -386,7 +378,6 @@ async function onAppItemPicked(planItem) {
   }
   const createdLine = data.value?.data ?? null
   await loadAll()
-  if (isConsultancy.value && createdLine?.id) activeBriefItemId.value = createdLine.id
   if (isPlannedExternalRequest.value && createdLine?.id) await openExternalAllocation(createdLine)
 }
 
@@ -396,14 +387,17 @@ async function saveAndContinue() {
     return
   }
   if (isConsultancy.value) {
-    if (activeBriefItemId.value) {
-      const saved = await consultancyBrief.value?.save?.()
+    for (const row of requestItems.value) {
+      const brief = consultancyBriefRefs.get(Number(row.id))
+      if (!brief?.save) {
+        errorMessage.value = `The Terms of Reference form for “${row.description}” is not ready. Please try again.`
+        return
+      }
+      const saved = await brief.save()
       if (!saved) return
-      await loadAll()
     }
     const missingBrief = requestItems.value.find(row => !row.consultancy_brief)
     if (missingBrief) {
-      activeBriefItemId.value = missingBrief.id
       errorMessage.value = `Complete the Terms of Reference for “${missingBrief.description}” before continuing.`
       return
     }
@@ -411,12 +405,15 @@ async function saveAndContinue() {
   emit('saved', { eoiRequired: Boolean(consultancyEoi.value?.required) })
 }
 
-function toggleBrief(itemId) {
-  activeBriefItemId.value = Number(activeBriefItemId.value) === Number(itemId) ? null : itemId
+function setConsultancyBriefRef(itemId, instance) {
+  const key = Number(itemId)
+  if (instance) consultancyBriefRefs.set(key, instance)
+  else consultancyBriefRefs.delete(key)
 }
 
-function setConsultancyBriefRef(instance) {
-  consultancyBrief.value = instance ?? null
+function markBriefSaved(itemId) {
+  const row = requestItems.value.find(item => Number(item.id) === Number(itemId))
+  if (row) row.consultancy_brief = row.consultancy_brief ?? { saved: true }
 }
 
 function onManualAdd() {
