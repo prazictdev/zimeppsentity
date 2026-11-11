@@ -1,35 +1,5 @@
 <template>
   <div class="w-full space-y-6">
-    <section class="relative overflow-hidden rounded-box border border-base-300 bg-base-100 shadow-sm">
-      <div class="absolute inset-y-0 left-0 w-1 bg-primary" aria-hidden="true" />
-      <div class="flex flex-col gap-6 px-5 py-6 sm:px-7 lg:flex-row lg:items-center lg:justify-between">
-        <div class="max-w-2xl">
-          <div class="mb-3 flex flex-wrap items-center gap-2">
-            <span class="badge badge-outline border-base-300 text-base-content/70">{{ currentYear }} procurement workspace</span>
-            <span v-if="planChecked" class="badge" :class="planApproved ? 'badge-success' : 'badge-warning'">
-              {{ planApproved ? 'APP approved' : planFound ? 'APP pending' : 'No approved APP' }}
-            </span>
-          </div>
-          <p class="text-sm font-semibold text-primary">Procurement command centre</p>
-          <h1 class="mt-1 text-2xl font-bold tracking-tight text-base-content sm:text-3xl">{{ companyName }}</h1>
-          <p class="mt-2 max-w-xl text-sm text-base-content/60">Monitor procurement demand, approvals, active tenders and delivery against your annual procurement plan.</p>
-        </div>
-        <div class="flex flex-wrap gap-2">
-          <NuxtLink to="/tenders/awaiting-approval" class="btn btn-outline btn-sm">
-            <Icon name="lucide:clock-3" class="h-4 w-4" /> Awaiting approval
-          </NuxtLink>
-          <NuxtLink v-if="canAddTender" to="/tenders/new" class="btn btn-primary btn-sm">
-            <Icon name="lucide:plus" class="h-4 w-4" /> New tender
-          </NuxtLink>
-        </div>
-      </div>
-      <div role="tablist" class="tabs tabs-border border-t border-base-300 px-5 sm:px-7">
-        <NuxtLink to="/dashboard" role="tab" class="tab tab-active h-12 font-semibold">Dashboard</NuxtLink>
-        <NuxtLink to="/annualprocurementplans" role="tab" class="tab h-12 text-base-content/55">Annual plans</NuxtLink>
-        <NuxtLink to="/tenders" role="tab" class="tab h-12 text-base-content/55">Tender activity</NuxtLink>
-      </div>
-    </section>
-
     <div v-if="loading" class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
       <div v-for="index in 6" :key="index" class="skeleton h-32 rounded-2xl" />
     </div>
@@ -202,7 +172,6 @@
 definePageMeta({ layout: 'default', sanctum: { authOnly: true } })
 useHead({ title: 'Dashboard' })
 
-const { canAdd: canAddTender } = useCheckPermission('tenders')
 const { getCompanyPlan } = useDashboardHelper()
 const { getTransitions } = useAnnualprocurementplanHelper()
 const { list: listBidBonds } = useBidBondManagement()
@@ -211,7 +180,6 @@ const loading = ref(true)
 const errorMessage = ref('')
 const planChecked = ref(false)
 const planFound = ref(false)
-const company = ref(null)
 const plan = ref(null)
 const planTransitions = ref([])
 const currentYear = ref(new Date().getFullYear())
@@ -223,7 +191,6 @@ const upcomingDeadlines = ref([])
 const recentTenders = ref([])
 const bidBondTenders = ref([])
 
-const companyName = computed(() => company.value?.name ?? 'Procurement entity')
 const planClassName = computed(() => plan.value?.procurementclass?.name ?? null)
 const planApproved = computed(() => ['ACTIVE', 'AUTHORIZED'].includes(String(plan.value?.status ?? '')))
 const planItemPercent = computed(() => planSummary.value.items > 0 ? Math.round((planSummary.value.utilized_items / planSummary.value.items) * 100) : 0)
@@ -297,7 +264,6 @@ async function loadDashboard() {
 
   bidBondTenders.value = bondResult.ok ? (bondResult.data?.data?.data ?? []) : []
   const payload = data.value?.data ?? {}
-  company.value = payload.company ?? null
   plan.value = payload.plan ?? null
   if (plan.value?.uuid) {
     const history = await getTransitions(plan.value.uuid)

@@ -11,8 +11,16 @@
       </button>
 
       <div class="min-w-0">
-        <p class="truncate text-sm font-bold text-base-content sm:text-base">Procurement entity portal</p>
-        <p class="hidden truncate text-xs text-base-content/50 sm:block">PRAZ electronic procurement</p>
+        <div class="flex min-w-0 items-center gap-2">
+          <p class="truncate text-sm font-bold text-base-content sm:text-base">{{ companyName }}</p>
+          <span v-if="procurementClass" class="badge badge-outline badge-sm hidden shrink-0 border-primary/30 text-primary md:inline-flex">
+            {{ procurementClass }}
+          </span>
+        </div>
+        <p class="truncate text-xs text-base-content/50">
+          <span class="hidden sm:inline">Procurement entity portal</span>
+          <span v-if="procurementClass" class="sm:hidden">{{ procurementClass }}</span>
+        </p>
       </div>
     </div>
 
@@ -56,6 +64,22 @@ defineEmits(['toggleSidebar'])
 
 const { user } = useSanctumAuth()
 const { logoutUser } = useAuthHelper()
+const { getCompanyPlan } = useDashboardHelper()
+
+const companyPlan = ref(null)
+
+const authCompany = computed(() => user.value?.data?.company
+  ?? user.value?.data?.user?.companies?.[0]
+  ?? user.value?.company
+  ?? null)
+
+const companyName = computed(() => companyPlan.value?.company?.name
+  ?? authCompany.value?.name
+  ?? 'Procurement entity')
+
+const procurementClass = computed(() => companyPlan.value?.plan?.procurementclass?.name
+  ? `Class: ${companyPlan.value.plan.procurementclass.name}`
+  : null)
 
 const userName = computed(() => {
   if (!user.value) return ''
@@ -69,4 +93,9 @@ const logout = async () => {
     await navigateTo('/login')
   }
 }
+
+onMounted(async () => {
+  const { data, error } = await getCompanyPlan()
+  if (!error.value) companyPlan.value = data.value?.data ?? null
+})
 </script>
