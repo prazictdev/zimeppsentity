@@ -1,4 +1,45 @@
 @import "tailwindcss";
-@plugin "daisyui"{
-    themes: light --default, corporate;
-  }
+@plugin "daisyui" { themes: false; }
+@plugin "daisyui/theme" {
+  name: "procurement";
+  default: true;
+  prefersdark: false;
+  color-scheme: light;
+  --color-base-100: #ffffff;
+  --color-base-200: #f3f6f5;
+  --color-base-300: #dfe8e3;
+  --color-base-content: #16211b;
+  --color-primary: #17643a;
+  --color-primary-content: #ffffff;
+  --color-secondary: #315d4a;
+  --color-secondary-content: #ffffff;
+  --color-accent: #d64545;
+  --color-accent-content: #ffffff;
+  --color-neutral: #083f5e;
+  --color-neutral-content: #f8fbfc;
+  --color-info: #2f779f;
+  --color-info-content: #ffffff;
+  --color-success: #247a48;
+  --color-success-content: #ffffff;
+  --color-warning: #d29a32;
+  --color-warning-content: #211705;
+  --color-error: #b8423f;
+  --color-error-content: #ffffff;
+  --radius-selector: 0.5rem;
+  --radius-field: 0.375rem;
+  --radius-box: 0.75rem;
+  --size-selector: 0.25rem;
+  --size-field: 0.25rem;
+  --border: 1px;
+  --depth: 0;
+  --noise: 0;
+}
+
+@layer base {
+  body { min-width: 320px; font-family: "Aptos", "Segoe UI Variable", "Segoe UI", sans-serif; }
+  :focus-visible { outline: 3px solid color-mix(in oklab, var(--color-primary) 36%, transparent); outline-offset: 2px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
+}

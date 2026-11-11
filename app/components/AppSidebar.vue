@@ -1,24 +1,24 @@
 <template>
   <div class="flex h-full flex-col">
     <!-- Sidebar header -->
-    <div class="flex items-center justify-between border-b border-base-200 px-4 py-3">
-      <NuxtLink to="/" class="flex items-center gap-2" @click="$emit('close')">
+    <div class="flex min-h-20 items-center justify-between border-b border-base-300 px-4 py-3">
+      <NuxtLink to="/dashboard" class="flex min-w-0 items-center gap-3" @click="$emit('close')">
         <img
           v-if="showLogoImage"
           :src="imgUrl"
           alt="EGP logo"
-          class="h-10 w-10 rounded-lg border border-success object-cover"
+          class="h-10 w-10 rounded-lg border border-base-300 bg-base-100 object-contain p-0.5"
           @error="onLogoError"
         />
-        <div class="flex flex-col leading-tight">
-          <span class="text-xs font-bold text-base-content/90">PRAZ</span>
-          <span class="text-[10px] font-medium text-base-content/60">e-Procurement</span>
+        <div class="flex min-w-0 flex-col leading-tight">
+          <span class="truncate text-sm font-bold text-base-content">Zimbabwe eGP</span>
+          <span class="truncate text-xs font-medium text-base-content/55">Entity portal</span>
         </div>
       </NuxtLink>
 
       <!-- Close button -->
       <button
-        class="btn btn-outline btn-circle btn-sm shadow-sm"
+        class="btn btn-ghost btn-circle btn-sm lg:hidden"
         aria-label="Close sidebar"
         @click="$emit('close')"
       >
@@ -28,11 +28,12 @@
 
     <!-- Nav links -->
     <nav class="flex-1 overflow-y-auto px-3 py-4">
+      <p class="px-3 pb-2 text-[0.7rem] font-bold uppercase tracking-[0.14em] text-base-content/40">Workspace</p>
       <ul class="menu w-full gap-1 p-0">
         <li>
           <NuxtLink
             to="/dashboard"
-            :class="['gap-2 rounded-lg', route.path === '/dashboard' ? 'bg-success text-white' : '']"
+            :class="['gap-2 rounded-lg', route.path === '/dashboard' ? 'bg-primary font-semibold text-primary-content' : '']"
             @click="$emit('close')"
           >
             <Icon name="lucide:home" class="h-4 w-4 shrink-0" />
@@ -50,7 +51,7 @@
               <li v-for="submodule in module.submodules" :key="submodule.id">
                 <NuxtLink
                   :to="submodule.url"
-                  :class="['gap-2 rounded-lg text-sm', route.path === submodule.url ? 'bg-success text-white' : '']"
+                  :class="['gap-2 rounded-lg text-sm', route.path === submodule.url ? 'bg-primary font-semibold text-primary-content' : '']"
                   @click="$emit('close')"
                 >
                   <Icon :name="submodule.icon" class="h-4 w-4 shrink-0" />
@@ -64,10 +65,10 @@
     </nav>
 
     <!-- Sidebar footer -->
-    <div class="border-t border-base-200 px-4 py-3">
+    <div class="border-t border-base-300 px-3 py-3">
       <button class="btn btn-ghost btn-sm w-full justify-start gap-2 text-error" @click="logout">
         <Icon name="lucide:log-out" class="h-4 w-4" />
-        Logout
+        Sign out
       </button>
     </div>
   </div>

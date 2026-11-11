@@ -1,28 +1,32 @@
 <template>
-  <div class="w-full space-y-6 p-4 sm:p-6">
-    <section class="relative overflow-hidden rounded-2xl bg-gradient-to-br from-emerald-950 via-emerald-800 to-teal-700 px-5 py-6 text-white shadow-lg sm:px-7 sm:py-8">
-      <div class="absolute -right-16 -top-20 h-64 w-64 rounded-full bg-white/10 blur-2xl" />
-      <div class="absolute -bottom-24 left-1/3 h-52 w-52 rounded-full bg-teal-300/10 blur-3xl" />
-      <div class="relative flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+  <div class="w-full space-y-6">
+    <section class="relative overflow-hidden rounded-box border border-base-300 bg-base-100 shadow-sm">
+      <div class="absolute inset-y-0 left-0 w-1 bg-primary" aria-hidden="true" />
+      <div class="flex flex-col gap-6 px-5 py-6 sm:px-7 lg:flex-row lg:items-center lg:justify-between">
         <div class="max-w-2xl">
           <div class="mb-3 flex flex-wrap items-center gap-2">
-            <span class="rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs font-medium backdrop-blur">{{ currentYear }} procurement workspace</span>
-            <span v-if="planChecked" class="rounded-full px-3 py-1 text-xs font-medium" :class="planApproved ? 'bg-emerald-300/20 text-emerald-50' : 'bg-amber-300/20 text-amber-50'">
+            <span class="badge badge-outline border-base-300 text-base-content/70">{{ currentYear }} procurement workspace</span>
+            <span v-if="planChecked" class="badge" :class="planApproved ? 'badge-success' : 'badge-warning'">
               {{ planApproved ? 'APP approved' : planFound ? 'APP pending' : 'No approved APP' }}
             </span>
           </div>
-          <p class="text-sm font-medium text-emerald-100">Welcome back</p>
-          <h1 class="mt-1 text-2xl font-bold tracking-tight sm:text-3xl">{{ companyName }}</h1>
-          <p class="mt-2 max-w-xl text-sm text-emerald-50/80">Monitor procurement demand, approvals, active tenders and delivery against your annual procurement plan.</p>
+          <p class="text-sm font-semibold text-primary">Procurement command centre</p>
+          <h1 class="mt-1 text-2xl font-bold tracking-tight text-base-content sm:text-3xl">{{ companyName }}</h1>
+          <p class="mt-2 max-w-xl text-sm text-base-content/60">Monitor procurement demand, approvals, active tenders and delivery against your annual procurement plan.</p>
         </div>
         <div class="flex flex-wrap gap-2">
-          <NuxtLink to="/tenders/awaiting-approval" class="btn btn-sm border-white/20 bg-white/10 text-white hover:bg-white/20">
+          <NuxtLink to="/tenders/awaiting-approval" class="btn btn-outline btn-sm">
             <Icon name="lucide:clock-3" class="h-4 w-4" /> Awaiting approval
           </NuxtLink>
-          <NuxtLink v-if="canAddTender" to="/tenders/new" class="btn btn-sm border-0 bg-white text-emerald-900 hover:bg-emerald-50">
+          <NuxtLink v-if="canAddTender" to="/tenders/new" class="btn btn-primary btn-sm">
             <Icon name="lucide:plus" class="h-4 w-4" /> New tender
           </NuxtLink>
         </div>
+      </div>
+      <div role="tablist" class="tabs tabs-border border-t border-base-300 px-5 sm:px-7">
+        <NuxtLink to="/dashboard" role="tab" class="tab tab-active h-12 font-semibold">Dashboard</NuxtLink>
+        <NuxtLink to="/annualprocurementplans" role="tab" class="tab h-12 text-base-content/55">Annual plans</NuxtLink>
+        <NuxtLink to="/tenders" role="tab" class="tab h-12 text-base-content/55">Tender activity</NuxtLink>
       </div>
     </section>
 
@@ -87,17 +91,22 @@
         </div>
       </section>
 
-      <section class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
-        <NuxtLink v-for="kpi in kpis" :key="kpi.label" :to="kpi.to" class="group rounded-2xl border border-base-200 bg-base-100 p-5 shadow-sm transition hover:-translate-y-0.5 hover:border-primary/25 hover:shadow-md">
-          <div class="flex items-start justify-between gap-4">
-            <div>
-              <p class="text-sm text-base-content/55">{{ kpi.label }}</p>
-              <p class="mt-2 text-3xl font-bold tracking-tight">{{ kpi.value }}</p>
-              <p class="mt-2 text-xs text-base-content/50">{{ kpi.caption }}</p>
+      <section aria-labelledby="pe-overview-heading">
+        <h2 id="pe-overview-heading" class="mb-3 text-lg font-bold">Overview</h2>
+        <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+          <NuxtLink v-for="kpi in kpis" :key="kpi.label" :to="kpi.to" class="stats border border-base-300 bg-base-100 shadow-sm transition hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-md">
+            <div class="stat min-w-0 p-4">
+              <div class="stat-figure">
+                <span class="flex h-11 w-11 items-center justify-center rounded-box" :class="[kpi.bg, kpi.color]">
+                  <Icon :name="kpi.icon" class="h-5 w-5" />
+                </span>
+              </div>
+              <div class="stat-title text-sm">{{ kpi.label }}</div>
+              <div class="stat-value text-3xl tabular-nums">{{ kpi.value }}</div>
+              <div class="stat-desc mt-1 truncate">{{ kpi.caption }}</div>
             </div>
-            <div :class="['rounded-xl p-3', kpi.bg]"><Icon :name="kpi.icon" :class="['h-5 w-5', kpi.color]" /></div>
-          </div>
-        </NuxtLink>
+          </NuxtLink>
+        </div>
       </section>
 
       <section class="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1.65fr)_minmax(320px,0.85fr)]">

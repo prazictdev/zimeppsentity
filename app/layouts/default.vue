@@ -1,32 +1,21 @@
 <template>
-  <div class="min-h-screen flex">
-    <!-- Mobile overlay -->
-    <Transition name="fade">
-      <div
-        v-if="isSidebarOpen"
-        class="fixed inset-0 z-40 bg-black/40 lg:hidden"
-        @click="closeSidebar"
-      />
-    </Transition>
+  <div class="drawer lg:drawer-open">
+    <input id="pe-navigation-drawer" v-model="isSidebarOpen" type="checkbox" class="drawer-toggle" />
 
-    <!-- Sidebar -->
-    <aside
-      :inert="!isSidebarOpen"
-      :class="[
-        'fixed inset-y-0 left-0 z-50 flex w-72 flex-col border-r border-base-200 bg-base-100 shadow-lg transition-transform duration-300 ease-in-out',
-        'lg:shadow-none',
-        isSidebarOpen ? 'translate-x-0 lg:static' : '-translate-x-full',
-      ]"
-    >
-      <AppSidebar @close="closeSidebar" />
-    </aside>
-
-    <!-- Main content -->
-    <div class="flex min-w-0 flex-1 flex-col">
-      <Navbar @toggleSidebar="toggleSidebar" />
-      <main class="flex-1 overflow-auto p-4">
-        <slot />
+    <div class="drawer-content flex min-h-screen min-w-0 flex-col bg-base-200/60">
+      <Navbar @toggle-sidebar="toggleSidebar" />
+      <main class="flex-1 px-4 py-5 sm:px-6 lg:px-7 lg:py-7">
+        <div class="mx-auto w-full max-w-[90rem]">
+          <slot />
+        </div>
       </main>
+    </div>
+
+    <div class="drawer-side z-50">
+      <label for="pe-navigation-drawer" aria-label="Close navigation" class="drawer-overlay"></label>
+      <aside class="min-h-full w-72 border-r border-base-300 bg-base-100">
+        <AppSidebar @close="closeSidebar" />
+      </aside>
     </div>
   </div>
 </template>
@@ -42,14 +31,3 @@ const closeSidebar = () => {
   isSidebarOpen.value = false;
 };
 </script>
-
-<style scoped>
-.fade-enter-active,
-.fade-leave-active {
-  transition: opacity 0.2s ease;
-}
-.fade-enter-from,
-.fade-leave-to {
-  opacity: 0;
-}
-</style>

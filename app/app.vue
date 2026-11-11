@@ -1,5 +1,5 @@
 <template>
-  <Html data-theme="corporate">
+  <Html data-theme="procurement">
   <NuxtLayout>
     <NuxtPage />
   </NuxtLayout>
