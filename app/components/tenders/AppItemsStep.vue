@@ -1,13 +1,8 @@
 <template>
   <div class="w-full space-y-4">
-    <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-      <div>
-        <h2 class="text-lg font-semibold">{{ isConsultancy ? 'Consultancy budget & Terms of Reference' : 'Line items & breakdown' }}</h2>
-        <p class="text-sm text-base-content/60">
-          {{ isConsultancy ? 'Attach the approved APP budget line, then define the assignment, outputs, expertise and proposal requirements.' : 'Each procurement line item is shown in its own card. Break items down into products or services and add specifications.' }}
-        </p>
-      </div>
-      <div class="flex flex-wrap items-center gap-2">
+    <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <h2 class="text-lg font-semibold">{{ isConsultancy ? 'Consultancy budget & Terms of Reference' : 'Line items & breakdown' }}</h2>
+      <div class="flex shrink-0 flex-nowrap items-center justify-end gap-2">
         <button class="btn btn-ghost btn-sm" type="button" @click="emit('back')">
           <Icon name="lucide:arrow-left" class="h-4 w-4" />
           Back
@@ -52,7 +47,7 @@
     >
       <div class="card-body p-10 text-center text-base-content/50">
         <Icon name="lucide:inbox" class="mx-auto mb-2 h-10 w-10" />
-        <p class="text-sm">No line items yet. Click <strong>Add line item</strong> to begin.</p>
+        <p class="text-sm">No line items yet.</p>
       </div>
     </div>
 

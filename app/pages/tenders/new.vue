@@ -5,12 +5,9 @@
         <NuxtLink to="/tenders" class="btn btn-ghost btn-circle btn-sm shrink-0" aria-label="Back to tenders">
           <Icon name="lucide:arrow-left" class="h-4 w-4" />
         </NuxtLink>
-        <div class="min-w-0">
-          <div class="flex flex-wrap items-center gap-2">
-            <h1 class="text-xl font-bold tracking-tight sm:text-2xl">Create a tender</h1>
-            <span class="badge badge-outline badge-sm">Draft</span>
-          </div>
-          <p class="mt-1 text-sm text-base-content/55">Build the procurement record, bidder requirements and solicitation document.</p>
+        <div class="flex min-w-0 flex-wrap items-center gap-2">
+          <h1 class="text-xl font-bold tracking-tight sm:text-2xl">Create a tender</h1>
+          <span class="badge badge-outline badge-sm">Draft</span>
         </div>
       </div>
       <div class="flex items-center gap-3 pl-12 sm:pl-0">
@@ -27,10 +24,7 @@
     <div class="grid items-start gap-5 lg:grid-cols-[17rem_minmax(0,1fr)]">
       <aside class="card card-border sticky top-24 hidden bg-base-100 lg:block">
         <div class="card-body gap-5 p-4">
-          <div>
-            <p class="text-sm font-semibold">Tender setup</p>
-            <p class="mt-1 text-xs leading-relaxed text-base-content/55">Complete each section in order. Your latest step is retained for this draft.</p>
-          </div>
+          <p class="text-sm font-semibold">Tender setup</p>
 
           <ul class="steps steps-vertical w-full text-sm">
             <li
@@ -86,12 +80,9 @@
             <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-box bg-primary/10 text-primary">
               <Icon :name="currentStep.icon" class="h-5 w-5" />
             </span>
-            <div class="min-w-0">
-              <div class="flex flex-wrap items-center gap-2">
-                <h2 class="font-bold">{{ currentStepLabel }}</h2>
-                <span class="badge badge-ghost badge-sm">{{ currentStepIndex + 1 }}/{{ wizardSteps.length }}</span>
-              </div>
-              <p class="mt-1 text-sm text-base-content/60">{{ currentStep.description }}</p>
+            <div class="flex min-w-0 flex-wrap items-center gap-2">
+              <h2 class="font-bold">{{ currentStepLabel }}</h2>
+              <span class="badge badge-ghost badge-sm">{{ currentStepIndex + 1 }}/{{ wizardSteps.length }}</span>
             </div>
           </div>
         </section>
