@@ -1,127 +1,187 @@
 <template>
-  <div class="flex flex-col gap-4">
-    <div class="flex items-start justify-between gap-3">
-      <div>
-        <h1 class="text-xl font-bold">New Tender</h1>
-        <p class="text-xs text-base-content/60">Create a tender in {{ wizardSteps.length }} steps.</p>
-      </div>
-      <NuxtLink to="/dashboard" class="btn btn-ghost btn-sm">
-        <Icon name="lucide:arrow-left" class="h-4 w-4" />
-        Back
-      </NuxtLink>
-    </div>
-
-    <ul class="steps steps-horizontal w-full overflow-x-auto text-xs sm:text-sm">
-      <li
-        v-for="(wizardStep, i) in wizardSteps"
-        :key="wizardStep.id"
-        class="step"
-        :class="{ 'step-primary': currentStepIndex >= i }"
-      >
-        {{ wizardStep.label }}
-      </li>
-    </ul>
-
-    <TendersAppItemsStep
-      v-if="currentStepId === 'items'"
-      :tender-uuid="tenderUuid"
-      @saved="onStep2Saved"
-      @back="onStep2Back"
-    />
-
-    <TendersEligibilityCriteriaStep
-      v-else-if="currentStepId === 'eligibility'"
-      :tender-uuid="tenderUuid"
-      @saved="onStep3Saved"
-      @back="onStep3Back"
-    />
-
-    <TendersTechnicalEligibilityStep
-      v-else-if="currentStepId === 'technical'"
-      :tender-uuid="tenderUuid"
-      @saved="onStep4Saved"
-      @back="onStep4Back"
-    />
-
-    <TendersFinancialTemplateStep
-      v-else-if="currentStepId === 'finance'"
-      :tender-uuid="tenderUuid"
-      @saved="onStep5Saved"
-      @back="onStep5Back"
-    />
-
-    <TendersDatesManagementStep
-      v-else-if="currentStepId === 'dates'"
-      :tender-uuid="tenderUuid"
-      @saved="onStep6Saved"
-      @back="onStep6Back"
-    />
-
-    <TendersSbdCreateStep
-      v-else-if="currentStepId === 'sbd'"
-      :tender-uuid="tenderUuid"
-      @saved="onStep7Saved"
-      @back="onStep7Back"
-    />
-
-    <TendersComplianceAnalysisStep
-      v-else-if="currentStepId === 'analysis'"
-      :tender-uuid="tenderUuid"
-      @saved="onStep8Saved"
-      @back="onStep8Back"
-    />
-
-    <div v-else-if="currentStepId === 'eoi'" class="space-y-4">
-      <TendersConsultancyEoiPanel
-        v-if="tenderUuid && tender"
-        :tender-uuid="tenderUuid"
-        :tender="tender"
-        @updated="onEoiUpdated"
-        @status-change="eoiStatus = $event"
-      />
-      <div class="flex items-center justify-between border-t border-base-200 pt-4">
-        <button type="button" class="btn" @click="goBack"><Icon name="lucide:arrow-left" class="h-4 w-4" />Back</button>
-        <div class="text-right">
-          <p v-if="eoiStatus !== 'EVALUATED'" class="mb-2 text-xs text-base-content/60">Complete the EOI evaluation and shortlist before continuing.</p>
-          <button type="button" class="btn btn-primary" :disabled="eoiStatus !== 'EVALUATED'" @click="goNext">Continue<Icon name="lucide:arrow-right" class="h-4 w-4" /></button>
+  <div class="space-y-5">
+    <header class="flex flex-col gap-4 border-b border-base-300 pb-5 sm:flex-row sm:items-center sm:justify-between">
+      <div class="flex min-w-0 items-center gap-3">
+        <NuxtLink to="/tenders" class="btn btn-ghost btn-circle btn-sm shrink-0" aria-label="Back to tenders">
+          <Icon name="lucide:arrow-left" class="h-4 w-4" />
+        </NuxtLink>
+        <div class="min-w-0">
+          <div class="flex flex-wrap items-center gap-2">
+            <h1 class="text-xl font-bold tracking-tight sm:text-2xl">Create a tender</h1>
+            <span class="badge badge-outline badge-sm">Draft</span>
+          </div>
+          <p class="mt-1 text-sm text-base-content/55">Build the procurement record, bidder requirements and solicitation document.</p>
         </div>
       </div>
-    </div>
+      <div class="flex items-center gap-3 pl-12 sm:pl-0">
+        <div class="text-right">
+          <p class="text-xs text-base-content/50">Progress</p>
+          <p class="text-sm font-semibold">Step {{ currentStepIndex + 1 }} of {{ wizardSteps.length }}</p>
+        </div>
+        <div class="radial-progress text-primary" :style="{ '--value': completionPercent, '--size': '2.75rem', '--thickness': '0.3rem' }" role="progressbar" :aria-valuenow="completionPercent">
+          <span class="text-[0.65rem] font-bold">{{ completionPercent }}%</span>
+        </div>
+      </div>
+    </header>
 
-    <div v-else class="card bg-base-100 shadow-sm border border-base-200">
-      <div class="card-body">
+    <div class="grid items-start gap-5 lg:grid-cols-[17rem_minmax(0,1fr)]">
+      <aside class="card card-border sticky top-24 hidden bg-base-100 lg:block">
+        <div class="card-body gap-5 p-4">
+          <div>
+            <p class="text-sm font-semibold">Tender setup</p>
+            <p class="mt-1 text-xs leading-relaxed text-base-content/55">Complete each section in order. Your latest step is retained for this draft.</p>
+          </div>
+
+          <ul class="steps steps-vertical w-full text-sm">
+            <li
+              v-for="(wizardStep, index) in wizardSteps"
+              :key="wizardStep.id"
+              class="step justify-start text-left"
+              :class="index < currentStepIndex ? 'step-success' : index === currentStepIndex ? 'step-primary font-semibold' : ''"
+              :data-content="index < currentStepIndex ? '✓' : index + 1"
+              :aria-current="index === currentStepIndex ? 'step' : undefined"
+            >
+              {{ wizardStep.label }}
+            </li>
+          </ul>
+
+          <div v-if="tenderUuid" class="rounded-box border border-base-300 bg-base-200/40 p-3">
+            <div class="flex items-center gap-2 text-xs font-semibold text-success">
+              <Icon name="lucide:cloud-check" class="h-4 w-4" />
+              Draft saved
+            </div>
+            <p class="mt-2 truncate font-mono text-[0.68rem] text-base-content/50" :title="tenderUuid">{{ tenderUuid }}</p>
+          </div>
+        </div>
+      </aside>
+
+      <main class="min-w-0 space-y-4">
+        <div class="card card-border bg-base-100 lg:hidden">
+          <div class="card-body gap-3 p-4">
+            <div class="flex items-center justify-between gap-3">
+              <div class="min-w-0">
+                <p class="truncate font-semibold">{{ currentStepLabel }}</p>
+                <p class="text-xs text-base-content/50">Step {{ currentStepIndex + 1 }} of {{ wizardSteps.length }}</p>
+              </div>
+              <span v-if="tenderUuid" class="badge badge-success badge-sm gap-1"><Icon name="lucide:check" class="h-3 w-3" /> Saved</span>
+            </div>
+            <div class="overflow-x-auto pb-1">
+              <ul class="steps steps-horizontal min-w-max text-xs">
+                <li
+                  v-for="(wizardStep, index) in wizardSteps"
+                  :key="wizardStep.id"
+                  class="step"
+                  :class="index < currentStepIndex ? 'step-success' : index === currentStepIndex ? 'step-primary' : ''"
+                  :data-content="index < currentStepIndex ? '✓' : index + 1"
+                >
+                  {{ wizardStep.shortLabel ?? wizardStep.label }}
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <section class="card card-border bg-base-100">
+          <div class="card-body flex-row items-start gap-3 p-4 sm:p-5">
+            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-box bg-primary/10 text-primary">
+              <Icon :name="currentStep.icon" class="h-5 w-5" />
+            </span>
+            <div class="min-w-0">
+              <div class="flex flex-wrap items-center gap-2">
+                <h2 class="font-bold">{{ currentStepLabel }}</h2>
+                <span class="badge badge-ghost badge-sm">{{ currentStepIndex + 1 }}/{{ wizardSteps.length }}</span>
+              </div>
+              <p class="mt-1 text-sm text-base-content/60">{{ currentStep.description }}</p>
+            </div>
+          </div>
+        </section>
+
+        <TendersAppItemsStep
+          v-if="currentStepId === 'items'"
+          :tender-uuid="tenderUuid"
+          @saved="onStep2Saved"
+          @back="onStep2Back"
+        />
+
+        <TendersEligibilityCriteriaStep
+          v-else-if="currentStepId === 'eligibility'"
+          :tender-uuid="tenderUuid"
+          @saved="onStep3Saved"
+          @back="onStep3Back"
+        />
+
+        <TendersTechnicalEligibilityStep
+          v-else-if="currentStepId === 'technical'"
+          :tender-uuid="tenderUuid"
+          @saved="onStep4Saved"
+          @back="onStep4Back"
+        />
+
+        <TendersFinancialTemplateStep
+          v-else-if="currentStepId === 'finance'"
+          :tender-uuid="tenderUuid"
+          @saved="onStep5Saved"
+          @back="onStep5Back"
+        />
+
+        <TendersDatesManagementStep
+          v-else-if="currentStepId === 'dates'"
+          :tender-uuid="tenderUuid"
+          @saved="onStep6Saved"
+          @back="onStep6Back"
+        />
+
+        <TendersSbdCreateStep
+          v-else-if="currentStepId === 'sbd'"
+          :tender-uuid="tenderUuid"
+          @saved="onStep7Saved"
+          @back="onStep7Back"
+        />
+
+        <TendersComplianceAnalysisStep
+          v-else-if="currentStepId === 'analysis'"
+          :tender-uuid="tenderUuid"
+          @saved="onStep8Saved"
+          @back="onStep8Back"
+        />
+
+        <div v-else-if="currentStepId === 'eoi'" class="space-y-4">
+          <TendersConsultancyEoiPanel
+            v-if="tenderUuid && tender"
+            :tender-uuid="tenderUuid"
+            :tender="tender"
+            @updated="onEoiUpdated"
+            @status-change="eoiStatus = $event"
+          />
+          <div class="flex flex-col gap-3 border-t border-base-300 pt-4 sm:flex-row sm:items-end sm:justify-between">
+            <button type="button" class="btn" @click="goBack"><Icon name="lucide:arrow-left" class="h-4 w-4" />Back</button>
+            <div class="sm:text-right">
+              <p v-if="eoiStatus !== 'EVALUATED'" class="mb-2 text-xs text-base-content/60">Complete the EOI evaluation and shortlist before continuing.</p>
+              <button type="button" class="btn btn-primary w-full sm:w-auto" :disabled="eoiStatus !== 'EVALUATED'" @click="goNext">Continue<Icon name="lucide:arrow-right" class="h-4 w-4" /></button>
+            </div>
+          </div>
+        </div>
+
         <TendersRequestDetailsStep
-          v-if="currentStepId === 'request'"
+          v-else-if="currentStepId === 'request'"
           :mode="tenderUuid ? 'edit' : 'create'"
           :tender-uuid="tenderUuid"
           @saved="onStep1Saved"
         />
 
-        <div v-else class="space-y-3">
-          <div class="alert alert-info border border-info/30 bg-info/10">
-            <Icon name="lucide:info" class="h-4 w-4" />
-            <span>
-              <strong>{{ currentStepLabel }}</strong> is a placeholder for now.
-            </span>
-          </div>
-
-          <div class="flex items-center justify-between">
-            <button class="btn" :disabled="currentStepIndex <= 0" @click="goBack">Back</button>
-            <div class="flex items-center gap-2">
-              <span v-if="tenderUuid" class="text-xs text-base-content/60">
-                Draft: <span class="font-mono">{{ tenderUuid }}</span>
-              </span>
-              <button
-                v-if="currentStepIndex < wizardSteps.length - 1"
-                class="btn btn-primary"
-                @click="goNext"
-              >
-                Next
-              </button>
+        <div v-else class="card card-border bg-base-100">
+          <div class="card-body gap-4">
+            <div role="alert" class="alert alert-info alert-soft">
+              <Icon name="lucide:info" class="h-4 w-4" />
+              <span><strong>{{ currentStepLabel }}</strong> is not available yet.</span>
+            </div>
+            <div class="card-actions justify-between">
+              <button class="btn" :disabled="currentStepIndex <= 0" @click="goBack">Back</button>
+              <button v-if="currentStepIndex < wizardSteps.length - 1" class="btn btn-primary" @click="goNext">Continue</button>
             </div>
           </div>
         </div>
-      </div>
+      </main>
     </div>
   </div>
 </template>
@@ -135,14 +195,14 @@ definePageMeta({
 useHead({ title: 'New Tender' })
 
 const BASE_STEPS = [
-  { id: 'request', label: 'Request details' },
-  { id: 'items', label: 'Line items' },
-  { id: 'eligibility', label: 'Eligibility criteria' },
-  { id: 'technical', label: 'Technical Eligibility' },
-  { id: 'finance', label: 'Finance' },
-  { id: 'dates', label: 'Dates management' },
-  { id: 'sbd', label: 'SBD create' },
-  { id: 'analysis', label: 'Preview & Analysis' },
+  { id: 'request', label: 'Request details', shortLabel: 'Request', icon: 'lucide:file-input', description: 'Capture the procurement request, tender scope and planning information.' },
+  { id: 'items', label: 'Line items', shortLabel: 'Items', icon: 'lucide:list-tree', description: 'Add the goods, works or services and connect them to the approved procurement plan.' },
+  { id: 'eligibility', label: 'Eligibility criteria', shortLabel: 'Eligibility', icon: 'lucide:files', description: 'Define the documents and declarations every bidder must provide.' },
+  { id: 'technical', label: 'Technical evaluation', shortLabel: 'Technical', icon: 'lucide:clipboard-check', description: 'Set the technical response structure, questions and evaluation rules.' },
+  { id: 'finance', label: 'Financial schedule', shortLabel: 'Finance', icon: 'lucide:calculator', description: 'Review the pricing schedule that bidders will complete.' },
+  { id: 'dates', label: 'Key dates', shortLabel: 'Dates', icon: 'lucide:calendar-clock', description: 'Set publication, clarification, closing and evaluation dates.' },
+  { id: 'sbd', label: 'Bidding document', shortLabel: 'Document', icon: 'lucide:notebook-tabs', description: 'Assemble the standard bidding document and supporting sections.' },
+  { id: 'analysis', label: 'Review and submit', shortLabel: 'Review', icon: 'lucide:scan-search', description: 'Run compliance checks, preview the tender and send it for approval.' },
 ]
 
 const { guardPage } = useCheckPermission('tenders')
@@ -162,11 +222,13 @@ const { getTender, getTenderConsultancyEoi } = useTenderHelper()
 
 const wizardSteps = computed(() => {
   const steps = [...BASE_STEPS]
-  if (eoiRequired.value) steps.splice(2, 0, { id: 'eoi', label: 'Expression of Interest' })
+  if (eoiRequired.value) steps.splice(2, 0, { id: 'eoi', label: 'Expression of interest', shortLabel: 'EOI', icon: 'lucide:users-round', description: 'Complete the consultancy expression-of-interest and shortlist process.' })
   return steps
 })
 const currentStepIndex = computed(() => Math.max(0, wizardSteps.value.findIndex(item => item.id === currentStepId.value)))
 const currentStepLabel = computed(() => wizardSteps.value[currentStepIndex.value]?.label ?? 'Tender step')
+const currentStep = computed(() => wizardSteps.value[currentStepIndex.value] ?? BASE_STEPS[0])
+const completionPercent = computed(() => Math.round(((currentStepIndex.value + 1) / wizardSteps.value.length) * 100))
 
 const getDraftStorageKey = (uuid) => `peclient:tenders:draft:${uuid}:step`
 
