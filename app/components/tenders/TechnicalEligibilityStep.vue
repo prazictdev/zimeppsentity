@@ -5,17 +5,17 @@
       <button class="btn btn-ghost btn-sm" type="button" @click="emit('back')"><Icon name="lucide:arrow-left" class="h-4 w-4" /> Back</button>
     </div>
 
-    <div v-if="errorMessage" class="alert alert-error border border-error/30 bg-error/10"><Icon name="lucide:alert-triangle" class="h-5 w-5 shrink-0" /><span>{{ errorMessage }}</span></div>
+    <div v-if="errorMessage" ref="errorAlert" role="alert" aria-live="assertive" tabindex="-1" class="alert alert-error alert-soft"><Icon name="lucide:alert-triangle" class="h-5 w-5 shrink-0" /><span class="font-medium">{{ errorMessage }}</span></div>
     <div v-if="importError" class="alert alert-warning py-2 text-sm"><Icon name="lucide:triangle-alert" class="h-4 w-4 shrink-0" /><span>{{ importError }}</span></div>
     <input ref="questionFileInput" type="file" accept=".xlsx,.xls,.csv" class="hidden" @change="uploadQuestions">
     <div v-if="loading" class="card border border-base-200 bg-base-100"><div class="card-body flex items-center justify-center gap-2 p-10"><span class="loading loading-spinner" /> Loading products and eligibility groups…</div></div>
-    <div v-else-if="!products.length" class="card border border-dashed border-warning/50 bg-warning/5"><div class="card-body items-center p-10 text-center"><Icon name="lucide:package-x" class="h-10 w-10 text-warning" /><p class="font-medium">No products or services are available.</p><p class="text-sm text-base-content/60">Go back to Step 2 and add products or services before configuring technical eligibility.</p></div></div>
+    <div v-else-if="!products.length" class="card border border-dashed border-warning/50 bg-warning/5"><div class="card-body items-center p-10 text-center"><Icon name="lucide:package-x" class="h-10 w-10 text-warning" /><p class="font-medium">No evaluation items are available.</p><p class="text-sm text-base-content/60">Go back to Step 2 and add a line item before configuring technical evaluation.</p></div></div>
 
     <template v-else>
       <div class="space-y-4">
       <div v-if="showProductSelector" class="card border border-base-200 bg-base-100 shadow-sm">
         <div class="card-body gap-4 p-4 sm:p-6">
-          <div><h3 class="text-sm font-semibold">Select a product or service</h3><p class="text-xs text-base-content/60">Technical response requirements are configured separately for each product or service.</p></div>
+          <div><h3 class="text-sm font-semibold">{{ isConsultancy ? 'Select a consultancy assignment' : 'Select a product or service' }}</h3><p class="text-xs text-base-content/60">Technical response requirements are configured separately for each {{ isConsultancy ? 'assignment' : 'product or service' }}.</p></div>
           <div class="flex flex-wrap gap-2">
             <button v-for="product in products" :key="product.id" type="button" :class="['btn btn-sm', activeProductId === product.id ? 'btn-primary' : 'btn-outline']" @click="activeProductId = product.id">
               <span v-if="isMultipleLot" class="badge badge-sm">Lot {{ product.lot_number }}</span>{{ product.description }}
@@ -102,6 +102,7 @@ const saving = ref(false)
 const importing = ref(false)
 const downloadingTemplate = ref(false)
 const errorMessage = ref('')
+const errorAlert = ref(null)
 const importError = ref('')
 const questionFileInput = ref(null)
 const uploadTargetGroup = ref(null)
@@ -116,9 +117,9 @@ const activeProduct = computed(() => products.value.find(product => Number(produ
 const activeGroups = computed(() => groupsByProduct.value[String(activeProductId.value)] ?? [])
 const isConsultancy = computed(() => tender.value?.procurementgroup?.code === 'CONSULTANCY')
 const isQcbs = computed(() => tender.value?.bidevaluationmethod?.code === 'QCBS')
-const showProductSelector = computed(() => products.value.length > 1 && !isConsultancy.value)
+const showProductSelector = computed(() => products.value.length > 1)
 const financialWeight = computed(() => Math.max(0, 100 - Number(evaluation.technical_weight || 0)))
-const groupWeightTotal = computed(() => Number(activeGroups.value.reduce((sum, group) => sum + Number(group.weight || 0), 0).toFixed(2)))
+const groupWeightTotal = computed(() => Number(Object.values(groupsByProduct.value).flat().reduce((sum, group) => sum + Number(group.weight || 0), 0).toFixed(2)))
 const key = () => crypto.randomUUID?.() ?? `${Date.now()}-${Math.random()}`
 const newBand = (label = '', percentage = null) => ({ _key: key(), label, percentage })
 const defaultBands = responseType => responseType === 'YES_NO'
@@ -233,13 +234,18 @@ function validate() {
       }
     }
   }
-  if (isConsultancy.value && groupWeightTotal.value !== Number(evaluation.technical_weight)) { errorMessage.value = `Response-group allocations must total ${formatNumber(evaluation.technical_weight)} technical points. They currently total ${formatNumber(groupWeightTotal.value)}.`; return false }
+  if (isConsultancy.value && groupWeightTotal.value !== Number(evaluation.technical_weight)) {
+    errorMessage.value = groupWeightTotal.value === 0
+      ? `Add at least one technical response group, then allocate a combined total of ${formatNumber(evaluation.technical_weight)} points across the groups.`
+      : `Technical response-group points must add up to ${formatNumber(evaluation.technical_weight)}. Currently allocated: ${formatNumber(groupWeightTotal.value)} points.`
+    return false
+  }
   errorMessage.value = ''
   return true
 }
 
 function buildPayload() {
-  return products.value.flatMap(product => (groupsByProduct.value[String(product.id)] ?? []).flatMap((group, groupIndex) => group.questions.map(row => ({ procurementrequestitem_id: product.procurementrequestitem_id, procurementrequestitem_product_id: product.id, group_title: group.title.trim(), group_sort_order: groupIndex + 1, question: row.question.trim(), response_type: row.response_type, ...(isConsultancy.value ? { group_weight: Number(group.weight), question_weight: Number(row.weight), scoring_bands: row.bands.map(band => ({ label: band.label.trim(), percentage: Number(band.percentage) })) } : {}) }))))
+  return products.value.flatMap(product => (groupsByProduct.value[String(product.id)] ?? []).flatMap((group, groupIndex) => group.questions.map(row => ({ procurementrequestitem_id: product.procurementrequestitem_id, procurementrequestitem_product_id: product.procurementrequestitem_product_id, group_title: group.title.trim(), group_sort_order: groupIndex + 1, question: row.question.trim(), response_type: row.response_type, ...(isConsultancy.value ? { group_weight: Number(group.weight), question_weight: Number(row.weight), scoring_bands: row.bands.map(band => ({ label: band.label.trim(), percentage: Number(band.percentage) })) } : {}) }))))
 }
 
 async function saveAndContinue() {
@@ -285,7 +291,7 @@ async function load() {
   products.value = payload.products ?? []
   const grouped = {}
   for (const product of products.value) grouped[String(product.id)] = groupRows(product.questions ?? [])
-  const legacy = (payload.questions ?? []).filter(row => !row.procurementrequestitem_product_id)
+  const legacy = (payload.questions ?? []).filter(row => !row.procurementrequestitem_product_id && !row.procurementrequestitem_id)
   if (legacy.length && products.value[0]) grouped[String(products.value[0].id)].push(...groupRows(legacy))
   groupsByProduct.value = grouped
   activeProductId.value = products.value[0]?.id ?? null
@@ -293,4 +299,11 @@ async function load() {
 }
 
 onMounted(load)
+
+watch(errorMessage, async message => {
+  if (!message) return
+  await nextTick()
+  errorAlert.value?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+  errorAlert.value?.focus({ preventScroll: true })
+})
 </script>
