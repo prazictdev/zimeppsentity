@@ -48,6 +48,13 @@
             <button type="button" class="btn btn-ghost btn-sm text-error" @click="confirmDelete(row)"><Icon name="lucide:trash-2" class="h-4 w-4" /></button>
           </div>
         </div>
+        <TendersSupplierCategorySelector
+          class="mt-4"
+          :tender-uuid="tenderUuid"
+          :item="row"
+          :categories="supplierCategories"
+          @saved="loadAll"
+        />
         <div class="mt-4 border-t border-base-200 pt-4">
           <TendersConsultancyBriefStep
             :key="row.id"
