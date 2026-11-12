@@ -244,6 +244,16 @@
                     </div>
                   </div>
                 </div>
+                <div v-if="preview.eoi_supplier_category_changes" class="rounded-lg border border-base-200 p-3">
+                  <p class="mb-2 text-sm font-semibold">Required supplier-category changes</p>
+                  <div v-for="change in preview.eoi_supplier_category_changes" :key="change.item_id" class="mb-3 rounded-lg border border-warning/40 bg-warning/5 p-3 text-sm last:mb-0">
+                    <p class="font-medium">{{ change.item_description || 'Consultancy assignment' }}</p>
+                    <div class="mt-2 grid gap-3 sm:grid-cols-2">
+                      <div><p class="text-xs font-semibold text-base-content/50">Previous categories</p><div class="mt-1 flex flex-wrap gap-1"><span v-for="category in change.before?.categories ?? []" :key="`before-${change.item_id}-${category.id}`" class="badge badge-ghost badge-sm">{{ category.code }} · {{ category.name }}</span><span v-if="!(change.before?.categories?.length)" class="text-xs text-base-content/50">None</span></div></div>
+                      <div><p class="text-xs font-semibold text-base-content/50">Revised categories</p><div class="mt-1 flex flex-wrap gap-1"><span v-for="category in change.after?.categories ?? []" :key="`after-${change.item_id}-${category.id}`" class="badge badge-success badge-sm">{{ category.code }} · {{ category.name }}</span></div></div>
+                    </div>
+                  </div>
+                </div>
                 <div v-if="preview.eligibility_questions" class="rounded-lg border border-base-200 p-3">
                   <p class="mb-2 text-sm font-semibold">Eligibility questions ({{ preview.eligibility_questions.length }})</p>
                   <ol class="list-decimal space-y-1 pl-5 text-sm">
@@ -412,6 +422,30 @@
                 </div>
               </section>
 
+              <section v-if="isEoiScope && form.addendum_type === 'SUPPLIER_CATEGORY_CHANGE'" class="space-y-4 rounded-xl border border-primary/25 bg-primary/5 p-4">
+                <div>
+                  <h4 class="font-semibold">Proposed required supplier categories</h4>
+                  <p class="text-xs text-base-content/60">Add the missing categories for each consultancy assignment. The new requirements take effect only after approval and publication.</p>
+                </div>
+                <label class="input input-sm flex w-full items-center gap-2 bg-base-100">
+                  <Icon name="lucide:search" class="h-4 w-4 text-base-content/40" />
+                  <input v-model="supplierCategorySearch" class="grow" placeholder="Search supplier categories…">
+                </label>
+                <article v-for="row in form.eoi_supplier_categories" :key="row.item_id" class="rounded-xl border border-base-200 bg-base-100 p-4">
+                  <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                    <h5 class="font-semibold">{{ row.item_description || 'Consultancy assignment' }}</h5>
+                    <span class="badge" :class="row.supplier_category_ids.length ? 'badge-success' : 'badge-error'">{{ row.supplier_category_ids.length }} selected</span>
+                  </div>
+                  <div class="mt-3 max-h-56 space-y-1 overflow-y-auto rounded-box border border-base-200 p-2">
+                    <label v-for="category in filteredEoiSupplierCategories" :key="`${row.item_id}-${category.id}`" class="flex cursor-pointer items-start gap-2 rounded-box px-2 py-1.5 hover:bg-base-200/60">
+                      <input v-model="row.supplier_category_ids" type="checkbox" class="checkbox checkbox-sm mt-0.5" :value="Number(category.id)">
+                      <span class="text-sm"><strong>{{ category.name }}</strong><span class="ml-1 font-mono text-xs text-base-content/50">{{ category.code }}</span></span>
+                    </label>
+                  </div>
+                  <p v-if="row.supplier_category_ids.length === 0" class="mt-2 text-xs text-error">Select at least one required category for this assignment.</p>
+                </article>
+              </section>
+
               <section v-if="isEoiScope && isTorOrScopeChange" class="space-y-4 rounded-xl border border-primary/25 bg-primary/5 p-4">
                 <div>
                   <h4 class="font-semibold">{{ form.addendum_type === 'TERMS_OF_REFERENCE_CHANGE' ? 'Proposed Terms of Reference' : 'Proposed assignment scope' }}</h4>
@@ -469,7 +503,7 @@
               </section>
 
               <div class="grid grid-cols-1 gap-3" :class="{ 'sm:grid-cols-2': !isEoiScope }">
-                <label v-if="!isEoiScope || ['DATE_CHANGE', 'ELIGIBILITY_REQUIREMENTS_CHANGE', 'TERMS_OF_REFERENCE_CHANGE', 'SCOPE_CHANGE'].includes(form.addendum_type)" class="form-control w-full">
+                <label v-if="!isEoiScope || ['DATE_CHANGE', 'ELIGIBILITY_REQUIREMENTS_CHANGE', 'TERMS_OF_REFERENCE_CHANGE', 'SCOPE_CHANGE', 'SUPPLIER_CATEGORY_CHANGE'].includes(form.addendum_type)" class="form-control w-full">
                   <span class="label-text text-xs font-medium">{{ isEoiScope ? `Revised EOI closing date & time${eoiDeadlineExtensionRequired ? ' *' : ' (optional)'}` : 'New closing date & time (optional)' }}</span>
                   <input v-model="form.new_closing_at" type="datetime-local" class="input input-bordered w-full" :min="isEoiScope ? minimumEoiClosingInput : undefined" :disabled="saving" />
                   <span v-if="eoiDeadlineExtensionRequired" class="mt-1 text-xs text-warning-content">Less than one-third of the response period remains. The deadline extension is mandatory.</span>
@@ -549,6 +583,8 @@ const {
   getTenderAddenda,
   getTenderAddendum,
   getTenderConsultancyEoi,
+  getTenderItems,
+  getSupplierCategories,
   createTenderAddendum,
   updateTenderAddendum,
   deleteTenderAddendum,
@@ -583,6 +619,7 @@ const eoiAddendumTypes = [
   { value: 'SCOPE_CHANGE', label: 'Change of scope', help: 'Record a formal amendment to the assignment scope, with an optional supporting document.' },
   { value: 'DATE_CHANGE', label: 'Change of dates', help: 'Set a later EOI closing date and time. The live deadline changes only after approval and publication.' },
   { value: 'ELIGIBILITY_REQUIREMENTS_CHANGE', label: 'Change of eligibility requirements', help: 'Add, edit, or remove eligibility requirements while preserving a complete before-and-after audit record.' },
+  { value: 'SUPPLIER_CATEGORY_CHANGE', label: 'Change required supplier categories', help: 'Add a missing supplier category to one or more published EOI assignments.' },
 ]
 
 const actionMeta = {
@@ -622,20 +659,29 @@ const currentEoiLoading = ref(false)
 const currentEoiError = ref('')
 let eligibilityEditorInitialized = false
 let scopeEditorInitialized = false
+let supplierCategoryEditorInitialized = false
+const supplierCategories = ref([])
+const supplierCategorySearch = ref('')
 const form = reactive({
   title: '', description: '', addendum_type: isEoiScope.value ? 'EOI_ADDENDUM' : 'GENERAL', new_closing_at: '', new_opening_at: '',
   eoi_eligibility_criteria: [],
   eoi_scope_snapshot: [],
+  eoi_supplier_categories: [],
   file_disk: null, file_path: null, original_filename: null, mime_type: null, file_size: null,
 })
 const selectedTypeHelp = computed(() => eoiAddendumTypes.find(option => option.value === form.addendum_type)?.help ?? '')
 const isTorOrScopeChange = computed(() => ['TERMS_OF_REFERENCE_CHANGE', 'SCOPE_CHANGE'].includes(form.addendum_type))
+const filteredEoiSupplierCategories = computed(() => {
+  const term = supplierCategorySearch.value.trim().toLowerCase()
+  if (!term) return supplierCategories.value
+  return supplierCategories.value.filter(category => `${category.code} ${category.name}`.toLowerCase().includes(term))
+})
 const removedEligibilityCriteria = computed(() => {
   const proposedUuids = new Set(form.eoi_eligibility_criteria.map(criterion => criterion.uuid))
   return (currentEoi.value?.criteria ?? []).filter(criterion => !proposedUuids.has(criterion.uuid))
 })
 const eoiDeadlineExtensionRequired = computed(() => {
-  if (!['ELIGIBILITY_REQUIREMENTS_CHANGE', 'TERMS_OF_REFERENCE_CHANGE', 'SCOPE_CHANGE'].includes(form.addendum_type)) return false
+  if (!['ELIGIBILITY_REQUIREMENTS_CHANGE', 'TERMS_OF_REFERENCE_CHANGE', 'SCOPE_CHANGE', 'SUPPLIER_CATEGORY_CHANGE'].includes(form.addendum_type)) return false
   const publication = new Date(currentEoi.value?.publication_at || currentEoi.value?.published_at || '').getTime()
   const closing = new Date(currentEoi.value?.closing_at || '').getTime()
   if (!Number.isFinite(publication) || !Number.isFinite(closing) || closing <= publication) return false
@@ -656,7 +702,11 @@ async function loadCurrentEoi() {
   if (!isEoiScope.value) return
   currentEoiLoading.value = true
   currentEoiError.value = ''
-  const { data, error } = await getTenderConsultancyEoi(props.tenderUuid)
+  const [{ data, error }, itemsResult, categoriesResult] = await Promise.all([
+    getTenderConsultancyEoi(props.tenderUuid),
+    getTenderItems(props.tenderUuid),
+    getSupplierCategories(),
+  ])
   currentEoiLoading.value = false
   if (error.value) {
     currentEoi.value = null
@@ -664,6 +714,7 @@ async function loadCurrentEoi() {
     return
   }
   currentEoi.value = data.value?.data ?? null
+  supplierCategories.value = categoriesResult.data.value?.data ?? []
   if (!currentEoi.value) currentEoiError.value = 'No published EOI data was returned.'
   if (form.addendum_type === 'ELIGIBILITY_REQUIREMENTS_CHANGE' && !eligibilityEditorInitialized && currentEoi.value) {
     form.eoi_eligibility_criteria = cloneCriteria(currentEoi.value.criteria ?? [])
@@ -672,6 +723,14 @@ async function loadCurrentEoi() {
   if (isTorOrScopeChange.value && !scopeEditorInitialized && currentEoi.value) {
     form.eoi_scope_snapshot = cloneScopeSnapshot(currentEoi.value.scope_snapshot ?? [])
     scopeEditorInitialized = true
+  }
+  if (form.addendum_type === 'SUPPLIER_CATEGORY_CHANGE' && !supplierCategoryEditorInitialized) {
+    form.eoi_supplier_categories = (itemsResult.data.value?.data ?? []).map(item => ({
+      item_id: Number(item.id),
+      item_description: item.description ?? '',
+      supplier_category_ids: (item.supplier_categories ?? []).map(category => Number(category.id)),
+    }))
+    supplierCategoryEditorInitialized = true
   }
 }
 
@@ -684,10 +743,13 @@ function resetForm() {
     title: '', description: '', addendum_type: isEoiScope.value ? 'EOI_ADDENDUM' : 'GENERAL', new_closing_at: '', new_opening_at: '',
     eoi_eligibility_criteria: [],
     eoi_scope_snapshot: [],
+    eoi_supplier_categories: [],
     file_disk: null, file_path: null, original_filename: null, mime_type: null, file_size: null,
   })
   eligibilityEditorInitialized = false
   scopeEditorInitialized = false
+  supplierCategoryEditorInitialized = false
+  supplierCategorySearch.value = ''
   formError.value = ''
 }
 
@@ -710,6 +772,7 @@ async function openEdit(a) {
     new_opening_at: toLocalInput(a.new_opening_at),
     eoi_eligibility_criteria: cloneCriteria(a.content_changes?.eoi_eligibility_criteria ?? []),
     eoi_scope_snapshot: cloneScopeSnapshot(a.content_changes?.eoi_scope_snapshot ?? []),
+    eoi_supplier_categories: structuredClone(a.content_changes?.eoi_supplier_categories ?? []),
     file_disk: a.file_disk ?? null,
     file_path: a.file_path ?? null,
     original_filename: a.original_filename ?? null,
@@ -718,6 +781,7 @@ async function openEdit(a) {
   })
   eligibilityEditorInitialized = form.addendum_type === 'ELIGIBILITY_REQUIREMENTS_CHANGE'
   scopeEditorInitialized = isTorOrScopeChange.value
+  supplierCategoryEditorInitialized = form.addendum_type === 'SUPPLIER_CATEGORY_CHANGE'
   formOpen.value = true
   formDialog.value?.showModal?.()
   await loadCurrentEoi()
@@ -751,12 +815,14 @@ function buildPayload() {
     description: form.description.trim(),
     scope: props.scope,
     addendum_type: form.addendum_type,
-    new_closing_at: isEoiScope.value && !['DATE_CHANGE', 'ELIGIBILITY_REQUIREMENTS_CHANGE', 'TERMS_OF_REFERENCE_CHANGE', 'SCOPE_CHANGE'].includes(form.addendum_type) ? null : form.new_closing_at || null,
+    new_closing_at: isEoiScope.value && !['DATE_CHANGE', 'ELIGIBILITY_REQUIREMENTS_CHANGE', 'TERMS_OF_REFERENCE_CHANGE', 'SCOPE_CHANGE', 'SUPPLIER_CATEGORY_CHANGE'].includes(form.addendum_type) ? null : form.new_closing_at || null,
     new_opening_at: isEoiScope.value ? null : form.new_opening_at || null,
     content_changes: isEoiScope.value
       ? (form.addendum_type === 'ELIGIBILITY_REQUIREMENTS_CHANGE'
           ? { eoi_eligibility_criteria: cloneCriteria(form.eoi_eligibility_criteria) }
-          : (isTorOrScopeChange.value ? { eoi_scope_snapshot: cloneScopeSnapshot(form.eoi_scope_snapshot) } : null))
+          : (isTorOrScopeChange.value
+              ? { eoi_scope_snapshot: cloneScopeSnapshot(form.eoi_scope_snapshot) }
+              : (form.addendum_type === 'SUPPLIER_CATEGORY_CHANGE' ? { eoi_supplier_categories: structuredClone(form.eoi_supplier_categories) } : null)))
       : contentEditor.value?.buildContentChanges?.() ?? null,
     file_disk: form.file_disk,
     file_path: form.file_path,
@@ -773,6 +839,7 @@ async function submitForm() {
   if (isEoiScope.value && form.addendum_type === 'DATE_CHANGE' && !form.new_closing_at) { formError.value = 'A revised EOI closing date and time is required.'; return }
   if (form.addendum_type === 'ELIGIBILITY_REQUIREMENTS_CHANGE' && form.eoi_eligibility_criteria.length === 0) { formError.value = 'At least one eligibility requirement must remain.'; return }
   if (form.addendum_type === 'ELIGIBILITY_REQUIREMENTS_CHANGE' && form.eoi_eligibility_criteria.some(criterion => !criterion.title?.trim())) { formError.value = 'Every eligibility requirement must have a title.'; return }
+  if (form.addendum_type === 'SUPPLIER_CATEGORY_CHANGE' && (form.eoi_supplier_categories.length === 0 || form.eoi_supplier_categories.some(row => row.supplier_category_ids.length === 0))) { formError.value = 'Select at least one required supplier category for every consultancy assignment.'; return }
   if (isTorOrScopeChange.value && form.eoi_scope_snapshot.length === 0) { formError.value = 'The published EOI has no Terms of Reference data to amend.'; return }
   if (isTorOrScopeChange.value && form.eoi_scope_snapshot.some(scope => (form.addendum_type === 'TERMS_OF_REFERENCE_CHANGE' && !scope.objective?.trim()) || !scope.scope_of_services?.trim() || scope.tasks.length === 0 || scope.deliverables.length === 0)) { formError.value = 'Each assignment requires a scope of services, at least one task, and at least one deliverable. Terms of Reference changes also require an objective.'; return }
   if (eoiDeadlineExtensionRequired.value && !form.new_closing_at) { formError.value = 'A deadline extension is required because less than one-third of the response period remains.'; return }
