@@ -197,6 +197,14 @@
           </div>
         </div>
 
+        <TendersConsultancyShortlistStep
+          v-else-if="currentStepId === 'shortlist'"
+          :tender-uuid="tenderUuid"
+          @back="onShortlistBack"
+          @saved="onShortlistSaved"
+          @updated="refreshTender"
+        />
+
         <TendersRequestDetailsStep
           v-else-if="currentStepId === 'request'"
           :mode="tenderUuid ? 'edit' : 'create'"
@@ -260,8 +268,10 @@ const { getTender, getTenderConsultancyEoi } = useTenderHelper()
 const wizardSteps = computed(() => {
   const steps = [...BASE_STEPS]
   if (eoiRequired.value) steps.splice(2, 0, { id: 'eoi', label: 'Expression of interest', shortLabel: 'EOI', icon: 'lucide:users-round', description: 'Complete the consultancy expression-of-interest and shortlist process.' })
+  else if (directShortlistRequired.value) steps.splice(2, 0, { id: 'shortlist', label: 'Consultancy shortlist', shortLabel: 'Shortlist', icon: 'lucide:list-checks', description: 'Select and approve the firms invited to submit proposals.' })
   return steps
 })
+const directShortlistRequired = computed(() => tender.value?.consultancy_eoi?.sourcing_mode === 'DIRECT_SHORTLIST')
 const currentStepIndex = computed(() => Math.max(0, wizardSteps.value.findIndex(item => item.id === currentStepId.value)))
 const currentStepLabel = computed(() => wizardSteps.value[currentStepIndex.value]?.label ?? 'Tender step')
 const currentStep = computed(() => wizardSteps.value[currentStepIndex.value] ?? BASE_STEPS[0])
@@ -287,7 +297,7 @@ function onStep1Saved(payload) {
 async function onStep2Saved(payload) {
   eoiRequired.value = Boolean(payload?.eoiRequired)
   await refreshTender()
-  currentStepId.value = eoiRequired.value ? 'eoi' : 'eligibility'
+  currentStepId.value = eoiRequired.value ? 'eoi' : directShortlistRequired.value ? 'shortlist' : 'eligibility'
   persistDraftStep()
 }
 
@@ -316,7 +326,17 @@ function onStep3Saved() {
 }
 
 function onStep3Back() {
-  currentStepId.value = eoiRequired.value ? 'eoi' : 'items'
+  currentStepId.value = eoiRequired.value ? 'eoi' : directShortlistRequired.value ? 'shortlist' : 'items'
+  persistDraftStep()
+}
+
+function onShortlistSaved() {
+  currentStepId.value = 'eligibility'
+  persistDraftStep()
+}
+
+function onShortlistBack() {
+  currentStepId.value = 'items'
   persistDraftStep()
 }
 
@@ -437,12 +457,17 @@ async function restoreDraftFromQuery() {
     const raw = window.localStorage.getItem(getDraftStorageKey(uuid))
     const legacyIds = BASE_STEPS.map(item => item.id)
     const legacyNumber = Number(raw)
-    const savedStepId = legacyIds.includes(raw) || raw === 'eoi' ? raw : legacyIds[legacyNumber - 1]
+    const savedStepId = legacyIds.includes(raw) || ['eoi', 'shortlist'].includes(raw) ? raw : legacyIds[legacyNumber - 1]
     const eoiMustBeCompleted = eoiRequired.value
       && eoiStatus.value !== 'EVALUATED'
       && !['request', 'items', 'eoi'].includes(savedStepId)
+    const shortlistMustBeCompleted = directShortlistRequired.value
+      && !tender.value?.shortlist_approved_at
+      && !['request', 'items', 'shortlist'].includes(savedStepId)
     if (eoiMustBeCompleted) {
       currentStepId.value = 'eoi'
+    } else if (shortlistMustBeCompleted) {
+      currentStepId.value = 'shortlist'
     } else if (wizardSteps.value.some(item => item.id === savedStepId)) {
       currentStepId.value = savedStepId
     } else {
