@@ -1,7 +1,7 @@
 <template>
   <section class="card border border-base-300 bg-white shadow-sm">
     <div class="card-body gap-0 p-0">
-      <div class="flex flex-col gap-4 border-b border-base-200 px-5 py-5 2xl:flex-row 2xl:items-center 2xl:justify-between sm:px-6">
+      <div class="flex flex-col gap-4 border-b border-base-200 px-5 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-6">
         <div class="flex min-w-0 items-center gap-3">
           <div class="grid h-10 w-10 shrink-0 place-items-center rounded-box bg-primary/10 text-primary">
             <Icon name="lucide:files" class="h-5 w-5" />
@@ -12,33 +12,80 @@
           </div>
         </div>
 
-        <div class="flex w-full flex-col gap-3 sm:flex-row sm:flex-wrap 2xl:w-auto 2xl:flex-nowrap 2xl:justify-end">
-          <label class="input w-full bg-white sm:w-64">
-            <Icon name="lucide:search" class="h-4 w-4 text-base-content/45" />
-            <input
-              v-model="search"
-              type="search"
-              placeholder="Search documents..."
-            />
-          </label>
-          <select v-model="scopeFilter" class="select w-full bg-white sm:w-40">
-            <option value="">All scopes</option>
-            <option value="global">Global templates</option>
-            <option value="mine">My entity</option>
-          </select>
-          <select v-model="typeFilter" class="select w-full bg-white sm:w-44">
-            <option value="">All types</option>
-            <option value="REQUEST">Bidder uploads</option>
-            <option value="PROVIDE">Entity provides</option>
-          </select>
-          <select v-model="statusFilter" class="select w-full bg-white sm:w-40">
-            <option value="">All statuses</option>
-            <option value="ACTIVE">Active</option>
-            <option value="ARCHIVED">Archived</option>
-          </select>
+        <div class="flex items-center gap-2">
+          <button type="button" class="btn btn-outline" @click="openFilters">
+            <Icon name="lucide:list-filter" class="h-4 w-4" />
+            Search &amp; filters
+            <span v-if="activeFilterCount" class="badge badge-neutral badge-sm">{{ activeFilterCount }}</span>
+          </button>
           <MytenderdocumentsAdd v-if="canAdd" />
         </div>
       </div>
+
+      <dialog id="tender_document_filters" ref="filterDialog" class="modal modal-bottom sm:modal-middle">
+        <div class="modal-box max-w-xl p-0">
+          <div class="flex items-center justify-between border-b border-base-200 px-5 py-4">
+            <div>
+              <h2 class="text-lg font-bold">Search and filter documents</h2>
+              <p class="text-sm text-base-content/55">Narrow the catalog by ownership, document type, or status.</p>
+            </div>
+            <form method="dialog">
+              <button class="btn btn-ghost btn-circle btn-sm" aria-label="Close filters">
+                <Icon name="lucide:x" class="h-4 w-4" />
+              </button>
+            </form>
+          </div>
+
+          <div class="space-y-4 px-5 py-5">
+            <div>
+              <label for="document-filter-search" class="mb-1.5 block text-sm font-medium">Search</label>
+              <label class="input w-full">
+                <Icon name="lucide:search" class="h-4 w-4 text-base-content/45" />
+                <input id="document-filter-search" v-model="search" type="search" placeholder="Document name or description" />
+              </label>
+            </div>
+
+            <div class="grid gap-4 sm:grid-cols-2">
+              <div>
+                <label for="document-filter-scope" class="mb-1.5 block text-sm font-medium">Scope</label>
+                <select id="document-filter-scope" v-model="scopeFilter" class="select w-full">
+                  <option value="">All scopes</option>
+                  <option value="global">Global templates</option>
+                  <option value="mine">My entity</option>
+                </select>
+              </div>
+              <div>
+                <label for="document-filter-type" class="mb-1.5 block text-sm font-medium">Required from</label>
+                <select id="document-filter-type" v-model="typeFilter" class="select w-full">
+                  <option value="">All types</option>
+                  <option value="REQUEST">Bidder uploads</option>
+                  <option value="PROVIDE">Entity provides</option>
+                </select>
+              </div>
+              <div class="sm:col-span-2">
+                <label for="document-filter-status" class="mb-1.5 block text-sm font-medium">Status</label>
+                <select id="document-filter-status" v-model="statusFilter" class="select w-full">
+                  <option value="">All statuses</option>
+                  <option value="ACTIVE">Active</option>
+                  <option value="ARCHIVED">Archived</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div class="modal-action mt-0 border-t border-base-200 px-5 py-4">
+            <button type="button" class="btn btn-ghost mr-auto" :disabled="!activeFilterCount" @click="clearFilters">
+              Clear filters
+            </button>
+            <form method="dialog">
+              <button class="btn btn-primary">Show {{ filtered.length }} {{ filtered.length === 1 ? 'document' : 'documents' }}</button>
+            </form>
+          </div>
+        </div>
+        <form method="dialog" class="modal-backdrop">
+          <button>Close filters</button>
+        </form>
+      </dialog>
 
       <div v-if="store.loading" class="flex justify-center py-14">
         <span class="loading loading-spinner loading-lg" />
@@ -132,12 +179,22 @@ const search = ref('');
 const typeFilter = ref('');
 const statusFilter = ref('');
 const scopeFilter = ref('');
+const filterDialog = ref(null);
 
 defineProps({
   canAdd: { type: Boolean, default: false },
   canEdit: { type: Boolean, default: false },
   canDelete: { type: Boolean, default: false },
 });
+
+const activeFilterCount = computed(() => [search.value, typeFilter.value, statusFilter.value, scopeFilter.value].filter(Boolean).length);
+const openFilters = () => filterDialog.value?.showModal();
+const clearFilters = () => {
+  search.value = '';
+  typeFilter.value = '';
+  statusFilter.value = '';
+  scopeFilter.value = '';
+};
 
 const filtered = computed(() =>
   store.items.filter((i) => {
