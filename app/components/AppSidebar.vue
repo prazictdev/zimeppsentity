@@ -121,6 +121,15 @@ const modules = computed(() => {
     })
   }
 
+  if (can('can.access.peaudits') && !configuredUrls.has('/audits')) {
+    configuredModules.push({
+      id: 'pe-audit',
+      name: 'Audit & compliance',
+      icon: 'lucide:shield-check',
+      submodules: [{ id: 'pe-audit-explorer', name: 'Procurement audit', url: '/audits', icon: 'lucide:history' }],
+    })
+  }
+
   return configuredModules
 })
 
