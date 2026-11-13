@@ -23,5 +23,6 @@ export const useAuditHelper = () => {
     listAppItems: params => request(`${base}/app-items${query(params)}`),
     getAppItem: uuid => request(`${base}/app-items/${uuid}`),
     getTender: uuid => request(`${base}/tenders/${uuid}`),
+    getBidResponse: (tenderUuid, bidUuid) => request(`${base}/tenders/${tenderUuid}/bid-responses/${bidUuid}`),
   }
 }
