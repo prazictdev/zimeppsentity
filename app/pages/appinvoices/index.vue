@@ -1,51 +1,49 @@
 <template>
-  <div class="space-y-3">
-    <div class="card outline card-xs outline-1 outline-base-200">
-      <div class="card-body">
-        <div class="breadcrumbs text-sm">
-          <ul>
-            <li><NuxtLink to="/">Home</NuxtLink></li>
-            <li>Invoices</li>
-          </ul>
-        </div>
+  <div class="min-h-full bg-base-200/40 p-4 sm:p-6 lg:p-8">
+    <div class="mx-auto max-w-[1600px] space-y-4">
+      <div class="breadcrumbs px-1 text-sm text-base-content/60">
+        <ul>
+          <li><NuxtLink to="/dashboard">Home</NuxtLink></li>
+          <li>Authorization invoices</li>
+        </ul>
       </div>
-    </div>
 
-    <div class="card border border-base-200">
-      <div class="card-body">
-        <div class="flex flex-wrap items-center justify-between gap-2 border-b border-base-200 pb-2">
-          <span class="text-lg font-bold">Authorization Invoices</span>
-          <div class="flex flex-row flex-nowrap items-center gap-2">
+      <div class="card border border-base-300 bg-white shadow-sm">
+        <div class="card-body gap-0 p-0">
+          <div class="border-b border-base-200 px-5 py-5 sm:px-6">
+            <h1 class="text-xl font-bold tracking-tight sm:text-2xl">Authorization invoices</h1>
+            <p class="mt-1 max-w-2xl text-sm text-base-content/60">Review plan authorization fees, receipts and outstanding balances.</p>
+          </div>
+          <div class="grid gap-3 border-b border-base-200 bg-base-200/35 px-5 py-4 sm:grid-cols-2 sm:px-6 xl:grid-cols-3">
             <input
               v-model="searchInput"
               type="text"
               placeholder="Search invoice no., reference, company..."
-              class="input input-bordered input-sm w-72"
+              class="input input-bordered w-full bg-white"
               @input="onSearch"
             />
-            <select v-model="planFilter" class="select select-bordered select-sm w-72" @change="reload">
+            <select v-model="planFilter" class="select select-bordered w-full bg-white" @change="reload">
               <option value="">All plans</option>
               <option v-for="p in planOptions" :key="p.uuid" :value="p.uuid">
                 {{ p.year }} · {{ p.company?.name || '—' }}
               </option>
             </select>
-            <select v-model="statusFilter" class="select select-bordered select-sm" @change="reload">
+            <select v-model="statusFilter" class="select select-bordered w-full bg-white" @change="reload">
               <option value="">All statuses</option>
               <option value="UNPAID">Unpaid</option>
               <option value="AWAITING">Awaiting</option>
               <option value="PAID">Paid</option>
             </select>
           </div>
-        </div>
 
-        <div v-if="loading" class="flex justify-center py-10">
+        <div v-if="loading" class="flex justify-center py-16">
           <span class="loading loading-spinner loading-lg"></span>
         </div>
 
-        <div v-else class="mt-3 overflow-x-auto">
-          <table class="table table-zebra w-full text-sm">
+        <div v-else class="overflow-x-auto">
+          <table class="table w-full text-sm">
             <thead>
-              <tr class="text-left">
+              <tr class="bg-base-200/50 text-left text-base-content/65">
                 <th>#</th>
                 <th>Invoice no.</th>
                 <th>Plan</th>
@@ -59,9 +57,9 @@
             </thead>
             <tbody>
               <tr v-if="!items.length">
-                <td colspan="9" class="text-center text-base-content/50">No invoices match this view.</td>
+                <td colspan="9" class="py-12 text-center text-base-content/50">No invoices match this view.</td>
               </tr>
-              <tr v-for="(inv, i) in items" :key="inv.id">
+              <tr v-for="(inv, i) in items" :key="inv.id" class="border-base-200 hover:bg-base-200/25">
                 <td>{{ rowNumber(i) }}</td>
                 <td>
                   <p class="font-mono text-xs">{{ inv.invoice_number }}</p>
@@ -96,7 +94,7 @@
             </tbody>
           </table>
 
-          <div v-if="meta.last_page > 1" class="mt-3 flex flex-wrap items-center justify-between gap-2">
+          <div v-if="meta.last_page > 1" class="flex flex-wrap items-center justify-between gap-3 border-t border-base-200 px-5 py-4 sm:px-6">
             <div class="text-xs text-base-content/60">
               Page {{ meta.current_page }} of {{ meta.last_page }} · {{ meta.total }} total
             </div>
@@ -109,9 +107,10 @@
         </div>
       </div>
     </div>
+    </div>
 
     <dialog id="view_invoice_modal" class="modal">
-      <div class="modal-box h-screen max-h-none w-screen max-w-none rounded-none">
+      <div class="modal-box h-screen max-h-none w-screen max-w-none rounded-none bg-white">
         <div class="flex items-center justify-between border-b border-base-200 pb-2">
           <h3 class="text-lg font-bold">
             Invoice <span class="font-mono">{{ activeInvoice?.invoice_number }}</span>

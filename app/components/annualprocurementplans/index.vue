@@ -1,8 +1,11 @@
 <template>
-  <div class="card mt-3 border border-base-200">
-    <div class="card-body">
-      <div class="flex items-center justify-between border-b border-base-200 pb-2">
-        <span class="text-lg font-bold">Annual Procurement Plans</span>
+  <div class="card mt-4 border border-base-300 bg-white shadow-sm">
+    <div class="card-body gap-0 p-0">
+      <div class="flex flex-col gap-4 border-b border-base-200 px-5 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+        <div>
+          <h1 class="text-xl font-bold tracking-tight text-base-content sm:text-2xl">Annual procurement plans</h1>
+          <p class="mt-1 max-w-2xl text-sm text-base-content/60">Prepare, review and track the plans linked to your procurement entity.</p>
+        </div>
         <AnnualprocurementplansAdd v-if="canAdd" />
       </div>
 
@@ -11,14 +14,14 @@
       </div>
 
       <div v-else>
-        <div class="mt-3 flex flex-wrap items-center gap-3">
+        <div class="grid gap-3 border-b border-base-200 bg-base-200/35 px-5 py-4 sm:grid-cols-2 sm:px-6 lg:max-w-2xl">
           <input
             v-model="search"
             type="text"
             placeholder="Search by company or year..."
-            class="input input-bordered w-full max-w-xs"
+            class="input input-bordered w-full bg-white"
           />
-          <select v-model="statusFilter" class="select select-bordered max-w-xs">
+          <select v-model="statusFilter" class="select select-bordered w-full bg-white">
             <option value="">All statuses</option>
             <option value="DRAFT">Draft</option>
             <option value="ACTIVE">Active</option>
@@ -26,9 +29,10 @@
           </select>
         </div>
 
-        <table class="table table-zebra mt-3 w-full">
+        <div class="overflow-x-auto">
+        <table class="table w-full">
           <thead>
-            <tr>
+            <tr class="bg-base-200/50 text-base-content/65">
               <th>#</th>
               <th>Year</th>
               <th>Company</th>
@@ -43,7 +47,7 @@
             <tr v-if="!filtered.length">
               <td colspan="8" class="text-center text-base-content/50">No annual procurement plans found.</td>
             </tr>
-            <tr v-for="(plan, i) in filtered" :key="plan.id">
+            <tr v-for="(plan, i) in filtered" :key="plan.id" class="border-base-200 hover:bg-base-200/25">
               <td>{{ i + 1 }}</td>
               <td class="font-medium">{{ plan.year }}</td>
               <td>{{ plan.company?.name ?? '—' }}</td>
@@ -69,6 +73,7 @@
             </tr>
           </tbody>
         </table>
+        </div>
       </div>
     </div>
   </div>
