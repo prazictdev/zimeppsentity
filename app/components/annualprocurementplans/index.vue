@@ -1,12 +1,23 @@
 <template>
   <div class="card mt-4 border border-base-300 bg-white shadow-sm">
     <div class="card-body gap-0 p-0">
-      <div class="flex flex-col gap-4 border-b border-base-200 px-5 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-6">
-        <div>
-          <h1 class="text-xl font-bold tracking-tight text-base-content sm:text-2xl">Annual procurement plans</h1>
-          <p class="mt-1 max-w-2xl text-sm text-base-content/60">Prepare, review and track the plans linked to your procurement entity.</p>
+      <div class="flex flex-col gap-4 border-b border-base-200 px-5 py-5 lg:flex-row lg:items-center lg:justify-between sm:px-6">
+        <h1 class="text-xl font-bold tracking-tight text-base-content sm:text-2xl">Annual procurement plans</h1>
+        <div class="flex w-full flex-col gap-3 sm:flex-row lg:w-auto lg:justify-end">
+          <input
+            v-model="search"
+            type="text"
+            placeholder="Search by company or year..."
+            class="input w-full bg-white sm:w-72"
+          />
+          <select v-model="statusFilter" class="select w-full bg-white sm:w-44">
+            <option value="">All statuses</option>
+            <option value="DRAFT">Draft</option>
+            <option value="ACTIVE">Active</option>
+            <option value="ARCHIVED">Archived</option>
+          </select>
+          <AnnualprocurementplansAdd v-if="canAdd" />
         </div>
-        <AnnualprocurementplansAdd v-if="canAdd" />
       </div>
 
       <div v-if="store.loading" class="flex justify-center py-10">
@@ -14,21 +25,6 @@
       </div>
 
       <div v-else>
-        <div class="grid gap-3 border-b border-base-200 bg-base-200/35 px-5 py-4 sm:grid-cols-2 sm:px-6 lg:max-w-2xl">
-          <input
-            v-model="search"
-            type="text"
-            placeholder="Search by company or year..."
-            class="input input-bordered w-full bg-white"
-          />
-          <select v-model="statusFilter" class="select select-bordered w-full bg-white">
-            <option value="">All statuses</option>
-            <option value="DRAFT">Draft</option>
-            <option value="ACTIVE">Active</option>
-            <option value="ARCHIVED">Archived</option>
-          </select>
-        </div>
-
         <div class="overflow-x-auto">
         <table class="table w-full">
           <thead>

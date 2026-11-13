@@ -10,36 +10,33 @@
 
       <div class="card border border-base-300 bg-white shadow-sm">
         <div class="card-body gap-0 p-0">
-          <div class="flex flex-col gap-4 border-b border-base-200 px-5 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-6">
-            <div>
-              <h1 class="text-xl font-bold tracking-tight sm:text-2xl">Supplements</h1>
-              <p class="mt-1 max-w-2xl text-sm text-base-content/60">Add requirements to an active plan and track the authorization workflow.</p>
+          <div class="flex flex-col gap-4 border-b border-base-200 px-5 py-5 xl:flex-row xl:items-center xl:justify-between sm:px-6">
+            <h1 class="text-xl font-bold tracking-tight sm:text-2xl">Supplements</h1>
+            <div class="flex w-full flex-col gap-3 sm:flex-row sm:flex-wrap xl:w-auto xl:flex-nowrap xl:justify-end">
+              <input
+                v-model="searchInput"
+                type="text"
+                placeholder="Search by title or company..."
+                class="input w-full bg-white sm:w-64"
+                @input="onSearch"
+              />
+              <select v-model="planFilter" class="select w-full bg-white sm:w-52" @change="reload">
+                <option value="">All plans</option>
+                <option v-for="p in planOptions" :key="p.uuid" :value="p.uuid">
+                  {{ p.year }} · {{ p.company?.name || '—' }}
+                </option>
+              </select>
+              <select v-model="statusFilter" class="select w-full bg-white sm:w-52" @change="reload">
+                <option value="">All statuses</option>
+                <option value="DRAFT">Draft</option>
+                <option value="PENDING_ADMIN_AUTHORIZATION">Pending Admin Authorization</option>
+                <option value="PENDING_MANAGER_REVIEW">Pending Manager Review</option>
+                <option value="PENDING_APPROVER_DECISION">Pending Approver Decision</option>
+                <option value="AUTHORIZED">Authorized</option>
+                <option value="REJECTED">Rejected</option>
+              </select>
+              <SupplementsAdd :plan-uuid="planFilter" @created="reload" />
             </div>
-            <SupplementsAdd :plan-uuid="planFilter" @created="reload" />
-          </div>
-          <div class="grid gap-3 border-b border-base-200 bg-base-200/35 px-5 py-4 sm:grid-cols-2 sm:px-6 xl:grid-cols-3">
-            <input
-              v-model="searchInput"
-              type="text"
-              placeholder="Search by title or company..."
-              class="input input-bordered w-full bg-white"
-              @input="onSearch"
-            />
-            <select v-model="planFilter" class="select select-bordered w-full bg-white" @change="reload">
-              <option value="">All plans</option>
-              <option v-for="p in planOptions" :key="p.uuid" :value="p.uuid">
-                {{ p.year }} · {{ p.company?.name || '—' }}
-              </option>
-            </select>
-            <select v-model="statusFilter" class="select select-bordered w-full bg-white" @change="reload">
-              <option value="">All statuses</option>
-              <option value="DRAFT">Draft</option>
-              <option value="PENDING_ADMIN_AUTHORIZATION">Pending Admin Authorization</option>
-              <option value="PENDING_MANAGER_REVIEW">Pending Manager Review</option>
-              <option value="PENDING_APPROVER_DECISION">Pending Approver Decision</option>
-              <option value="AUTHORIZED">Authorized</option>
-              <option value="REJECTED">Rejected</option>
-            </select>
           </div>
 
         <div v-if="loading" class="flex justify-center py-16">

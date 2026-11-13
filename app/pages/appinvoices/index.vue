@@ -10,30 +10,29 @@
 
       <div class="card border border-base-300 bg-white shadow-sm">
         <div class="card-body gap-0 p-0">
-          <div class="border-b border-base-200 px-5 py-5 sm:px-6">
+          <div class="flex flex-col gap-4 border-b border-base-200 px-5 py-5 xl:flex-row xl:items-center xl:justify-between sm:px-6">
             <h1 class="text-xl font-bold tracking-tight sm:text-2xl">Authorization invoices</h1>
-            <p class="mt-1 max-w-2xl text-sm text-base-content/60">Review plan authorization fees, receipts and outstanding balances.</p>
-          </div>
-          <div class="grid gap-3 border-b border-base-200 bg-base-200/35 px-5 py-4 sm:grid-cols-2 sm:px-6 xl:grid-cols-3">
-            <input
-              v-model="searchInput"
-              type="text"
-              placeholder="Search invoice no., reference, company..."
-              class="input input-bordered w-full bg-white"
-              @input="onSearch"
-            />
-            <select v-model="planFilter" class="select select-bordered w-full bg-white" @change="reload">
-              <option value="">All plans</option>
-              <option v-for="p in planOptions" :key="p.uuid" :value="p.uuid">
-                {{ p.year }} · {{ p.company?.name || '—' }}
-              </option>
-            </select>
-            <select v-model="statusFilter" class="select select-bordered w-full bg-white" @change="reload">
-              <option value="">All statuses</option>
-              <option value="UNPAID">Unpaid</option>
-              <option value="AWAITING">Awaiting</option>
-              <option value="PAID">Paid</option>
-            </select>
+            <div class="flex w-full flex-col gap-3 sm:flex-row sm:flex-wrap xl:w-auto xl:flex-nowrap xl:justify-end">
+              <input
+                v-model="searchInput"
+                type="text"
+                placeholder="Search invoice no., reference, company..."
+                class="input w-full bg-white sm:w-72"
+                @input="onSearch"
+              />
+              <select v-model="planFilter" class="select w-full bg-white sm:w-52" @change="reload">
+                <option value="">All plans</option>
+                <option v-for="p in planOptions" :key="p.uuid" :value="p.uuid">
+                  {{ p.year }} · {{ p.company?.name || '—' }}
+                </option>
+              </select>
+              <select v-model="statusFilter" class="select w-full bg-white sm:w-40" @change="reload">
+                <option value="">All statuses</option>
+                <option value="UNPAID">Unpaid</option>
+                <option value="AWAITING">Awaiting</option>
+                <option value="PAID">Paid</option>
+              </select>
+            </div>
           </div>
 
         <div v-if="loading" class="flex justify-center py-16">

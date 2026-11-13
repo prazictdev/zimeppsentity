@@ -10,28 +10,24 @@
 
       <div class="card border border-base-300 bg-white shadow-sm">
         <div class="card-body gap-0 p-0">
-          <div class="flex flex-col gap-4 border-b border-base-200 px-5 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-6">
-            <div>
-              <h1 class="text-xl font-bold tracking-tight sm:text-2xl">Virements</h1>
-              <p class="mt-1 max-w-2xl text-sm text-base-content/60">Move approved budget between line items and follow each decision.</p>
+          <div class="flex flex-col gap-4 border-b border-base-200 px-5 py-5 lg:flex-row lg:items-center lg:justify-between sm:px-6">
+            <h1 class="text-xl font-bold tracking-tight sm:text-2xl">Virements</h1>
+            <div class="flex w-full flex-col gap-3 sm:flex-row sm:flex-wrap lg:w-auto lg:flex-nowrap lg:justify-end">
+              <select v-model="planFilter" class="select w-full bg-white sm:w-56" @change="onPlanChange">
+                <option value="">All plans</option>
+                <option v-for="p in planOptions" :key="p.uuid" :value="p.uuid">
+                  {{ p.year }} · {{ p.company?.name || '—' }}
+                </option>
+              </select>
+              <select v-model="statusFilter" class="select w-full bg-white sm:w-44" @change="reload">
+                <option value="">All statuses</option>
+                <option value="DRAFT">Draft</option>
+                <option value="PENDING">Pending</option>
+                <option value="APPROVED">Approved</option>
+                <option value="REJECTED">Rejected</option>
+              </select>
+              <VirementsAdd :plan-uuid="planFilter" @created="reload" />
             </div>
-            <VirementsAdd :plan-uuid="planFilter" @created="reload" />
-          </div>
-
-          <div class="grid gap-3 border-b border-base-200 bg-base-200/35 px-5 py-4 sm:grid-cols-2 sm:px-6 lg:max-w-3xl">
-            <select v-model="planFilter" class="select select-bordered w-full bg-white" @change="onPlanChange">
-              <option value="">All plans</option>
-              <option v-for="p in planOptions" :key="p.uuid" :value="p.uuid">
-                {{ p.year }} · {{ p.company?.name || '—' }}
-              </option>
-            </select>
-            <select v-model="statusFilter" class="select select-bordered w-full bg-white" @change="reload">
-              <option value="">All statuses</option>
-              <option value="DRAFT">Draft</option>
-              <option value="PENDING">Pending</option>
-              <option value="APPROVED">Approved</option>
-              <option value="REJECTED">Rejected</option>
-            </select>
           </div>
 
           <div v-if="loading" class="flex justify-center py-16">
