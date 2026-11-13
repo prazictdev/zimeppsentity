@@ -19,6 +19,7 @@ export const useAuditHelper = () => {
   }
 
   return {
+    getUtilization: params => request(`${base}/utilization${query(params)}`),
     listAppItems: params => request(`${base}/app-items${query(params)}`),
     getAppItem: uuid => request(`${base}/app-items/${uuid}`),
     getTender: uuid => request(`${base}/tenders/${uuid}`),
