@@ -1,85 +1,108 @@
 <template>
-  <div class="card border border-base-200 mt-3">
-    <div class="card-body">
-      <div class="flex items-center justify-between border-b border-base-200 pb-2">
-        <div>
-          <span class="text-lg font-bold">Test keypair</span>
-          <p class="text-xs text-base-content/60 mt-1">
-            Seals a message in your browser with the <strong>active public key</strong>, then asks the server to unseal it.
-            A successful round-trip confirms the keypair is wired correctly end-to-end.
-          </p>
+  <section class="card border border-base-300 bg-white shadow-sm">
+    <div class="card-body gap-0 p-0">
+      <div class="flex flex-col gap-3 border-b border-base-200 px-5 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+        <div class="flex items-center gap-3">
+          <div class="grid h-10 w-10 shrink-0 place-items-center rounded-box bg-base-200 text-base-content/70">
+            <Icon name="lucide:flask-conical" class="h-5 w-5" />
+          </div>
+          <div>
+            <h2 class="text-lg font-bold">Test keypair</h2>
+            <p class="text-sm text-base-content/60">Verify that sealed bids can be encrypted and opened end to end.</p>
+          </div>
         </div>
-        <span v-if="activeKey" class="badge badge-success badge-sm gap-1">
-          <Icon name="lucide:check-circle" class="h-3 w-3" />
-          <span class="font-mono">{{ activeKey.fingerprint }}</span>
+        <span v-if="activeKey" class="badge badge-success badge-soft gap-1">
+          <Icon name="lucide:shield-check" class="h-3.5 w-3.5" />
+          Ready
         </span>
-        <span v-else class="badge badge-warning badge-sm">No active key</span>
+        <span v-else class="badge badge-warning badge-soft">Key required</span>
       </div>
 
-      <div v-if="initError" role="alert" class="alert alert-error mt-3 text-sm">
-        <Icon name="lucide:alert-circle" />
-        <span>{{ initError }}</span>
-      </div>
-
-      <div v-else class="mt-3 grid grid-cols-1 md:grid-cols-3 gap-3">
-        <!-- Plaintext input -->
-        <div class="form-control">
-          <label class="label"><span class="label-text font-semibold">1. Plaintext</span></label>
-          <textarea
-            v-model="plaintext"
-            rows="6"
-            class="textarea textarea-bordered w-full font-mono text-xs"
-            placeholder="Type anything..."
-            :disabled="!activeKey"
-          />
-          <button
-            class="btn btn-primary btn-sm mt-2"
-            :disabled="!activeKey || !plaintext || encrypting"
-            @click="encrypt"
-          >
-            <span v-if="encrypting" class="loading loading-spinner loading-xs" />
-            <span v-else><Icon name="lucide:lock" /> Encrypt →</span>
-          </button>
+      <div class="p-5 sm:p-6">
+        <div v-if="initError" role="alert" class="alert alert-error alert-soft text-sm">
+          <Icon name="lucide:alert-circle" />
+          <span>{{ initError }}</span>
         </div>
 
-        <!-- Ciphertext -->
-        <div class="form-control">
-          <label class="label"><span class="label-text font-semibold">2. Ciphertext (base64)</span></label>
-          <textarea
-            v-model="ciphertext"
-            rows="6"
-            class="textarea textarea-bordered w-full font-mono text-xs"
-            placeholder="The sealed payload appears here..."
-            readonly
-          />
-          <button
-            class="btn btn-primary btn-sm mt-2"
-            :disabled="!ciphertext || decrypting"
-            @click="decrypt"
-          >
-            <span v-if="decrypting" class="loading loading-spinner loading-xs" />
-            <span v-else><Icon name="lucide:unlock" /> Decrypt →</span>
-          </button>
+        <div v-else-if="!activeKey" role="alert" class="alert alert-warning alert-soft text-sm">
+          <Icon name="lucide:key-round" />
+          <span>Generate an active keypair before running the encryption test.</span>
         </div>
 
-        <!-- Decrypted -->
-        <div class="form-control">
-          <label class="label"><span class="label-text font-semibold">3. Decrypted plaintext</span></label>
-          <textarea
-            :value="decrypted"
-            rows="6"
-            class="textarea textarea-bordered w-full font-mono text-xs"
-            placeholder="The unsealed plaintext appears here..."
-            readonly
-          />
-          <p v-if="status" :class="['text-xs mt-2', statusClass]">
-            <Icon :name="statusIcon" class="h-3 w-3 inline" />
-            {{ status }}
-          </p>
+        <div v-else class="grid grid-cols-1 gap-4 lg:grid-cols-3">
+          <div class="rounded-box border border-base-200 bg-base-200/25 p-4">
+            <div class="mb-3 flex items-center gap-2">
+              <span class="badge badge-neutral badge-sm">1</span>
+              <h3 class="text-sm font-semibold">Enter a test message</h3>
+            </div>
+            <textarea
+              v-model="plaintext"
+              rows="7"
+              class="textarea w-full resize-none bg-white font-mono text-xs"
+              placeholder="Type a message to seal..."
+            />
+            <button
+              class="btn mt-3 w-full"
+              :disabled="!plaintext || encrypting"
+              @click="encrypt"
+            >
+              <span v-if="encrypting" class="loading loading-spinner loading-xs" />
+              <Icon v-else name="lucide:lock" class="h-4 w-4" />
+              Encrypt message
+            </button>
+          </div>
+
+          <div class="rounded-box border border-base-200 bg-base-200/25 p-4">
+            <div class="mb-3 flex items-center gap-2">
+              <span class="badge badge-neutral badge-sm">2</span>
+              <h3 class="text-sm font-semibold">Send the sealed payload</h3>
+            </div>
+            <textarea
+              v-model="ciphertext"
+              rows="7"
+              class="textarea w-full resize-none bg-white font-mono text-xs"
+              placeholder="Encrypted base64 payload appears here..."
+              readonly
+            />
+            <button
+              class="btn mt-3 w-full"
+              :disabled="!ciphertext || decrypting"
+              @click="decrypt"
+            >
+              <span v-if="decrypting" class="loading loading-spinner loading-xs" />
+              <Icon v-else name="lucide:send" class="h-4 w-4" />
+              Verify on server
+            </button>
+          </div>
+
+          <div class="rounded-box border border-base-200 bg-base-200/25 p-4">
+            <div class="mb-3 flex items-center gap-2">
+              <span class="badge badge-neutral badge-sm">3</span>
+              <h3 class="text-sm font-semibold">Confirm the result</h3>
+            </div>
+            <textarea
+              :value="decrypted"
+              rows="7"
+              class="textarea w-full resize-none bg-white font-mono text-xs"
+              placeholder="The opened message appears here..."
+              readonly
+            />
+            <div
+              v-if="status"
+              role="status"
+              :class="[
+                'alert alert-soft mt-3 py-2 text-xs',
+                statusKind === 'success' ? 'alert-success' : statusKind === 'error' ? 'alert-error' : 'alert-info',
+              ]"
+            >
+              <Icon :name="statusIcon" class="h-4 w-4 shrink-0" />
+              <span>{{ status }}</span>
+            </div>
+          </div>
         </div>
       </div>
     </div>
-  </div>
+  </section>
 </template>
 
 <script setup>
@@ -103,7 +126,6 @@ const statusKind = ref(''); // 'success' | 'error' | ''
 const initError = ref('');
 const sodiumReady = ref(false);
 
-const statusClass = computed(() => ({ success: 'text-success', error: 'text-error' })[statusKind.value] || 'text-base-content/60');
 const statusIcon = computed(() => ({
   success: 'lucide:check-circle',
   error: 'lucide:alert-circle',
