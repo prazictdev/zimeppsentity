@@ -1,5 +1,5 @@
 export const useCommitteeHelper = () => {
-  const client = useSanctumClient();
+  const client = usePeClient();
   const base = '/api/v1/me/committees';
   return {
     list: () => client(base),

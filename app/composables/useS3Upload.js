@@ -1,5 +1,5 @@
 export const useS3Upload = () => {
-  const client = useSanctumClient()
+  const client = usePeClient()
 
   const extractError = (error, fallback) =>
     error?.data?.message ?? error?.response?._data?.message ?? error?.message ?? fallback

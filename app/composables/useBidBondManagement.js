@@ -1,5 +1,5 @@
 export const useBidBondManagement = () => {
-  const client = useSanctumClient()
+  const client = usePeClient()
   const request = async (url, options = {}) => {
     try { return { ok: true, data: await client(url, options), error: null } }
     catch (error) { return { ok: false, data: null, error: error?.data?.message ?? error?.message ?? 'The bid-bond request failed.' } }

@@ -1,5 +1,5 @@
 export const useLeastCostSelectionApi = () => {
-  const client = useSanctumClient()
+  const client = usePeClient()
 
   const call = async (url, options = {}) => {
     try {

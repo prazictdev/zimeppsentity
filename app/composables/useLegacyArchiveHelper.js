@@ -1,5 +1,5 @@
 export const useLegacyArchiveHelper = () => {
-  const client = useSanctumClient()
+  const client = usePeClient()
   const list = (resource, query = {}) => client(`/api/v1/legacy-archive/${resource}`, { query })
   return {
     tenders: (query) => list('tenders', query),

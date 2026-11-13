@@ -1,5 +1,5 @@
 export const useProfileHelper = () => {
-  const client = useSanctumClient();
+  const client = usePeClient();
   const { refreshIdentity } = useSanctumAuth();
 
   const errorMessage = (error, fallback) =>

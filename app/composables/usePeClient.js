@@ -45,15 +45,23 @@ export const usePeClient = () => {
    * Usage: const data = await client('/api/...', { method: 'GET' });
    */
   const client = async (url, options = {}) => {
+    const scopedOptions = {
+      ...options,
+      headers: {
+        ...(options.headers ?? {}),
+        'X-Portal-Context': 'procurement-entity',
+      },
+    };
+
     try {
-      return await sanctumClient(url, options);
+      return await sanctumClient(url, scopedOptions);
     } catch (err) {
       if (getStatus(err) !== 401) throw err;
 
       // 401 — try to refresh, then retry once
       try {
         await attemptRefresh();
-        return await sanctumClient(url, options);
+        return await sanctumClient(url, scopedOptions);
       } catch {
         await redirectToLogin();
         throw err;
