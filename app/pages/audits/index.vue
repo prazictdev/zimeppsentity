@@ -9,7 +9,7 @@
           <div class="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
             <div class="flex items-center gap-3">
               <div class="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary"><Icon name="lucide:history" class="h-5 w-5" /></div>
-              <div><h1 class="text-xl font-bold sm:text-2xl">Procurement audit</h1><p class="text-sm text-base-content/55">Trace each APP line into its tenders and final award.</p></div>
+              <div><h1 class="text-xl font-bold sm:text-2xl">Procurement audit</h1><p class="text-sm text-base-content/55">Trace each APP line into its tenders and final award. </p></div>
             </div>
             <div class="flex flex-col gap-2 sm:flex-row">
               <label class="input input-sm w-full sm:w-72"><Icon name="lucide:search" class="h-4 w-4 opacity-50" /><input v-model.trim="search" type="search" placeholder="APP reference, item or tender" /></label>
