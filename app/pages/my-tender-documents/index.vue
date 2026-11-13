@@ -1,28 +1,25 @@
 <template>
-  <div class="p-6">
-    <div class="card outline card-xs outline-1 outline-base-200">
-      <div class="card-body">
-        <div class="breadcrumbs text-sm">
-          <ul>
-            <li><NuxtLink to="/dashboard">Home</NuxtLink></li>
-            <li>My Tender Documents</li>
-          </ul>
-        </div>
+  <div class="min-h-full bg-base-200/40 p-4 sm:p-6 lg:p-8">
+    <div class="mx-auto max-w-[1600px] space-y-4">
+      <div class="breadcrumbs px-1 text-sm text-base-content/60">
+        <ul>
+          <li><NuxtLink to="/dashboard">Home</NuxtLink></li>
+          <li>Tender documents</li>
+        </ul>
       </div>
-    </div>
-    <Mytenderdocuments
-      v-if="canAccess"
-      :can-add="canAdd"
-      :can-edit="canEdit"
-      :can-delete="canDelete"
-    />
-    <div v-else>
-      <div role="alert" class="alert alert-error mt-3">
+
+      <Mytenderdocuments
+        v-if="canAccess"
+        :can-add="canAdd"
+        :can-edit="canEdit"
+        :can-delete="canDelete"
+      />
+      <div v-else role="alert" class="alert alert-error alert-soft">
         <Icon name="lucide:alert-circle" />
         <span>You do not have permission to access this page.</span>
       </div>
+      <Loader :loading="store.loading" />
     </div>
-    <Loader :loading="store.loading" />
   </div>
 </template>
 
@@ -37,7 +34,7 @@ const store = useTenderdocumentStore();
 const { canAccess, canAdd, canEdit, canDelete } = useCheckPermission('my-tender-documents');
 
 onMounted(async () => {
-  if (canAccess) {
+  if (canAccess.value) {
     store.fetchAll();
   }
 });

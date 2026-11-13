@@ -1,84 +1,108 @@
 <template>
-  <div class="card mt-3 border border-base-200">
-    <div class="card-body">
-      <div class="flex items-center justify-between border-b border-base-200 pb-2">
-        <div>
-          <span class="text-lg font-bold">My Tender Documents</span>
-          <p class="text-xs text-base-content/60">
-            Document catalog for tender preparation. PROVIDE files are attached in step 3.
-          </p>
+  <section class="card border border-base-300 bg-white shadow-sm">
+    <div class="card-body gap-0 p-0">
+      <div class="flex flex-col gap-4 border-b border-base-200 px-5 py-5 2xl:flex-row 2xl:items-center 2xl:justify-between sm:px-6">
+        <div class="flex min-w-0 items-center gap-3">
+          <div class="grid h-10 w-10 shrink-0 place-items-center rounded-box bg-primary/10 text-primary">
+            <Icon name="lucide:files" class="h-5 w-5" />
+          </div>
+          <div>
+            <h1 class="text-xl font-bold tracking-tight sm:text-2xl">Tender documents</h1>
+            <p class="text-xs text-base-content/55">{{ filtered.length }} of {{ store.items.length }} documents</p>
+          </div>
         </div>
-        <MytenderdocumentsAdd v-if="canAdd" />
-      </div>
 
-      <div v-if="store.loading" class="flex justify-center py-10">
-        <span class="loading loading-spinner loading-lg"></span>
-      </div>
-      <div v-else>
-        <div class="mt-3 flex flex-wrap items-center gap-3">
-          <input
-            v-model="search"
-            type="text"
-            placeholder="Search documents..."
-            class="input input-bordered w-full max-w-xs"
-          />
-          <select v-model="scopeFilter" class="select select-bordered max-w-xs">
+        <div class="flex w-full flex-col gap-3 sm:flex-row sm:flex-wrap 2xl:w-auto 2xl:flex-nowrap 2xl:justify-end">
+          <label class="input w-full bg-white sm:w-64">
+            <Icon name="lucide:search" class="h-4 w-4 text-base-content/45" />
+            <input
+              v-model="search"
+              type="search"
+              placeholder="Search documents..."
+            />
+          </label>
+          <select v-model="scopeFilter" class="select w-full bg-white sm:w-40">
             <option value="">All scopes</option>
-            <option value="global">Global (admin)</option>
+            <option value="global">Global templates</option>
             <option value="mine">My entity</option>
           </select>
-          <select v-model="typeFilter" class="select select-bordered max-w-xs">
+          <select v-model="typeFilter" class="select w-full bg-white sm:w-44">
             <option value="">All types</option>
-            <option value="REQUEST">Request (bidder uploads)</option>
-            <option value="PROVIDE">Provide (at tender prep)</option>
+            <option value="REQUEST">Bidder uploads</option>
+            <option value="PROVIDE">Entity provides</option>
           </select>
-          <select v-model="statusFilter" class="select select-bordered max-w-xs">
+          <select v-model="statusFilter" class="select w-full bg-white sm:w-40">
             <option value="">All statuses</option>
             <option value="ACTIVE">Active</option>
             <option value="ARCHIVED">Archived</option>
           </select>
+          <MytenderdocumentsAdd v-if="canAdd" />
         </div>
-        <table class="table table-zebra mt-3 w-full">
+      </div>
+
+      <div v-if="store.loading" class="flex justify-center py-14">
+        <span class="loading loading-spinner loading-lg" />
+      </div>
+      <div v-else class="overflow-x-auto">
+        <table class="table w-full text-sm">
           <thead>
-            <tr>
+            <tr class="bg-base-200/50 text-base-content/65">
               <th>#</th>
-              <th>Name</th>
+              <th>Document</th>
               <th>Scope</th>
-              <th>Type</th>
-              <th>Expires</th>
+              <th>Required from</th>
+              <th>Expiry required</th>
               <th>Status</th>
               <th class="text-right">Actions</th>
             </tr>
           </thead>
           <tbody>
             <tr v-if="!filtered.length">
-              <td colspan="7" class="text-center text-base-content/50">
-                No tender documents found.
+              <td colspan="7" class="py-14 text-center">
+                <div class="mx-auto flex max-w-sm flex-col items-center gap-2 text-base-content/55">
+                  <Icon name="lucide:file-search" class="h-8 w-8" />
+                  <p class="font-medium text-base-content/70">No matching documents</p>
+                  <p class="text-xs">Adjust the filters or add a document for your procurement entity.</p>
+                </div>
               </td>
             </tr>
-            <tr v-for="(item, i) in filtered" :key="item.id">
+            <tr v-for="(item, i) in filtered" :key="item.id" class="border-base-200 hover:bg-base-200/25">
               <td>{{ i + 1 }}</td>
               <td>
-                <div class="font-semibold">{{ item.name }}</div>
-                <div v-if="item.description" class="text-xs opacity-60">{{ item.description }}</div>
+                <div class="flex min-w-64 items-center gap-3">
+                  <div
+                    :class="[
+                      'grid h-9 w-9 shrink-0 place-items-center rounded-box',
+                      item.company_id ? 'bg-primary/10 text-primary' : 'bg-base-200 text-base-content/55',
+                    ]"
+                  >
+                    <Icon :name="item.type === 'REQUEST' ? 'lucide:file-up' : 'lucide:file-down'" class="h-4 w-4" />
+                  </div>
+                  <div>
+                    <p class="font-semibold">{{ item.name }}</p>
+                    <p v-if="item.description" class="max-w-md truncate text-xs text-base-content/55" :title="item.description">
+                      {{ item.description }}
+                    </p>
+                  </div>
+                </div>
               </td>
               <td>
-                <span :class="['badge badge-sm', item.company_id ? 'badge-primary' : 'badge-neutral']">
-                  {{ item.company_id ? 'Mine' : 'Global' }}
+                <span :class="['badge badge-sm badge-soft', item.company_id ? 'badge-primary' : 'badge-neutral']">
+                  {{ item.company_id ? 'My entity' : 'Global' }}
                 </span>
               </td>
               <td>
-                <span :class="['badge badge-sm', item.type === 'REQUEST' ? 'badge-warning' : 'badge-info']">
-                  {{ item.type }}
+                <span :class="['badge badge-sm badge-soft', item.type === 'REQUEST' ? 'badge-warning' : 'badge-info']">
+                  {{ item.type === 'REQUEST' ? 'Bidder' : 'Entity' }}
                 </span>
               </td>
               <td>
-                <span :class="['badge badge-sm', item.expires === 'Y' ? 'badge-warning' : 'badge-ghost']">
+                <span :class="['badge badge-sm badge-soft', item.expires === 'Y' ? 'badge-warning' : 'badge-ghost']">
                   {{ item.expires === 'Y' ? 'Yes' : 'No' }}
                 </span>
               </td>
               <td>
-                <span :class="['badge badge-sm', item.status === 'ACTIVE' ? 'badge-success' : 'badge-ghost']">
+                <span :class="['badge badge-sm badge-soft', item.status === 'ACTIVE' ? 'badge-success' : 'badge-ghost']">
                   {{ item.status }}
                 </span>
               </td>
@@ -88,7 +112,10 @@
                     <MytenderdocumentsEdit v-if="canEdit" :item="item" />
                     <MytenderdocumentsDelete v-if="canDelete && item.status === 'ACTIVE'" :item="item" />
                   </template>
-                  <span v-else class="text-xs opacity-50">Read-only</span>
+                  <span v-else class="inline-flex items-center gap-1 text-xs text-base-content/45">
+                    <Icon name="lucide:lock" class="h-3.5 w-3.5" />
+                    Global template
+                  </span>
                 </div>
               </td>
             </tr>
@@ -96,7 +123,7 @@
         </table>
       </div>
     </div>
-  </div>
+  </section>
 </template>
 
 <script setup>

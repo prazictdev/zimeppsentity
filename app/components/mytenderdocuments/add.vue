@@ -1,8 +1,8 @@
 <template>
   <div>
-    <button class="btn btn-success btn-sm" @click="openModal">
-      <Icon name="lucide:plus" />
-      <span class="hidden md:block">Add Document</span>
+    <button class="btn btn-primary shrink-0" @click="openModal">
+      <Icon name="lucide:file-plus-2" class="h-4 w-4" />
+      <span>Add document</span>
     </button>
     <dialog id="new_mytenderdocument_modal" class="modal">
       <div class="modal-box max-w-lg">
