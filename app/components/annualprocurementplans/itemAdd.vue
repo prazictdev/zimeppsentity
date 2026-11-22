@@ -81,7 +81,7 @@
         <p class="mb-2 mt-3 text-xs text-base-content/60">Complete each item below. The Description column stays visible while you scroll across the remaining details.</p>
         <fieldset :disabled="submitting" class="max-h-[65vh] min-h-0 min-w-0 flex-1 overflow-auto rounded-xl border border-base-300">
           <table class="item-grid table table-sm">
-            <thead><tr><th>Row</th><th>Description *</th><th>UNSPSC *</th><th>Reference</th><th v-for="column in lookupColumns" :key="column.key">{{ column.label }}</th><th v-if="exemptionMode">Exemption grounds *</th><th v-if="exemptionMode">Evidence document key</th><th>Quantity</th><th>Unit cost</th><th>Quarter</th><th>Expense</th><th>Award type</th><th v-for="column in dayColumns" :key="column.key">{{ column.label }}</th><th v-for="column in flagColumns" :key="column.key">{{ column.label }}</th><th v-for="column in dateColumns" :key="column.key">{{ column.label }}</th><th>MSDS (Minimum Service Delivery Standard)</th></tr></thead>
+            <thead><tr><th>Row</th><th>Description *</th><th>UNSPSC *</th><th>Reference</th><th v-for="column in lookupColumns" :key="column.key">{{ column.label }}</th><th v-if="exemptionMode">Exemption grounds *</th><th v-if="exemptionMode">Evidence document key</th><th>Quantity</th><th>Unit cost</th><th>Quarter</th><th>Expense</th><th>Award type</th><th v-for="column in dayColumns" :key="column.key">{{ column.label }}</th><th>Pre-qualification</th><th>EOI</th><th v-for="column in flagColumns" :key="column.key">{{ column.label }}</th><th v-for="column in dateColumns" :key="column.key">{{ column.label }}</th><th>MSDS (Minimum Service Delivery Standard)</th></tr></thead>
             <tbody><template v-for="row in visibleRows" :key="row.uuid">
               <tr :class="['align-top', !row.unspsc_id ? 'bg-warning/10' : '']">
                 <td><span class="block mb-2">{{ rowNumber(row) }}</span><button type="button" class="btn btn-error btn-outline btn-xs btn-square" aria-label="Delete row" title="Delete row" :disabled="row._sent || submitting" @click="removeRow(row)"><Icon name="lucide:trash-2" /></button></td>
@@ -96,11 +96,13 @@
                 <td><select v-model="row.expensecategory" class="select select-sm w-28" :disabled="row._sent" aria-label="Expense"><option>MOOE</option><option>CapEx</option></select></td>
                 <td><select v-model="row.award_type" class="select select-sm w-36" :disabled="row._sent" aria-label="Award type"><option value="AWARD">Award</option><option value="FRAMEWORK">Framework</option></select></td>
                 <td v-for="column in dayColumns" :key="column.key"><input v-model.number="row[column.key]" type="number" min="0" :max="column.max" :disabled="row._sent" :aria-label="column.label" class="input input-sm w-36" /></td>
+                <td class="min-w-40 text-center"><input v-model="row.pre_qualification" type="checkbox" class="checkbox checkbox-sm" :disabled="row._sent || !planningApplicability(row).prequalificationAllowed" aria-label="Pre-qualification" /><span v-if="!planningApplicability(row).prequalificationAllowed" class="mt-1 block text-xs text-base-content/50">Not applicable</span></td>
+                <td class="min-w-40 text-center"><span :class="['badge badge-sm', planningApplicability(row).eoiRequired ? 'badge-success badge-soft' : 'badge-ghost']">{{ planningApplicability(row).eoiLabel }}</span></td>
                 <td v-for="column in flagColumns" :key="column.key" class="text-center"><input v-model="row[column.key]" type="checkbox" class="checkbox checkbox-sm" :disabled="row._sent" :aria-label="column.label" /></td>
-                <td v-for="column in dateColumns" :key="column.key"><input v-model="row[column.key]" type="date" :disabled="row._sent || (column.eoiOnly && !row.eoi)" :aria-label="column.label" class="input input-sm w-44" /></td>
+                <td v-for="column in dateColumns" :key="column.key" class="min-w-44"><span v-if="column.eoiOnly && !row.eoi" class="badge badge-ghost badge-sm">Not applicable</span><input v-else v-model="row[column.key]" type="date" :disabled="row._sent" :aria-label="column.label" class="input input-sm w-44" /></td>
                 <td><textarea v-model="row.msds" rows="2" class="textarea w-72" :disabled="row._sent" aria-label="MSDS (Minimum Service Delivery Standard)" /></td>
               </tr>
-            </template><tr v-if="!visibleRows.length"><td :colspan="13 + dayColumns.length + flagColumns.length + dateColumns.length + 1" class="empty-grid py-16 text-base-content/50">{{ emptyGridMessage }}</td></tr></tbody>
+            </template><tr v-if="!visibleRows.length"><td :colspan="15 + dayColumns.length + flagColumns.length + dateColumns.length + 1" class="empty-grid py-16 text-base-content/50">{{ emptyGridMessage }}</td></tr></tbody>
           </table>
         </fieldset>
         <div class="mt-3 flex items-center justify-between gap-3"><p class="text-xs text-base-content/60">{{ uploadNote }}</p><div class="flex items-center gap-2"><button class="btn btn-sm" :disabled="page <= 1 || submitting" @click="page--">Previous</button><span class="text-sm">{{ page }} / {{ lastPage }}</span><button class="btn btn-sm" :disabled="page >= lastPage || submitting" @click="page++">Next</button></div></div>
@@ -148,6 +150,7 @@ const uploadNote = computed(() => supplementMode.value
   : 'Uploaded items require the NSPL scan and UNSPSC reviewer verification before submission.');
 const currentUserId = computed(() => identity.value?.data?.user?.id ?? identity.value?.user?.id ?? identity.value?.id ?? null);
 const searchDialog = ref(null), deleteAllDialog = ref(null), rows = ref([]), rowCount = ref(10), page = ref(1), rowFilter = ref('all');
+const planningRules = ref({ prequalification: { method_codes: ['CMB'] }, eoi: { amount: 50000, currency_code: 'USD', procurement_group_code: 'CONSULTANCY', procurement_method_code: 'RFP' } });
 const ready = ref(false), submitting = ref(false), matching = ref(false), errorMessage = ref(''), notice = ref(''), saveStatus = ref(''), catalogueStatus = ref(''), rowErrors = ref({});
 const exemptionTypes = ref([]), groundDialog = ref(null), groundError = ref('');
 let groundRow = null;
@@ -158,7 +161,8 @@ const unclassifiedRows = computed(() => rows.value.filter(row => !row.unspsc_id)
 const matchedRows = computed(() => rows.value.length - unclassifiedRows.value);
 const incompleteRows = computed(() => rows.value.filter(row => {
   const hasPricing = [row.quantity, row.unit_cost].every(value => value !== '' && Number.isFinite(Number(value)) && Number(value) >= 0);
-  return !row.description?.trim() || !row.unspsc_id || !hasPricing || (exemptionMode.value && Boolean(groundsValidationError(row)));
+  const missingEoiDates = row.eoi && (!row.eoi_publication_date || !row.eoi_closing_date);
+  return !row.description?.trim() || !row.unspsc_id || !row.expected_delivery_date || !hasPricing || missingEoiDates || (exemptionMode.value && Boolean(groundsValidationError(row)));
 }).length);
 const workflowStep = computed(() => !rows.value.length ? 1 : (incompleteRows.value ? 2 : 3));
 const unsavedRows = computed(() => rows.value.filter(row => !row._sent));
@@ -174,19 +178,42 @@ const lookupColumns = [
   { key: 'sourceoffunds_id', list: 'sourceoffunds', label: 'Source of funds' }, { key: 'unitofmeasure_id', list: 'unitofmeasures', label: 'Unit' },
 ];
 const dayColumns = [
-  { key: 'lead_time_days', label: 'Lead time days' },
   { key: 'estimated_contract_negotiation_days', label: 'Contract negotiation days (est.)', max: 365 },
 ];
 const flagColumns = [
-  { key: 'pre_qualification', label: 'Pre-Qualification' },
-  { key: 'eoi', label: 'EOI' },
   { key: 'sustainable_procurement', label: 'Sustainable' },
   { key: 'affirmative_procurement', label: 'Affirmative' },
 ];
+const lookupById = (items, id) => items.find(item => Number(item.id) === Number(id));
+function planningApplicability(row) {
+  const methodCode = String(lookupById(store.procurementmethods, row.procurementmethod_id)?.code || '').toUpperCase();
+  const groupCode = String(lookupById(store.procurementgroups, row.procurementgroup_id)?.code || '').toUpperCase();
+  const prequalificationAllowed = (planningRules.value.prequalification?.method_codes || ['CMB']).includes(methodCode);
+  const eoiRule = planningRules.value.eoi || {};
+  const eoiApplicable = groupCode === String(eoiRule.procurement_group_code || 'CONSULTANCY').toUpperCase()
+    && methodCode === String(eoiRule.procurement_method_code || 'RFP').toUpperCase();
+  const estimatedValue = Number(row.quantity || 0) * Number(row.unit_cost || 0);
+  const eoiRequired = eoiApplicable && estimatedValue >= Number(eoiRule.amount || 50000);
+  return {
+    prequalificationAllowed,
+    eoiRequired,
+    eoiLabel: eoiRequired ? 'Required automatically' : (eoiApplicable ? `Not required below ${eoiRule.currency_code || 'USD'} ${Number(eoiRule.amount || 50000).toLocaleString()}` : 'Not applicable'),
+  };
+}
+function reconcilePlanningApplicability(row) {
+  const applicability = planningApplicability(row);
+  if (!applicability.prequalificationAllowed && row.pre_qualification) row.pre_qualification = false;
+  if (row.eoi !== applicability.eoiRequired) row.eoi = applicability.eoiRequired;
+  if (!applicability.eoiRequired) {
+    if (row.eoi_publication_date) row.eoi_publication_date = '';
+    if (row.eoi_closing_date) row.eoi_closing_date = '';
+  }
+}
 const dateColumns = [
   { key: 'eoi_publication_date', label: 'EOI publication date', eoiOnly: true },
   { key: 'eoi_closing_date', label: 'EOI closing date', eoiOnly: true },
   { key: 'bid_notice_publication_date', label: 'Bid notice publication date' },
+  { key: 'expected_delivery_date', label: 'Expected delivery / completion date' },
 ];
 const fallbackTermFields = {
   SHORT_BIDDING_PERIOD: [{ key: 'normal_advertising_days', label: 'Normal advertising days', type: 'number', required: false }, { key: 'requested_advertising_days', label: 'Requested advertising days', type: 'number', required: true, minimum: 1 }],
@@ -232,7 +259,10 @@ function saveDraft() {
   clearTimeout(saveTimer);
   try { persist(); return true; } catch (error) { saveStatus.value = 'Not saved'; errorMessage.value = `Could not save locally: ${error.message}`; return false; }
 }
-watch(rows, () => { if (ready.value) { saveStatus.value = 'Saving…'; clearTimeout(saveTimer); saveTimer = setTimeout(saveDraft, 300); } }, { deep: true });
+watch(rows, () => {
+  rows.value.forEach(reconcilePlanningApplicability);
+  if (ready.value) { saveStatus.value = 'Saving…'; clearTimeout(saveTimer); saveTimer = setTimeout(saveDraft, 300); }
+}, { deep: true });
 async function initializeDraft() {
   errorMessage.value = ''; notice.value = ''; ready.value = false;
   try {
@@ -243,6 +273,9 @@ async function initializeDraft() {
     rows.value = loadGridDraft(window.localStorage, draftKey).map(row => ({ ...row, grounds: exemptionMode.value ? (row.grounds || []) : undefined, unspsc_confirmed: Boolean(row.unspsc_id) }));
     page.value = 1; rowErrors.value = {}; ready.value = true; saveStatus.value = rows.value.length ? 'Local draft restored' : 'No local draft yet';
     await store.fetchItemLookups();
+    const rulesResponse = await client('/api/v1/annual-procurement-plans/items/planning-rules');
+    planningRules.value = rulesResponse?.data ?? planningRules.value;
+    rows.value.forEach(reconcilePlanningApplicability);
     if (exemptionMode.value) {
       const response = await client('/api/v1/exemption-types/list');
       exemptionTypes.value = response?.data ?? response ?? [];
@@ -313,7 +346,9 @@ async function upload() {
   rowErrors.value = {}; errorMessage.value = ''; notice.value = '';
   for (const row of rows.value) {
     if (!row.description.trim() || !row.unspsc_id) rowErrors.value[row.uuid] = 'Enter a description and select a UNSPSC commodity.';
+    else if (!row.expected_delivery_date) rowErrors.value[row.uuid] = 'Select the expected delivery / completion date. Lead time will be calculated automatically.';
     else if (![row.quantity, row.unit_cost].every(value => value !== '' && Number.isFinite(Number(value)) && Number(value) >= 0)) rowErrors.value[row.uuid] = 'Quantity and unit cost must be zero or greater.';
+    else if (row.eoi && (!row.eoi_publication_date || !row.eoi_closing_date)) rowErrors.value[row.uuid] = 'Enter the EOI publication and closing dates required for this consultancy item.';
     else if (exemptionMode.value && groundsValidationError(row)) rowErrors.value[row.uuid] = groundsValidationError(row);
   }
   if (Object.keys(rowErrors.value).length) { rowFilter.value = 'all'; page.value = Math.floor(rows.value.findIndex(row => rowErrors.value[row.uuid]) / 25) + 1; errorMessage.value = 'Correct the highlighted rows before uploading.'; return; }

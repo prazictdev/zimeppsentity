@@ -24,6 +24,7 @@
               :procurementgroups="store.procurementgroups"
               :sourceoffunds="store.sourceoffunds"
               :unitofmeasures="store.unitofmeasures"
+              :planning-rules="planningRules"
             />
           </div>
           <div class="modal-action">
@@ -50,6 +51,8 @@ const props = defineProps({
 });
 
 const store = useAnnualprocurementplanStore();
+const client = usePeClient();
+const planningRules = ref({ prequalification: { method_codes: ['CMB'] }, eoi: { amount: 50000, currency_code: 'USD', procurement_group_code: 'CONSULTANCY', procurement_method_code: 'RFP' } });
 
 const form = ref({});
 const errors = reactive({ description: '', quantity: '', unit_cost: '', award_type: '' });
@@ -71,8 +74,8 @@ const toFormShape = (it) => ({
   bid_closing_date: it.bid_closing_date ?? '',
   publish_award_notice: it.publish_award_notice ?? '',
   contract_signing: it.contract_signing ?? '',
+  expected_delivery_date: it.expected_delivery_date ?? '',
   cycle_days: it.cycle_days ?? null,
-  lead_time_days: it.lead_time_days ?? null,
   estimated_contract_negotiation_days: it.estimated_contract_negotiation_days ?? null,
   sourceoffunds_id: it.sourceoffunds_id ?? null,
   unitofmeasure_id: it.unitofmeasure_id ?? null,
@@ -87,6 +90,8 @@ const toFormShape = (it) => ({
 
 const openModal = async () => {
   await store.fetchItemLookups();
+  const rulesResponse = await client('/api/v1/annual-procurement-plans/items/planning-rules');
+  planningRules.value = rulesResponse?.data ?? planningRules.value;
   form.value = toFormShape(props.item);
   document.getElementById(`edit_apitem_modal_${props.item.id}`).showModal();
 };

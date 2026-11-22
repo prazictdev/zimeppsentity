@@ -33,9 +33,9 @@ export const AnnualprocurementplanItemSchema = yup.object({
   bid_closing_date: optionalDate,
   publish_award_notice: optionalDate,
   contract_signing: optionalDate,
+  expected_delivery_date: optionalDate.required('Expected delivery / completion date is required'),
 
   cycle_days: optionalInt,
-  lead_time_days: optionalInt,
   estimated_contract_negotiation_days: optionalInt,
 
   sourceoffunds_id: optionalId,

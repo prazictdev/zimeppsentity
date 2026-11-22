@@ -131,11 +131,6 @@
     </label>
 
     <label class="fieldset">
-      <span class="fieldset-legend">Lead Time Days</span>
-      <input type="number" v-model.number="form.lead_time_days" class="input input-bordered w-full" />
-    </label>
-
-    <label class="fieldset">
       <span class="fieldset-legend" title="Estimated days between publish-award-notice + standstill and contract signing. Officer-entered; feeds into the auto-calculated contract signing date.">
         Contract Negotiation Days (est.)
       </span>
@@ -154,12 +149,12 @@
       <div class="text-sm font-semibold text-base-content/70">Flags</div>
       <div class="mt-1 grid grid-cols-2 gap-2 md:grid-cols-5">
         <label class="label cursor-pointer justify-start gap-2">
-          <input type="checkbox" v-model="form.pre_qualification" class="checkbox checkbox-sm" />
-          <span class="label-text">Pre-Qualification</span>
+          <input type="checkbox" v-model="form.pre_qualification" :disabled="!itemApplicability.prequalificationAllowed" class="checkbox checkbox-sm" />
+          <span class="label-text">Pre-Qualification <span v-if="!itemApplicability.prequalificationAllowed" class="text-xs text-base-content/50">(not applicable)</span></span>
         </label>
         <label class="label cursor-pointer justify-start gap-2">
-          <input type="checkbox" v-model="form.eoi" class="checkbox checkbox-sm" />
-          <span class="label-text">EOI</span>
+          <input type="checkbox" :checked="itemApplicability.eoiRequired" disabled class="checkbox checkbox-sm" />
+          <span class="label-text">EOI <span class="text-xs text-base-content/50">({{ itemApplicability.eoiLabel }})</span></span>
         </label>
         <label
           class="label justify-start gap-2"
@@ -222,6 +217,25 @@
       <input type="date" :value="form.contract_signing ?? ''" readonly class="input input-bordered w-full bg-base-200" />
     </label>
 
+    <label class="fieldset">
+      <span class="fieldset-legend">Expected Delivery / Completion Date</span>
+      <input
+        v-model="form.expected_delivery_date"
+        type="date"
+        :min="dateOnly(form.contract_signing) || undefined"
+        :class="['input input-bordered w-full', errors.expected_delivery_date ? 'input-error' : '']"
+      />
+      <span v-if="errors.expected_delivery_date" class="mt-1 text-xs text-error">{{ errors.expected_delivery_date }}</span>
+      <span v-else class="mt-1 text-xs text-base-content/60">Lead time is calculated from contract signing to this date.</span>
+    </label>
+
+    <label class="fieldset">
+      <span class="fieldset-legend">Delivery Lead Time <span class="text-xs text-base-content/50">(auto)</span></span>
+      <div class="input input-bordered flex w-full items-center bg-base-200" aria-live="polite">
+        {{ deliveryLeadTime === null ? 'Calculated after dates are available' : `${deliveryLeadTime} days` }}
+      </div>
+    </label>
+
     <label class="fieldset md:col-span-3">
       <span class="fieldset-legend">MSDS (Minimum Service Delivery Standard)</span>
       <textarea v-model="form.msds" rows="2" class="textarea textarea-bordered w-full"></textarea>
@@ -237,6 +251,7 @@ const props = defineProps({
   procurementgroups: { type: Array, default: () => [] },
   sourceoffunds: { type: Array, default: () => [] },
   unitofmeasures: { type: Array, default: () => [] },
+  planningRules: { type: Object, default: () => ({ prequalification: { method_codes: ['CMB'] }, eoi: { amount: 50000, currency_code: 'USD', procurement_group_code: 'CONSULTANCY', procurement_method_code: 'RFP' } }) },
 });
 
 const emit = defineEmits(['update:modelValue']);
@@ -251,5 +266,38 @@ const totalCost = computed(() => {
   const u = Number(form.value.unit_cost ?? 0);
   if (!Number.isFinite(q) || !Number.isFinite(u)) return 0;
   return (q * u).toFixed(2);
+});
+
+const itemApplicability = computed(() => {
+  const methodCode = String(props.procurementmethods.find(item => Number(item.id) === Number(form.value.procurementmethod_id))?.code || '').toUpperCase();
+  const groupCode = String(props.procurementgroups.find(item => Number(item.id) === Number(form.value.procurementgroup_id))?.code || '').toUpperCase();
+  const prequalificationAllowed = (props.planningRules.prequalification?.method_codes || ['CMB']).includes(methodCode);
+  const eoiRule = props.planningRules.eoi || {};
+  const applicable = groupCode === String(eoiRule.procurement_group_code || 'CONSULTANCY').toUpperCase()
+    && methodCode === String(eoiRule.procurement_method_code || 'RFP').toUpperCase();
+  const required = applicable && Number(totalCost.value) >= Number(eoiRule.amount || 50000);
+  return {
+    prequalificationAllowed,
+    eoiRequired: required,
+    eoiLabel: required ? 'required automatically' : (applicable ? 'direct shortlist; below threshold' : 'not applicable'),
+  };
+});
+
+watch(itemApplicability, applicability => {
+  if (!applicability.prequalificationAllowed) form.value.pre_qualification = false;
+  form.value.eoi = applicability.eoiRequired;
+  if (!applicability.eoiRequired) {
+    form.value.eoi_publication_date = null;
+    form.value.eoi_closing_date = null;
+  }
+}, { immediate: true });
+
+const dateOnly = value => value ? String(value).slice(0, 10) : '';
+const deliveryLeadTime = computed(() => {
+  const signing = dateOnly(form.value.contract_signing);
+  const delivery = dateOnly(form.value.expected_delivery_date);
+  if (!signing || !delivery) return null;
+  const days = Math.round((Date.parse(`${delivery}T00:00:00Z`) - Date.parse(`${signing}T00:00:00Z`)) / 86400000);
+  return Number.isFinite(days) && days >= 0 ? days : null;
 });
 </script>
