@@ -126,7 +126,6 @@
       :budget-only="formBudgetOnly"
       :description-readonly="formDescriptionReadonly"
       :quantity-readonly="formQuantityReadonly"
-      :unit-price-readonly="formUnitPriceReadonly"
       :max-quantity="formMaxQuantity"
       :max-budget="formMaxBudget"
       :initial="formInitial"
@@ -267,7 +266,6 @@ const formAppRef = ref('')
 const formBudgetOnly = ref(false)
 const formDescriptionReadonly = ref(false)
 const formQuantityReadonly = ref(false)
-const formUnitPriceReadonly = ref(false)
 const formMaxQuantity = ref(null)
 const formMaxBudget = ref(null)
 const formInitial = ref({ description: '', quantity: 0, unit_price: 0, total: 0 })
@@ -323,7 +321,6 @@ function configureFormForApp(planItem) {
   formBudgetOnly.value = true
   formDescriptionReadonly.value = true
   formQuantityReadonly.value = true
-  formUnitPriceReadonly.value = true
   formMaxQuantity.value = null
   formMaxBudget.value = Number(planItem?.remaining_balance ?? planItem?.total_cost ?? 0)
 
@@ -336,7 +333,6 @@ function configureFormForManual(initial = {}) {
   formBudgetOnly.value = false
   formDescriptionReadonly.value = false
   formQuantityReadonly.value = false
-  formUnitPriceReadonly.value = false
   formMaxQuantity.value = null
   formMaxBudget.value = null
   formInitial.value = {
@@ -472,7 +468,6 @@ function configureFormForEdit(row) {
     formBudgetOnly.value = true
     formDescriptionReadonly.value = true
     formQuantityReadonly.value = true
-    formUnitPriceReadonly.value = true
     formMaxQuantity.value = null
     formMaxBudget.value = Number(row.annualprocurementplanconsolidation.remaining_balance ?? row.total)
     formInitial.value = {

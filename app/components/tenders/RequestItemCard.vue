@@ -12,15 +12,11 @@
           </div>
           <h3 class="mt-2 pr-20 text-lg font-semibold leading-6">{{ item.description }}</h3>
 
-          <dl class="mt-4 grid overflow-hidden rounded-field border border-base-300 bg-base-100 text-sm" :class="isAppLine ? 'sm:grid-cols-2' : 'sm:grid-cols-3'">
+          <dl class="mt-4 grid overflow-hidden rounded-field border border-base-300 bg-base-100 text-sm sm:grid-cols-2">
             <template v-if="!isAppLine">
               <div class="border-b border-base-200 px-3 py-2.5 sm:border-b-0 sm:border-r">
                 <dt class="text-xs text-base-content/45">Quantity</dt>
                 <dd class="mt-0.5 font-semibold tabular-nums">{{ item.quantity }}</dd>
-              </div>
-              <div class="border-b border-base-200 px-3 py-2.5 sm:border-b-0 sm:border-r">
-                <dt class="text-xs text-base-content/45">Unit price</dt>
-                <dd class="mt-0.5 font-semibold tabular-nums">{{ formatMoney(item.unit_price) }}</dd>
               </div>
             </template>
             <div class="border-b border-base-200 px-3 py-2.5 sm:border-b-0" :class="{ 'sm:border-r': isAppLine }">
@@ -131,8 +127,8 @@
                 <th class="w-[21%]">UNSPSC classification</th>
                 <th class="w-24 text-right">Quantity</th>
                 <th>Specifications</th>
-                <th v-if="isAppLine" class="w-32 text-right">Unit price</th>
-                <th v-if="isAppLine" class="w-36 text-right">Total</th>
+                <th class="w-32 text-right">Unit price</th>
+                <th class="w-36 text-right">Product total</th>
                 <th class="w-24 text-right">Actions</th>
               </tr>
             </thead>
@@ -173,10 +169,10 @@
                   </button>
                   <span v-else class="text-xs text-base-content/40">No specifications</span>
                 </td>
-                <td v-if="isAppLine" class="text-right font-medium tabular-nums">{{ formatMoney(product.unit_price) }}</td>
-                <td v-if="isAppLine" class="text-right">
+                <td class="text-right font-medium tabular-nums">{{ formatMoney(product.unit_price) }}</td>
+                <td class="text-right">
                   <p class="font-semibold tabular-nums">{{ formatMoney(product.budget_amount) }}</p>
-                  <p class="mt-1 text-xs text-base-content/45">{{ formatMoney(productRemainingAfterAllocation(product)) }} remaining</p>
+                  <p v-if="isAppLine" class="mt-1 text-xs text-base-content/45">{{ formatMoney(productRemainingAfterAllocation(product)) }} remaining</p>
                 </td>
                 <td>
                   <div class="flex justify-end gap-1">

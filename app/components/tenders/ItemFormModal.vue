@@ -27,36 +27,19 @@
           />
         </label>
 
-        <div v-if="!budgetOnly" class="grid grid-cols-2 gap-3">
-          <label class="form-control w-full">
-            <span class="label-text text-xs font-medium">Quantity</span>
-            <input
-              v-model.number="form.quantity"
-              type="number"
-              min="0"
-              step="0.01"
-              class="input input-bordered w-full"
-              :readonly="quantityReadonly"
-              :class="quantityReadonly ? 'bg-base-200/50' : ''"
-              :disabled="submitting"
-              @input="recalcTotal"
-            />
-          </label>
-          <label class="form-control w-full">
-            <span class="label-text text-xs font-medium">Unit price</span>
-            <input
-              v-model.number="form.unit_price"
-              type="number"
-              min="0"
-              step="0.01"
-              class="input input-bordered w-full"
-              :readonly="unitPriceReadonly"
-              :class="unitPriceReadonly ? 'bg-base-200/50' : ''"
-              :disabled="submitting"
-              @input="recalcTotal"
-            />
-          </label>
-        </div>
+        <label v-if="!budgetOnly" class="form-control w-full">
+          <span class="label-text text-xs font-medium">Quantity</span>
+          <input
+            v-model.number="form.quantity"
+            type="number"
+            min="0"
+            step="0.01"
+            class="input input-bordered w-full"
+            :readonly="quantityReadonly"
+            :class="quantityReadonly ? 'bg-base-200/50' : ''"
+            :disabled="submitting"
+          />
+        </label>
 
         <label v-if="budgetOnly" class="form-control w-full">
           <span class="label-text text-xs font-medium">Amount to consume</span>
@@ -74,15 +57,9 @@
           </span>
         </label>
 
-        <label v-else class="form-control w-full">
-          <span class="label-text text-xs font-medium">Total</span>
-          <input
-            :value="formatMoney(form.total)"
-            type="text"
-            class="input input-bordered w-full font-mono"
-            readonly
-          />
-        </label>
+        <p v-else class="rounded-field border border-base-300 bg-base-200/30 px-3 py-2 text-xs leading-5 text-base-content/60">
+          Unit prices are captured on the products or services added to this line item.
+        </p>
 
         <p v-if="!budgetOnly && maxQuantity != null" class="text-xs text-base-content/50">
           Maximum quantity from APP line: {{ maxQuantity }}
@@ -109,7 +86,6 @@ const props = defineProps({
   budgetOnly: { type: Boolean, default: false },
   descriptionReadonly: { type: Boolean, default: false },
   quantityReadonly: { type: Boolean, default: false },
-  unitPriceReadonly: { type: Boolean, default: false },
   maxQuantity: { type: Number, default: null },
   maxBudget: { type: Number, default: null },
   initial: {
@@ -117,7 +93,6 @@ const props = defineProps({
     default: () => ({
       description: '',
       quantity: 0,
-      unit_price: 0,
       total: 0,
     }),
   },
@@ -132,7 +107,6 @@ const formError = ref('')
 const form = reactive({
   description: '',
   quantity: 0,
-  unit_price: 0,
   total: 0,
 })
 
@@ -142,21 +116,11 @@ function formatMoney(value) {
   return n.toLocaleString('en-ZW', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 }
 
-function recalcTotal() {
-  const q = Number(form.quantity) || 0
-  const u = Number(form.unit_price) || 0
-  form.total = Math.round(q * u * 100) / 100
-}
-
 function applyInitial(override = null) {
   const src = override ?? props.initial ?? {}
   form.description = src.description ?? ''
   form.quantity = Number(src.quantity ?? 0)
-  form.unit_price = Number(src.unit_price ?? 0)
   form.total = Number(src.total ?? 0)
-  if (!form.total && form.quantity && form.unit_price) {
-    recalcTotal()
-  }
   formError.value = ''
 }
 
@@ -197,7 +161,6 @@ async function submit() {
     : {
         description: form.description,
         quantity: form.quantity,
-        unit_price: form.unit_price,
       })
 }
 

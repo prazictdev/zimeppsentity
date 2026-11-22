@@ -101,7 +101,7 @@
           />
         </fieldset>
 
-        <fieldset v-if="budgetMode" class="fieldset order-2 w-full">
+        <fieldset class="fieldset order-2 w-full lg:col-span-2">
           <legend class="fieldset-legend">Unit price</legend>
           <input
             v-model.number="form.unit_price"
@@ -113,7 +113,7 @@
           />
         </fieldset>
 
-        <div v-if="budgetMode" class="order-4 grid gap-3 rounded-box border border-base-300 bg-base-200/30 p-4 text-sm sm:grid-cols-2 lg:col-span-2">
+        <div class="order-4 grid gap-3 rounded-box border border-base-300 bg-base-200/30 p-4 text-sm lg:col-span-2" :class="{ 'sm:grid-cols-2': budgetMode }">
           <div>
             <p class="text-xs text-base-content/45">Product total</p>
             <p class="mt-1 text-lg font-semibold tabular-nums">{{ formatMoney(productTotal) }}</p>
@@ -445,7 +445,7 @@ function submit() {
     formError.value = `Quantity cannot exceed remaining allocatable quantity (${props.remainingQuantity}).`
     return
   }
-  if (props.budgetMode && Number(form.unit_price) <= 0) {
+  if (Number(form.unit_price) <= 0) {
     formError.value = 'Unit price must be greater than zero.'
     return
   }
@@ -457,7 +457,7 @@ function submit() {
     description: form.description.trim(),
     unspsc_id: form.unspsc_id,
     quantity: form.quantity,
-    ...(props.budgetMode ? { unit_price: form.unit_price } : {}),
+    unit_price: form.unit_price,
     specifications: form.specifications
       .filter(s => s.label?.trim())
       .map((s, i) => ({
