@@ -1,93 +1,97 @@
 <template>
-  <div class="card w-full border border-base-200 bg-base-100 shadow-sm">
-    <div class="card-body gap-4 p-4 sm:p-5">
-      <div class="flex items-center gap-2">
-        <Icon name="lucide:receipt" class="h-4 w-4 text-base-content/60" />
-        <h3 class="text-sm font-semibold">Tender fees</h3>
-        <span v-if="loading" class="loading loading-spinner loading-xs ml-1" />
+  <section class="overflow-hidden rounded-box border border-base-300 bg-base-100">
+    <div class="flex flex-col gap-3 border-b border-base-200 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+      <div class="flex items-center gap-3">
+        <div class="grid h-9 w-9 place-items-center rounded-box bg-base-200 text-base-content/60">
+          <Icon name="lucide:receipt-text" class="h-4 w-4" />
+        </div>
+        <div>
+          <h3 class="font-semibold">Tender fees and security</h3>
+          <p class="text-xs text-base-content/50">Calculated from the current line-item value.</p>
+        </div>
+        <span v-if="loading" class="loading loading-spinner loading-xs" />
       </div>
 
-      <div class="flex items-center justify-between rounded-lg bg-base-200/40 px-3 py-2 text-sm">
-        <span class="text-base-content/70">Total value of line items</span>
-        <span class="font-mono font-semibold">{{ currencyCode }} {{ money(fees?.line_items_total) }}</span>
-      </div>
-
-      <!-- Bid bond / establishment fee -->
-      <div v-if="fees?.bid_bond" class="rounded-lg border border-base-200 p-3">
-        <div class="flex items-center gap-2">
-          <Icon name="lucide:shield-check" class="h-4 w-4 text-primary" />
-          <h4 class="text-sm font-medium">Bid bond &amp; establishment fee</h4>
-        </div>
-        <p class="mt-1 text-xs text-base-content/60">
-          The bid bond amount may not exceed
-          <strong>{{ fees.bid_bond.max_percent }}%</strong>
-          of the line-items total =
-          <strong>{{ currencyCode }} {{ money(fees.bid_bond.max_allowed) }}</strong>.
-        </p>
-
-        <div class="mt-3 flex flex-wrap items-end gap-3">
-          <label class="fieldset">
-            <span class="fieldset-legend">Required bid bond amount</span>
-            <input
-              type="number"
-              min="0"
-              step="0.01"
-              v-model.number="bidBond"
-              :max="fees.bid_bond.max_allowed"
-              class="input input-bordered input-sm w-44"
-              :class="overLimit ? 'input-error' : ''"
-            />
-          </label>
-          <button class="btn btn-primary btn-sm" type="button" :disabled="saving || overLimit" @click="saveBidBond">
-            <span v-if="saving" class="loading loading-spinner loading-xs" />
-            Save
-          </button>
-        </div>
-        <p v-if="overLimit" class="mt-1 text-xs text-error">
-          Exceeds the 2% cap ({{ currencyCode }} {{ money(fees.bid_bond.max_allowed) }}).
-        </p>
-        <p v-if="saveError" class="mt-1 text-xs text-error">{{ saveError }}</p>
-
-        <div v-if="fees.bid_bond.establishment_fee != null" class="mt-3 flex flex-wrap items-center gap-2 text-sm">
-          <span class="badge badge-success badge-sm">Establishment fee</span>
-          <span class="font-mono font-semibold">{{ currencyCode }} {{ money(fees.bid_bond.establishment_fee) }}</span>
-          <span class="text-xs text-base-content/50">
-            ({{ fees.bid_bond.fee_basis === 'percentage'
-              ? `${fees.bid_bond.fee_percentage}% of bid security`
-              : 'flat fee' }},
-            {{ fees.bid_bond.validity_period }}-day validity)
-          </span>
-        </div>
-        <p v-if="fees.bid_bond.extension" class="mt-1 text-xs text-base-content/60">
-          Extension option: {{ fees.bid_bond.extension.percentage }}% ({{ currencyCode }}
-          {{ money(fees.bid_bond.extension.fee) }}) for an extra {{ fees.bid_bond.extension.days }} days.
-        </p>
-        <p v-if="fees.bid_bond.message && fees.bid_bond.establishment_fee == null" class="mt-2 text-xs text-base-content/50">
-          {{ fees.bid_bond.message }}
-        </p>
-      </div>
-
-      <!-- Administration fee -->
-      <div
-        v-if="fees?.administration_fee"
-        class="rounded-lg border p-3"
-        :class="fees.administration_fee.applies ? 'border-success/30 bg-success/5' : 'border-base-200'"
-      >
-        <div class="flex items-center gap-2">
-          <Icon name="lucide:landmark" class="h-4 w-4" :class="fees.administration_fee.applies ? 'text-success' : 'text-base-content/50'" />
-          <h4 class="text-sm font-medium">Administration fee</h4>
-        </div>
-        <div v-if="fees.administration_fee.applies" class="mt-2 flex flex-wrap items-center gap-2 text-sm">
-          <span class="badge badge-success badge-sm">Payable</span>
-          <span class="font-mono font-semibold">
-            {{ fees.administration_fee.currency_code ?? currencyCode }} {{ money(fees.administration_fee.amount) }}
-          </span>
-          <span class="text-xs text-base-content/50">({{ fees.administration_fee.participant }})</span>
-        </div>
-        <p class="mt-1 text-xs text-base-content/60">{{ fees.administration_fee.reason }}</p>
+      <div class="sm:text-right">
+        <p class="text-xs text-base-content/45">Total tender value</p>
+        <p class="text-lg font-semibold tabular-nums">{{ currencyCode }} {{ money(fees?.line_items_total) }}</p>
       </div>
     </div>
-  </div>
+
+    <div class="grid gap-4 p-5 lg:grid-cols-2">
+      <section v-if="fees?.bid_bond" class="rounded-field border border-base-300 p-4">
+        <div class="flex items-start gap-3">
+          <div class="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-success/10 text-success">
+            <Icon name="lucide:shield-check" class="h-4 w-4" />
+          </div>
+          <div>
+            <h4 class="font-medium">Bid bond</h4>
+            <p class="mt-1 text-xs leading-5 text-base-content/55">
+              Maximum {{ fees.bid_bond.max_percent }}% of the tender value:
+              <strong class="font-semibold text-base-content">{{ currencyCode }} {{ money(fees.bid_bond.max_allowed) }}</strong>
+            </p>
+          </div>
+        </div>
+
+        <div class="mt-4 flex flex-col gap-2 sm:flex-row sm:items-end">
+          <fieldset class="fieldset flex-1">
+            <legend class="fieldset-legend">Required bid bond amount</legend>
+            <label class="input w-full" :class="{ 'input-error': overLimit }">
+              <span class="label text-xs">{{ currencyCode }}</span>
+              <input v-model.number="bidBond" type="number" min="0" step="0.01" :max="fees.bid_bond.max_allowed" class="grow tabular-nums">
+            </label>
+          </fieldset>
+          <button class="btn btn-neutral" type="button" :disabled="saving || overLimit" @click="saveBidBond">
+            <span v-if="saving" class="loading loading-spinner loading-sm" />
+            Save amount
+          </button>
+        </div>
+        <p v-if="overLimit" class="mt-2 text-xs text-error">
+          Enter an amount no greater than {{ currencyCode }} {{ money(fees.bid_bond.max_allowed) }}.
+        </p>
+        <p v-if="saveError" class="mt-2 text-xs text-error">{{ saveError }}</p>
+
+        <div v-if="fees.bid_bond.establishment_fee != null" class="mt-4 border-t border-base-200 pt-4">
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <span class="text-sm text-base-content/60">Establishment fee</span>
+            <strong class="text-sm tabular-nums">{{ currencyCode }} {{ money(fees.bid_bond.establishment_fee) }}</strong>
+          </div>
+          <p class="mt-1 text-xs leading-5 text-base-content/45">
+            {{ fees.bid_bond.fee_basis === 'percentage' ? `${fees.bid_bond.fee_percentage}% of bid security` : 'Flat fee' }}
+            · {{ fees.bid_bond.validity_period }}-day validity
+          </p>
+          <p v-if="fees.bid_bond.extension" class="mt-1 text-xs leading-5 text-base-content/45">
+            Extension: {{ fees.bid_bond.extension.percentage }}% ({{ currencyCode }} {{ money(fees.bid_bond.extension.fee) }}) for {{ fees.bid_bond.extension.days }} additional days.
+          </p>
+        </div>
+        <p v-else-if="fees.bid_bond.message" class="mt-3 text-xs leading-5 text-base-content/50">{{ fees.bid_bond.message }}</p>
+      </section>
+
+      <section
+        v-if="fees?.administration_fee"
+        class="rounded-field border p-4"
+        :class="fees.administration_fee.applies ? 'border-success/30 bg-success/5' : 'border-base-300'"
+      >
+        <div class="flex items-start gap-3">
+          <div class="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-base-200 text-base-content/55">
+            <Icon name="lucide:landmark" class="h-4 w-4" />
+          </div>
+          <div class="min-w-0 flex-1">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <h4 class="font-medium">Administration fee</h4>
+              <span v-if="fees.administration_fee.applies" class="badge badge-success badge-soft badge-sm">Payable</span>
+              <span v-else class="badge badge-ghost badge-sm">Not applicable</span>
+            </div>
+            <p v-if="fees.administration_fee.applies" class="mt-4 text-2xl font-semibold tabular-nums">
+              {{ fees.administration_fee.currency_code ?? currencyCode }} {{ money(fees.administration_fee.amount) }}
+            </p>
+            <p v-if="fees.administration_fee.applies" class="mt-1 text-xs text-base-content/45">Payable by {{ fees.administration_fee.participant }}</p>
+            <p class="mt-4 text-sm leading-6 text-base-content/55">{{ fees.administration_fee.reason }}</p>
+          </div>
+        </div>
+      </section>
+    </div>
+  </section>
 </template>
 
 <script setup>

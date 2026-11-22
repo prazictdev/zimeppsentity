@@ -1,39 +1,48 @@
 <template>
-  <div class="w-full space-y-4">
-    <div v-if="errorMessage" class="alert alert-error border border-error/30 bg-error/10">
+  <div class="w-full space-y-5">
+    <div v-if="errorMessage" class="alert alert-error alert-soft">
       <Icon name="lucide:alert-triangle" class="h-5 w-5 shrink-0" />
       <span>{{ errorMessage }}</span>
     </div>
 
     <div
       v-if="!loading && isPlannedExternalRequest && requestItems.length === 0"
-      class="alert alert-info border border-info/30 bg-info/10"
+      class="alert alert-info alert-soft"
     >
       <Icon name="lucide:link" class="h-5 w-5 shrink-0" />
-      <span class="text-black">
+      <span>
         Attach an approved APP line item first, then choose which external request items should be allocated to that line.
       </span>
     </div>
 
-    <div v-if="loading" class="card w-full border border-base-200 bg-base-100 shadow-sm">
-      <div class="card-body flex items-center justify-center gap-2 p-10 text-base-content/50">
-        <span class="loading loading-spinner loading-md" />
-        <span class="text-sm">Loading line items…</span>
+    <div v-if="loading" class="space-y-3" aria-label="Loading line items">
+      <div v-for="n in 2" :key="n" class="rounded-box border border-base-200 p-5">
+        <div class="flex items-start gap-4">
+          <div class="skeleton h-10 w-10 rounded-box" />
+          <div class="flex-1 space-y-3">
+            <div class="skeleton h-4 w-56 max-w-full" />
+            <div class="skeleton h-3 w-80 max-w-full" />
+            <div class="skeleton h-16 w-full" />
+          </div>
+        </div>
       </div>
     </div>
 
     <div
       v-else-if="requestItems.length === 0"
-      class="card w-full border border-dashed border-base-200 bg-base-100/50 shadow-sm"
+      class="grid min-h-56 place-items-center rounded-box border border-dashed border-base-300 bg-base-200/20 p-8 text-center"
     >
-      <div class="card-body p-10 text-center text-base-content/50">
-        <Icon name="lucide:inbox" class="mx-auto mb-2 h-10 w-10" />
-        <p class="text-sm">No line items yet.</p>
+      <div>
+        <div class="mx-auto grid h-12 w-12 place-items-center rounded-full bg-base-200 text-base-content/45">
+          <Icon name="lucide:list-plus" class="h-6 w-6" />
+        </div>
+        <h3 class="mt-4 font-semibold">No line items yet</h3>
+        <p class="mt-1 max-w-sm text-sm text-base-content/55">Add the goods, works, or services covered by this tender.</p>
       </div>
     </div>
 
     <div v-else-if="isConsultancy" class="space-y-3">
-      <div v-for="row in requestItems" :key="row.id" class="rounded-xl border border-base-200 bg-base-100 p-4 shadow-sm">
+      <div v-for="row in requestItems" :key="row.id" class="rounded-box border border-base-300 bg-base-100 p-5">
         <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <div class="mb-1 flex flex-wrap items-center gap-2">
@@ -86,7 +95,10 @@
 
     <TendersFeesPanel v-if="tenderUuid && requestItems.length" ref="feesPanel" :tender-uuid="tenderUuid" />
 
-    <div class="flex justify-end border-t border-base-200 pt-4">
+    <div class="sticky bottom-4 z-10 flex flex-col gap-3 rounded-box border border-base-300 bg-base-100/95 p-3 shadow-lg backdrop-blur sm:flex-row sm:items-center sm:justify-between">
+      <p class="px-1 text-sm text-base-content/55">
+        {{ requestItems.length }} {{ requestItems.length === 1 ? 'line item' : 'line items' }} added
+      </p>
       <button
         class="btn btn-primary w-full sm:w-auto"
         type="button"

@@ -1,37 +1,56 @@
 <template>
   <div class="space-y-5">
-    <header class="flex flex-col gap-4 border-b border-base-300 pb-5 sm:flex-row sm:items-center sm:justify-between">
-      <div class="flex min-w-0 items-center gap-3">
-        <NuxtLink to="/tenders" class="btn btn-ghost btn-circle btn-sm shrink-0" aria-label="Back to tenders">
-          <Icon name="lucide:arrow-left" class="h-4 w-4" />
-        </NuxtLink>
-        <div class="flex min-w-0 flex-wrap items-center gap-2">
-          <h1 class="text-xl font-bold tracking-tight sm:text-2xl">Create a tender</h1>
-          <span class="badge badge-outline badge-sm">Draft</span>
+    <nav class="breadcrumbs text-sm text-base-content/55" aria-label="Breadcrumb">
+      <ul>
+        <li><NuxtLink to="/dashboard">Home</NuxtLink></li>
+        <li><NuxtLink to="/tenders">Tenders</NuxtLink></li>
+        <li>New tender</li>
+      </ul>
+    </nav>
+
+    <header class="overflow-hidden rounded-box border border-base-300 bg-base-100">
+      <div class="flex flex-col gap-5 px-5 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-7">
+        <div class="flex min-w-0 items-start gap-4">
+          <NuxtLink to="/tenders" class="btn btn-ghost btn-square shrink-0" aria-label="Back to tenders">
+            <Icon name="lucide:arrow-left" class="h-5 w-5" />
+          </NuxtLink>
+          <div class="min-w-0">
+            <div class="flex flex-wrap items-center gap-2">
+              <h1 class="text-2xl font-semibold tracking-tight">Create a tender</h1>
+              <span class="badge badge-warning badge-soft badge-sm">Draft</span>
+            </div>
+            <div class="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-base-content/55">
+              <span>Build the tender package for review and publication.</span>
+              <span v-if="tenderUuid" class="inline-flex items-center gap-1.5 text-success">
+                <Icon name="lucide:cloud-check" class="h-4 w-4" />
+                Changes saved
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div class="min-w-44 sm:text-right">
+          <p class="text-sm font-medium">Step {{ currentStepIndex + 1 }} of {{ wizardSteps.length }}</p>
+          <p class="mt-0.5 text-xs text-base-content/50">{{ completionPercent }}% complete</p>
         </div>
       </div>
-      <div class="flex items-center gap-3 pl-12 sm:pl-0">
-        <div class="text-right">
-          <p class="text-xs text-base-content/50">Progress</p>
-          <p class="text-sm font-semibold">Step {{ currentStepIndex + 1 }} of {{ wizardSteps.length }}</p>
-        </div>
-        <div class="radial-progress text-primary" :style="{ '--value': completionPercent, '--size': '2.75rem', '--thickness': '0.3rem' }" role="progressbar" :aria-valuenow="completionPercent">
-          <span class="text-[0.65rem] font-bold">{{ completionPercent }}%</span>
-        </div>
-      </div>
+      <progress class="progress progress-primary block h-1 w-full rounded-none" :value="completionPercent" max="100" />
     </header>
 
     <div
       class="grid items-start gap-5 transition-[grid-template-columns] duration-200"
-      :class="setupSidebarCollapsed ? 'lg:grid-cols-[4.5rem_minmax(0,1fr)]' : 'lg:grid-cols-[17rem_minmax(0,1fr)]'"
+      :class="setupSidebarCollapsed ? 'lg:grid-cols-[4rem_minmax(0,1fr)]' : 'lg:grid-cols-[15.5rem_minmax(0,1fr)]'"
     >
-      <aside class="card card-border sticky top-24 hidden bg-base-100 lg:block">
-        <div class="card-body gap-5 p-4" :class="{ 'items-center px-2': setupSidebarCollapsed }">
-          <div class="flex w-full items-center" :class="setupSidebarCollapsed ? 'justify-center' : 'justify-between gap-3'">
-            <p v-if="!setupSidebarCollapsed" class="text-sm font-semibold">Tender setup</p>
+      <aside class="sticky top-24 hidden overflow-hidden rounded-box border border-base-300 bg-base-100 lg:block">
+        <div class="border-b border-base-200 p-3" :class="{ 'px-2': setupSidebarCollapsed }">
+          <div class="flex w-full items-center" :class="setupSidebarCollapsed ? 'justify-center' : 'justify-between gap-3 px-1'">
+            <div v-if="!setupSidebarCollapsed">
+              <p class="text-sm font-semibold">Tender outline</p>
+              <p class="mt-0.5 text-xs text-base-content/45">{{ wizardSteps.length }} required sections</p>
+            </div>
             <button
               type="button"
-              class="btn btn-ghost btn-circle btn-sm"
+              class="btn btn-ghost btn-square btn-sm"
               :aria-label="setupSidebarCollapsed ? 'Expand tender setup sidebar' : 'Collapse tender setup sidebar'"
               :title="setupSidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'"
               @click="toggleSetupSidebar"
@@ -39,46 +58,50 @@
               <Icon :name="setupSidebarCollapsed ? 'lucide:panel-left-open' : 'lucide:panel-left-close'" class="h-4 w-4" />
             </button>
           </div>
+        </div>
 
-          <ul v-if="!setupSidebarCollapsed" class="steps steps-vertical w-full text-sm">
+        <ol v-if="!setupSidebarCollapsed" class="p-2">
             <li
               v-for="(wizardStep, index) in wizardSteps"
               :key="wizardStep.id"
-              class="step justify-start text-left"
-              :class="index < currentStepIndex ? 'step-success' : index === currentStepIndex ? 'step-primary font-semibold' : ''"
-              :data-content="index < currentStepIndex ? '✓' : index + 1"
+              class="flex items-center gap-3 rounded-field px-3 py-2.5 text-sm"
+              :class="index === currentStepIndex ? 'bg-primary/10 font-semibold text-primary' : 'text-base-content/65'"
               :aria-current="index === currentStepIndex ? 'step' : undefined"
             >
-              {{ wizardStep.label }}
+              <span
+                class="grid h-7 w-7 shrink-0 place-items-center rounded-full border text-xs font-semibold"
+                :class="index < currentStepIndex ? 'border-success bg-success text-success-content' : index === currentStepIndex ? 'border-primary bg-primary text-primary-content' : 'border-base-300 bg-base-200'"
+              >
+                <Icon v-if="index < currentStepIndex" name="lucide:check" class="h-3.5 w-3.5" />
+                <span v-else>{{ index + 1 }}</span>
+              </span>
+              <span class="leading-5">{{ wizardStep.label }}</span>
             </li>
-          </ul>
+        </ol>
 
-          <div v-else class="flex flex-col items-center gap-2" aria-label="Tender setup progress">
+        <div v-else class="flex flex-col items-center gap-2 py-3" aria-label="Tender setup progress">
             <span
               v-for="(wizardStep, index) in wizardSteps"
               :key="`compact-${wizardStep.id}`"
-              class="badge badge-sm h-7 w-7 rounded-full p-0"
-              :class="index < currentStepIndex ? 'badge-success' : index === currentStepIndex ? 'badge-primary' : 'badge-ghost'"
+              class="grid h-7 w-7 place-items-center rounded-full border text-xs font-semibold"
+              :class="index < currentStepIndex ? 'border-success bg-success text-success-content' : index === currentStepIndex ? 'border-primary bg-primary text-primary-content' : 'border-base-300 bg-base-200'"
               :aria-label="`${wizardStep.label}: step ${index + 1}`"
               :title="wizardStep.label"
             >
-              {{ index < currentStepIndex ? '✓' : index + 1 }}
+              <Icon v-if="index < currentStepIndex" name="lucide:check" class="h-3.5 w-3.5" />
+              <span v-else>{{ index + 1 }}</span>
             </span>
-          </div>
+        </div>
 
-          <div v-if="tenderUuid && !setupSidebarCollapsed" class="rounded-box border border-base-300 bg-base-200/40 p-3">
-            <div class="flex items-center gap-2 text-xs font-semibold text-success">
-              <Icon name="lucide:cloud-check" class="h-4 w-4" />
-              Draft saved
-            </div>
-            <p class="mt-2 truncate font-mono text-[0.68rem] text-base-content/50" :title="tenderUuid">{{ tenderUuid }}</p>
-          </div>
+        <div v-if="tenderUuid && !setupSidebarCollapsed" class="border-t border-base-200 px-4 py-3">
+          <p class="text-xs text-base-content/45">Draft reference</p>
+          <p class="mt-1 truncate text-xs font-medium text-base-content/65" :title="tenderUuid">{{ tenderUuid }}</p>
         </div>
       </aside>
 
       <main class="min-w-0 space-y-4">
-        <div class="card card-border bg-base-100 lg:hidden">
-          <div class="card-body gap-3 p-4">
+        <div class="rounded-box border border-base-300 bg-base-100 lg:hidden">
+          <div class="space-y-3 p-4">
             <div class="flex items-center justify-between gap-3">
               <div class="min-w-0">
                 <p class="truncate font-semibold">{{ currentStepLabel }}</p>
@@ -102,24 +125,27 @@
           </div>
         </div>
 
-        <section class="card card-border bg-base-100">
-          <div class="card-body flex-row flex-wrap items-center gap-3 p-4 sm:p-5">
+        <section class="overflow-hidden rounded-box border border-base-300 bg-base-100">
+          <div class="flex flex-col gap-4 border-b border-base-200 p-5 sm:flex-row sm:items-center sm:justify-between sm:px-6">
             <div class="flex min-w-0 flex-1 items-center gap-3">
-              <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-box bg-primary/10 text-primary">
+              <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-box bg-base-200 text-base-content/70">
                 <Icon :name="currentStep.icon" class="h-5 w-5" />
               </span>
-              <div class="flex min-w-0 flex-wrap items-center gap-2">
-                <h2 class="font-bold">{{ currentStepTitle }}</h2>
-                <span class="badge badge-ghost badge-sm">{{ currentStepIndex + 1 }}/{{ wizardSteps.length }}</span>
+              <div class="min-w-0">
+                <div class="flex flex-wrap items-center gap-2">
+                  <h2 class="text-lg font-semibold">{{ currentStepTitle }}</h2>
+                  <span class="badge badge-ghost badge-sm">Section {{ currentStepIndex + 1 }}</span>
+                </div>
+                <p class="mt-1 max-w-2xl text-sm text-base-content/55">{{ currentStep.description }}</p>
               </div>
             </div>
-            <div v-if="currentStepId === 'items'" class="ml-auto flex shrink-0 flex-nowrap items-center gap-2">
+            <div v-if="currentStepId === 'items'" class="flex shrink-0 flex-nowrap items-center gap-2">
               <button class="btn btn-ghost btn-sm" type="button" @click="onStep2Back">
                 <Icon name="lucide:arrow-left" class="h-4 w-4" />
                 Back
               </button>
               <button
-                class="btn btn-success btn-sm"
+                class="btn btn-outline btn-sm"
                 type="button"
                 :disabled="!canAddLineItem"
                 @click="openAddLineItem"
@@ -129,7 +155,8 @@
               </button>
             </div>
           </div>
-        </section>
+
+          <div class="p-4 sm:p-6">
 
         <TendersAppItemsStep
           v-if="currentStepId === 'items'"
@@ -224,6 +251,8 @@
             </div>
           </div>
         </div>
+          </div>
+        </section>
       </main>
     </div>
   </div>

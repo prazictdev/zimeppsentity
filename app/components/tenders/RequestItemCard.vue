@@ -1,28 +1,39 @@
 <template>
-  <div class="card w-full border border-base-200 bg-base-100 shadow-sm">
-    <div class="card-body gap-4 p-4 sm:p-5">
-      <div class="flex flex-col gap-3 border-b border-base-200 pb-4 sm:flex-row sm:items-start sm:justify-between">
+  <article class="overflow-hidden rounded-box border border-base-300 bg-base-100">
+    <div class="flex flex-col gap-4 border-b border-base-200 bg-base-200/20 p-5 sm:flex-row sm:items-start sm:justify-between">
         <div class="min-w-0 flex-1">
           <div class="flex flex-wrap items-center gap-2">
-            <span class="badge badge-sm" :class="isAppLine ? 'badge-ghost' : 'badge-neutral'">
+            <span class="badge badge-sm" :class="isAppLine ? 'badge-info badge-soft' : 'badge-neutral badge-soft'">
               {{ appLineLabel }}
             </span>
-            <span v-if="appReference" class="font-mono text-xs text-base-content/60">
+            <span v-if="appReference" class="text-xs font-medium text-base-content/50">
               {{ appReference }}
             </span>
           </div>
-          <h3 class="mt-2 text-base font-semibold">{{ item.description }}</h3>
-          <div class="mt-2 flex flex-wrap gap-4 text-sm text-base-content/70">
+          <h3 class="mt-2 text-lg font-semibold leading-6">{{ item.description }}</h3>
+
+          <dl class="mt-4 grid overflow-hidden rounded-field border border-base-300 bg-base-100 text-sm" :class="isAppLine ? 'sm:grid-cols-2' : 'sm:grid-cols-3'">
             <template v-if="!isAppLine">
-              <span>Qty: <strong class="font-mono">{{ item.quantity }}</strong></span>
-              <span>Unit: <strong class="font-mono">{{ formatMoney(item.unit_price) }}</strong></span>
+              <div class="border-b border-base-200 px-3 py-2.5 sm:border-b-0 sm:border-r">
+                <dt class="text-xs text-base-content/45">Quantity</dt>
+                <dd class="mt-0.5 font-semibold tabular-nums">{{ item.quantity }}</dd>
+              </div>
+              <div class="border-b border-base-200 px-3 py-2.5 sm:border-b-0 sm:border-r">
+                <dt class="text-xs text-base-content/45">Unit price</dt>
+                <dd class="mt-0.5 font-semibold tabular-nums">{{ formatMoney(item.unit_price) }}</dd>
+              </div>
             </template>
-            <span>{{ isAppLine ? 'Budget consumed' : 'Total' }}: <strong class="font-mono">{{ formatMoney(item.total) }}</strong></span>
-            <span v-if="isAppLine">
-              Overall remaining: <strong class="font-mono text-success">{{ formatMoney(parentRemainingBudget) }}</strong>
-            </span>
-          </div>
-          <div v-if="isAppLine" class="mt-3 rounded-lg border border-base-200 bg-base-200/20 p-3">
+            <div class="border-b border-base-200 px-3 py-2.5 sm:border-b-0" :class="{ 'sm:border-r': isAppLine }">
+              <dt class="text-xs text-base-content/45">{{ isAppLine ? 'Budget allocated' : 'Line total' }}</dt>
+              <dd class="mt-0.5 font-semibold tabular-nums">{{ formatMoney(item.total) }}</dd>
+            </div>
+            <div v-if="isAppLine" class="px-3 py-2.5">
+              <dt class="text-xs text-base-content/45">Budget remaining</dt>
+              <dd class="mt-0.5 font-semibold tabular-nums text-success">{{ formatMoney(parentRemainingBudget) }}</dd>
+            </div>
+          </dl>
+
+          <div v-if="isAppLine" class="mt-3 rounded-field border border-base-300 bg-base-100 p-3">
             <div class="flex flex-wrap items-center justify-between gap-2">
               <div>
                 <p class="text-xs font-semibold">Required supplier categories</p>
@@ -63,20 +74,20 @@
           </div>
         </div>
         <div class="flex shrink-0 gap-1">
-          <button v-if="!isAppLine" type="button" class="btn btn-ghost btn-sm" title="Edit line item" @click="emit('edit-item', item)">
+          <button v-if="!isAppLine" type="button" class="btn btn-ghost btn-square btn-sm" title="Edit line item" aria-label="Edit line item" @click="emit('edit-item', item)">
             <Icon name="lucide:pencil" class="h-4 w-4" />
           </button>
-          <button type="button" class="btn btn-ghost btn-sm text-error" title="Delete line item" @click="emit('delete-item', item)">
+          <button type="button" class="btn btn-ghost btn-square btn-sm text-error" title="Delete line item" aria-label="Delete line item" @click="emit('delete-item', item)">
             <Icon name="lucide:trash-2" class="h-4 w-4" />
           </button>
         </div>
-      </div>
+    </div>
 
-      <div>
+    <div class="p-5">
         <div class="flex flex-wrap items-center justify-between gap-2">
           <div>
-            <h4 class="text-sm font-semibold">Products & services</h4>
-            <p class="text-xs text-base-content/60">
+            <h4 class="font-semibold">Products and services</h4>
+            <p class="mt-0.5 text-sm text-base-content/55">
               <template v-if="isAppLine">{{ products.length }} product/service entries</template>
               <template v-else>
                 Allocated {{ allocatedQty }} / {{ item.quantity }}
@@ -88,7 +99,7 @@
           <button
             v-if="externalRequest"
             type="button"
-            class="btn btn-outline btn-primary btn-sm"
+            class="btn btn-outline btn-sm"
             @click="emit('allocate-external-items', item)"
           >
             <Icon name="lucide:list-checks" class="h-4 w-4" />
@@ -106,31 +117,33 @@
           </button>
         </div>
 
-        <div v-if="!products.length" class="mt-4 rounded-lg border border-dashed border-base-200 p-6 text-center text-sm text-base-content/50">
-          Break this line item into the actual products or services to be procured.
+        <div v-if="!products.length" class="mt-4 flex min-h-28 flex-col items-center justify-center rounded-field border border-dashed border-base-300 bg-base-200/15 p-6 text-center">
+          <Icon name="lucide:package-plus" class="h-6 w-6 text-base-content/35" />
+          <p class="mt-2 text-sm font-medium">No products or services added</p>
+          <p class="mt-1 text-xs text-base-content/50">Break this line into the actual items suppliers will price.</p>
         </div>
 
         <div v-else class="mt-4 space-y-3">
           <div
             v-for="product in products"
             :key="product.id"
-            class="rounded-lg border border-base-200 bg-base-200/20 p-4"
+            class="rounded-field border border-base-300 bg-base-200/20 p-4"
           >
             <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
               <div class="min-w-0 flex-1">
                 <p class="font-medium">{{ product.description }}</p>
                 <p class="mt-1 text-xs text-base-content/60">
-                  UNSPSC: <template v-if="product.unspsc"><span class="font-mono">{{ product.unspsc.code }}</span> · {{ product.unspsc.name }}</template><template v-else>Not assigned</template>
+                  UNSPSC: <template v-if="product.unspsc"><span class="font-medium">{{ product.unspsc.code }}</span> · {{ product.unspsc.name }}</template><template v-else>Not assigned</template>
                 </p>
                 <p class="mt-1 text-xs text-base-content/60">
-                  Quantity: <span class="font-mono">{{ product.quantity }}</span>
+                  Quantity: <span class="font-medium tabular-nums">{{ product.quantity }}</span>
                   <template v-if="product.annualprocurementplanitem_id">
-                    · Unit price: <span class="font-mono">{{ formatMoney(product.unit_price) }}</span>
+                    · Unit price: <span class="font-medium tabular-nums">{{ formatMoney(product.unit_price) }}</span>
                   </template>
                 </p>
                 <p v-if="product.annualprocurementplanitem_id" class="mt-1 text-xs text-base-content/70">
-                  Product total: <strong class="font-mono">{{ formatMoney(product.budget_amount) }}</strong>
-                  · Budget remaining: <strong class="font-mono">{{ formatMoney(productRemainingAfterAllocation(product)) }}</strong>
+                  Product total: <strong class="tabular-nums">{{ formatMoney(product.budget_amount) }}</strong>
+                  · Budget remaining: <strong class="tabular-nums">{{ formatMoney(productRemainingAfterAllocation(product)) }}</strong>
                 </p>
               </div>
               <div class="flex gap-1">
@@ -163,7 +176,6 @@
 
           </div>
         </div>
-      </div>
     </div>
 
     <TendersProductFormModal
@@ -178,7 +190,7 @@
       :initial="productInitial"
       @submit="onProductSubmit"
     />
-  </div>
+  </article>
 </template>
 
 <script setup>
