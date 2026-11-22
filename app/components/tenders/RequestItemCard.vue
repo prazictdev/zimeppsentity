@@ -1,8 +1,8 @@
 <template>
   <article class="overflow-hidden rounded-box border border-base-300 bg-base-100">
-    <div class="flex flex-col gap-4 border-b border-base-200 bg-base-200/20 p-5 sm:flex-row sm:items-start sm:justify-between">
-        <div class="min-w-0 flex-1">
-          <div class="flex flex-wrap items-center gap-2">
+    <div class="relative border-b border-base-200 bg-base-200/20 p-5">
+        <div class="min-w-0 w-full">
+          <div class="flex flex-wrap items-center gap-2 pr-20">
             <span class="badge badge-sm" :class="isAppLine ? 'badge-info badge-soft' : 'badge-neutral badge-soft'">
               {{ appLineLabel }}
             </span>
@@ -10,7 +10,7 @@
               {{ appReference }}
             </span>
           </div>
-          <h3 class="mt-2 text-lg font-semibold leading-6">{{ item.description }}</h3>
+          <h3 class="mt-2 pr-20 text-lg font-semibold leading-6">{{ item.description }}</h3>
 
           <dl class="mt-4 grid overflow-hidden rounded-field border border-base-300 bg-base-100 text-sm" :class="isAppLine ? 'sm:grid-cols-2' : 'sm:grid-cols-3'">
             <template v-if="!isAppLine">
@@ -73,7 +73,7 @@
             </div>
           </div>
         </div>
-        <div class="flex shrink-0 gap-1">
+        <div class="absolute right-5 top-5 flex gap-1">
           <button v-if="!isAppLine" type="button" class="btn btn-ghost btn-square btn-sm" title="Edit line item" aria-label="Edit line item" @click="emit('edit-item', item)">
             <Icon name="lucide:pencil" class="h-4 w-4" />
           </button>
