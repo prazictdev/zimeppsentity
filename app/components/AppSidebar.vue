@@ -1,8 +1,8 @@
 <template>
   <div class="flex h-full flex-col">
     <!-- Sidebar header -->
-    <div class="flex min-h-20 items-center justify-between border-b border-base-300 px-4 py-3">
-      <NuxtLink to="/dashboard" class="flex min-w-0 items-center gap-3" @click="$emit('close')">
+    <div :class="['flex min-h-20 items-center border-b border-base-300 py-3', collapsed ? 'justify-center px-2' : 'justify-between px-4']">
+      <NuxtLink to="/dashboard" :class="['flex min-w-0 items-center', collapsed ? 'justify-center' : 'gap-3']" :title="collapsed ? 'Zimbabwe eGP' : undefined" @click="$emit('close')">
         <img
           v-if="showLogoImage"
           :src="imgUrl"
@@ -10,7 +10,7 @@
           class="h-10 w-10 rounded-lg border border-base-300 bg-base-100 object-contain p-0.5"
           @error="onLogoError"
         />
-        <div class="flex min-w-0 flex-col leading-tight">
+        <div v-if="!collapsed" class="flex min-w-0 flex-col leading-tight">
           <span class="truncate text-sm font-bold text-base-content">Zimbabwe eGP</span>
           <span class="truncate text-xs font-medium text-base-content/55">Entity portal</span>
         </div>
@@ -27,21 +27,31 @@
     </div>
 
     <!-- Nav links -->
-    <nav class="flex-1 overflow-y-auto px-3 py-4">
-      <p class="px-3 pb-2 text-[0.7rem] font-bold uppercase tracking-[0.14em] text-base-content/40">Workspace</p>
+    <nav :class="['flex-1 overflow-y-auto py-4', collapsed ? 'px-2' : 'px-3']">
+      <p v-if="!collapsed" class="px-3 pb-2 text-[0.7rem] font-bold uppercase tracking-[0.14em] text-base-content/40">Workspace</p>
       <ul class="menu w-full gap-1 p-0">
         <li>
           <NuxtLink
             to="/dashboard"
-            :class="['gap-2 rounded-lg', route.path === '/dashboard' ? 'bg-primary font-semibold text-primary-content' : '']"
+            :class="['rounded-lg', collapsed ? 'tooltip tooltip-right justify-center px-0' : 'gap-2', route.path === '/dashboard' ? 'bg-primary font-semibold text-primary-content' : '']"
+            :data-tip="collapsed ? 'Home' : undefined"
             @click="$emit('close')"
           >
             <Icon name="lucide:home" class="h-4 w-4 shrink-0" />
-            <span>Home</span>
+            <span v-if="!collapsed">Home</span>
           </NuxtLink>
         </li>
 
-        <li v-for="module in modules" :key="module.id" class="mt-1">
+        <template v-if="collapsed">
+          <template v-for="module in modules" :key="module.id">
+            <li class="menu-title mt-2 px-0 py-1"><span class="tooltip tooltip-right flex justify-center px-0" :data-tip="module.name" :title="module.name"><Icon :name="module.icon" class="h-4 w-4" /></span></li>
+            <li v-for="submodule in module.submodules" :key="submodule.id">
+              <NuxtLink :to="submodule.url" :class="['tooltip tooltip-right justify-center rounded-lg px-0', route.path === submodule.url ? 'bg-primary font-semibold text-primary-content' : '']" :data-tip="submodule.name" :title="submodule.name" @click="$emit('close')"><Icon :name="submodule.icon" class="h-4 w-4 shrink-0" /><span class="sr-only">{{ submodule.name }}</span></NuxtLink>
+            </li>
+          </template>
+        </template>
+
+        <li v-for="module in collapsed ? [] : modules" :key="module.id" class="mt-1">
           <details open>
             <summary class="gap-2 rounded-lg font-medium">
               <Icon :name="module.icon" class="h-4 w-4 shrink-0" />
@@ -65,16 +75,17 @@
     </nav>
 
     <!-- Sidebar footer -->
-    <div class="border-t border-base-300 px-3 py-3">
-      <button class="btn btn-ghost btn-sm w-full justify-start gap-2 text-error" @click="logout">
+    <div :class="['border-t border-base-300 py-3', collapsed ? 'px-2' : 'px-3']">
+      <button :class="['btn btn-ghost btn-sm w-full text-error', collapsed ? 'tooltip tooltip-right justify-center px-0' : 'justify-start gap-2']" :data-tip="collapsed ? 'Sign out' : undefined" @click="logout">
         <Icon name="lucide:log-out" class="h-4 w-4" />
-        Sign out
+        <span v-if="!collapsed">Sign out</span>
       </button>
     </div>
   </div>
 </template>
 
 <script setup>
+defineProps({ collapsed: { type: Boolean, default: false } })
 defineEmits(['close'])
 
 const route = useRoute()

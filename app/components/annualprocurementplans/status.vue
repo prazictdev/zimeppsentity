@@ -1,24 +1,14 @@
 <template>
-  <section aria-label="Plan and payment status" class="mt-5 grid gap-3 md:grid-cols-2">
-    <div class="rounded-xl border border-base-300 bg-base-100 p-4">
-      <div class="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-base-content/60"><Icon name="lucide:clipboard-check" />Plan status</div>
-      <p class="mt-2 text-lg font-bold" :class="authorized ? 'text-success' : 'text-base-content'">{{ label(plan?.status) }}</p>
-      <p class="mt-1 text-sm text-base-content/60">{{ plan?.status === 'ACTIVE' ? 'Your plan is active.' : plan?.status === 'AUTHORIZED' ? 'Your plan has been authorized.' : plan?.status === 'DRAFT' ? 'Complete your plan and submit it for review.' : plan?.status === 'ARCHIVED' ? 'This plan has been archived.' : 'Your plan is progressing through review and approval.' }}</p>
-    </div>
-    <div class="rounded-xl border border-base-300 bg-base-100 p-4" aria-live="polite">
-      <div class="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-base-content/60"><Icon name="lucide:credit-card" />Payment status</div>
-      <p v-if="loading" class="mt-2 flex items-center gap-2 text-sm"><span class="loading loading-spinner loading-xs" />Checking invoice…</p>
-      <div v-else-if="error" class="mt-2 text-sm text-error" role="alert">{{ error }} <button class="btn btn-ghost btn-xs" @click="loadInvoice">Retry</button></div>
+  <section aria-label="Plan and payment status" class="flex flex-col gap-3 border-t border-base-200 px-4 py-3 sm:px-5 md:flex-row md:items-center md:justify-between">
+    <div class="flex flex-wrap items-center gap-2 text-sm"><Icon name="lucide:clipboard-check" class="h-4 w-4 text-base-content/45" /><span class="text-base-content/55">Plan status</span><span :class="['badge badge-sm', authorized ? 'badge-success' : 'badge-outline']">{{ label(plan?.status) }}</span></div>
+    <div class="flex flex-wrap items-center gap-2 text-sm" aria-live="polite">
+      <Icon name="lucide:credit-card" class="h-4 w-4 text-base-content/45" /><span class="text-base-content/55">Payment</span>
+      <span v-if="loading" class="flex items-center gap-2"><span class="loading loading-spinner loading-xs" />Checking…</span>
+      <span v-else-if="error" class="text-error" role="alert">{{ error }} <button class="btn btn-ghost btn-xs" @click="loadInvoice">Retry</button></span>
       <template v-else>
-        <div class="mt-2 flex flex-wrap items-center justify-between gap-3">
-          <p class="text-lg font-bold" :class="paymentStatus === 'PAID' ? 'text-success' : invoice ? 'text-warning' : 'text-base-content/60'">{{ invoice ? label(paymentStatus) : 'Not yet invoiced' }}</p>
-          <NuxtLink v-if="invoice" :to="{ path: '/appinvoices', query: { plan_uuid: planUuid, view: 'invoice' } }" class="btn btn-primary btn-sm"><Icon name="lucide:receipt-text" />View Invoice<Icon name="lucide:arrow-right" /></NuxtLink>
-        </div>
-        <template v-if="invoice">
-          <p class="mt-2 break-words text-xs text-base-content/60">Invoice {{ invoice.invoice_number }}</p>
-          <p class="mt-1 text-sm">Outstanding balance <strong class="font-mono">{{ invoice.currency?.code }} {{ amount(invoice.remaining_balance) }}</strong></p>
-        </template>
-        <p v-else class="mt-1 text-sm text-base-content/60">The authorization invoice is generated when your plan is approved.</p>
+        <span :class="['badge badge-sm', paymentStatus === 'PAID' ? 'badge-success' : invoice ? 'badge-warning' : 'badge-ghost']">{{ invoice ? label(paymentStatus) : 'Not yet invoiced' }}</span>
+        <span v-if="invoice" class="text-xs text-base-content/55">Balance {{ invoice.currency?.code }} {{ amount(invoice.remaining_balance) }}</span>
+        <NuxtLink v-if="invoice" :to="{ path: '/appinvoices', query: { plan_uuid: planUuid, view: 'invoice' } }" class="btn btn-ghost btn-xs"><Icon name="lucide:receipt-text" />View invoice</NuxtLink>
       </template>
     </div>
   </section>

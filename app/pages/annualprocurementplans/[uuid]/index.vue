@@ -1,16 +1,6 @@
 <template>
-  <div class="p-6">
-    <div class="card outline card-xs outline-1 outline-base-200">
-      <div class="card-body">
-        <div class="breadcrumbs text-sm">
-          <ul>
-            <li><NuxtLink to="/dashboard">Home</NuxtLink></li>
-            <li><NuxtLink to="/annualprocurementplans">Annual Procurement Plans</NuxtLink></li>
-            <li>{{ store.currentPlan ? `${store.currentPlan.year} · ${store.currentPlan.company?.name ?? ''}` : '...' }}</li>
-          </ul>
-        </div>
-      </div>
-    </div>
+  <div class="p-4 sm:p-6">
+    <div class="breadcrumbs text-sm text-base-content/55"><ul><li><NuxtLink to="/dashboard">Home</NuxtLink></li><li><NuxtLink to="/annualprocurementplans">Annual Procurement Plans</NuxtLink></li><li>{{ store.currentPlan ? `${store.currentPlan.year} · ${store.currentPlan.company?.name ?? ''}` : '...' }}</li></ul></div>
 
     <AnnualprocurementplansDetail
       v-if="canAccess"

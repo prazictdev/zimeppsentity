@@ -10,6 +10,16 @@
         <Icon name="lucide:menu" class="h-5 w-5" />
       </button>
 
+      <button
+        type="button"
+        class="btn btn-ghost btn-circle btn-sm hidden lg:inline-flex"
+        :aria-label="sidebarCollapsed ? 'Expand sidebar' : 'Minimize sidebar'"
+        :title="sidebarCollapsed ? 'Expand sidebar' : 'Minimize sidebar'"
+        @click="$emit('toggleSidebarCollapse')"
+      >
+        <Icon :name="sidebarCollapsed ? 'lucide:panel-left-open' : 'lucide:panel-left-close'" class="h-5 w-5" />
+      </button>
+
       <div class="min-w-0">
         <div class="flex min-w-0 items-center gap-2">
           <p class="truncate text-sm font-bold text-base-content sm:text-base">{{ companyName }}</p>
@@ -60,7 +70,8 @@
 
 
 <script setup>
-defineEmits(['toggleSidebar'])
+defineProps({ sidebarCollapsed: { type: Boolean, default: false } })
+defineEmits(['toggleSidebar', 'toggleSidebarCollapse'])
 
 const { user } = useSanctumAuth()
 const { logoutUser } = useAuthHelper()

@@ -1,70 +1,31 @@
 <template>
   <div class="mt-3 space-y-4">
     <AnnualprocurementplansReturnAlert :transitions="store.transitions" />
-    <!-- Header / hero -->
-    <div class="relative overflow-hidden rounded-2xl border border-base-200 bg-gradient-to-br from-primary/10 via-base-100 to-base-100 shadow-sm">
-      <div class="absolute inset-y-0 left-0 w-1.5 bg-primary"></div>
-      <div class="p-5 sm:p-6">
-        <div class="flex flex-wrap items-start justify-between gap-4">
-          <div class="min-w-0 flex-1">
-            <div class="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-base-content/50">
-              <Icon name="lucide:clipboard-list" class="h-4 w-4" />
-              Annual Procurement Plan
-            </div>
-            <h1 class="mt-1 flex flex-wrap items-baseline gap-x-3 text-3xl font-bold tracking-tight">
-              <span>{{ plan?.year ?? '…' }}</span>
-              <span class="text-base-content/25">/</span>
-              <span class="text-base-content/80">{{ plan?.company?.name ?? '' }}</span>
-            </h1>
-            <div v-if="plan?.submitted_at" class="mt-3 flex items-center gap-1.5 text-xs text-base-content/50">
-              <Icon name="lucide:send" class="h-3.5 w-3.5" />
-              Submitted by {{ plan.submitted_by_user?.name || plan.submittedBy?.name || '—' }}
-              on {{ formatDateTime(plan.submitted_at) }}
-            </div>
+    <header class="overflow-hidden rounded-box border border-base-300 bg-base-100">
+      <div class="flex flex-col gap-4 border-l-4 border-primary px-4 py-4 sm:px-5 lg:flex-row lg:items-start lg:justify-between">
+        <div class="min-w-0">
+          <div class="flex flex-wrap items-center gap-2">
+            <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary"><Icon name="lucide:clipboard-list" class="h-4 w-4" /></span>
+            <h1 class="text-xl font-bold tracking-tight sm:text-2xl">{{ plan?.year ?? '…' }} Annual Procurement Plan</h1>
           </div>
-
-          <div class="flex w-full flex-col gap-3 sm:w-auto sm:min-w-64">
-            <section aria-label="Default plan currency" class="rounded-xl border border-primary/25 bg-base-100 p-4 shadow-sm">
-              <div class="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-base-content/60">
-                <Icon name="lucide:coins" class="h-4 w-4 text-primary" />
-                Default plan currency
-              </div>
-              <p class="mt-2 text-2xl font-bold tracking-tight text-primary">{{ plan?.currency?.code || 'Not specified' }}</p>
-            </section>
-            <div class="flex flex-wrap items-center gap-2 sm:justify-end">
-              <AnnualprocurementplansAnalyzePlan v-if="showPreparationSteps" :plan-uuid="planUuid" :can-edit="canEditPlan" />
-              <AnnualprocurementplansWorkflowActions :plan-uuid="planUuid" />
-            </div>
-          </div>
+          <p class="mt-1 pl-10 text-sm text-base-content/55">{{ plan?.company?.name ?? 'Procurement entity' }}</p>
+          <p v-if="plan?.submitted_at" class="mt-2 flex items-center gap-1.5 pl-10 text-xs text-base-content/50"><Icon name="lucide:send" class="h-3.5 w-3.5" />Submitted by {{ plan.submitted_by_user?.name || plan.submittedBy?.name || '—' }} on {{ formatDateTime(plan.submitted_at) }}</p>
         </div>
-
-        <AnnualprocurementplansStatus :plan-uuid="planUuid" :plan="plan" />
-
-        <!-- Stat strip -->
-        <div class="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3">
-          <div class="rounded-xl border border-base-200 bg-base-100/70 p-3 backdrop-blur">
-            <div class="flex items-center gap-1.5 text-xs font-medium text-base-content/50">
-              <Icon name="lucide:wallet" class="h-4 w-4" /> Total Budget
-            </div>
-            <div class="mt-1 truncate font-mono text-xl font-bold" :title="formatAmount(planTotal)">
-              <span class="text-sm text-base-content/50">{{ currencySymbol }}</span>{{ formatAmount(planTotal) }}
-            </div>
-          </div>
-          <div class="rounded-xl border border-base-200 bg-base-100/70 p-3 backdrop-blur">
-            <div class="flex items-center gap-1.5 text-xs font-medium text-base-content/50">
-              <Icon name="lucide:list" class="h-4 w-4" /> Plan Items
-            </div>
-            <div class="mt-1 text-xl font-bold">{{ totalItems }}</div>
-          </div>
-          <div class="rounded-xl border border-base-200 bg-base-100/70 p-3 backdrop-blur">
-            <div class="flex items-center gap-1.5 text-xs font-medium text-base-content/50">
-              <Icon name="lucide:alert-triangle" class="h-4 w-4" /> Issues
-            </div>
-            <div class="mt-1 text-xl font-bold" :class="unresolvedCount > 0 ? 'text-warning' : 'text-success'">{{ unresolvedCount }}</div>
-          </div>
+        <div class="flex flex-wrap items-center gap-2 lg:justify-end">
+          <AnnualprocurementplansAnalyzePlan v-if="showPreparationSteps" :plan-uuid="planUuid" :can-edit="canEditPlan" />
+          <AnnualprocurementplansWorkflowActions :plan-uuid="planUuid" />
         </div>
       </div>
-    </div>
+
+      <AnnualprocurementplansStatus :plan-uuid="planUuid" :plan="plan" />
+
+      <dl class="grid grid-cols-2 border-t border-base-200 sm:grid-cols-4">
+        <div class="border-b border-base-200 px-4 py-3 sm:border-b-0 sm:border-r"><dt class="flex items-center gap-1.5 text-xs text-base-content/50"><Icon name="lucide:wallet" class="h-3.5 w-3.5" />Total budget</dt><dd class="mt-1 truncate font-mono text-base font-bold" :title="formatAmount(planTotal)"><span class="mr-1 text-xs text-base-content/50">{{ currencySymbol }}</span>{{ formatAmount(planTotal) }}</dd></div>
+        <div class="border-b border-base-200 px-4 py-3 sm:border-b-0 sm:border-r"><dt class="flex items-center gap-1.5 text-xs text-base-content/50"><Icon name="lucide:list" class="h-3.5 w-3.5" />Plan items</dt><dd class="mt-1 text-base font-bold">{{ totalItems }}</dd></div>
+        <div class="border-r border-base-200 px-4 py-3"><dt class="flex items-center gap-1.5 text-xs text-base-content/50"><Icon name="lucide:alert-triangle" class="h-3.5 w-3.5" />Issues</dt><dd class="mt-1 text-base font-bold" :class="unresolvedCount > 0 ? 'text-warning' : 'text-success'">{{ unresolvedCount }}</dd></div>
+        <div class="px-4 py-3"><dt class="flex items-center gap-1.5 text-xs text-base-content/50"><Icon name="lucide:coins" class="h-3.5 w-3.5" />Plan currency</dt><dd class="mt-1 text-base font-bold text-primary">{{ plan?.currency?.code || 'Not specified' }}</dd></div>
+      </dl>
+    </header>
 
     <AnnualprocurementplansCompletion v-if="showPreparationSteps" :plan-uuid="planUuid" @select="activeTab = $event" />
 
