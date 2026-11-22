@@ -25,7 +25,12 @@
         </div>
       </section>
 
-      <section class="rounded-box border border-base-300 bg-base-100">
+      <div role="tablist" class="tabs tabs-border rounded-t-box border border-base-300 bg-base-100 px-4 pt-2" aria-label="Exemption workspace">
+        <button type="button" role="tab" :class="['tab h-12 gap-2', activeTab === 'items' ? 'tab-active' : '']" :aria-selected="activeTab === 'items'" @click="activeTab = 'items'"><Icon name="lucide:rows-3" />Exemption items <span class="badge badge-sm">{{ itemCount }}</span></button>
+        <button type="button" role="tab" :class="['tab h-12 gap-2', activeTab === 'history' ? 'tab-active' : '']" :aria-selected="activeTab === 'history'" @click="activeTab = 'history'"><Icon name="lucide:history" />Application history <span class="badge badge-sm">{{ store.history.length }}</span></button>
+      </div>
+
+      <section v-show="activeTab === 'items'" role="tabpanel" class="rounded-b-box border border-t-0 border-base-300 bg-base-100">
         <div class="flex flex-col gap-3 border-b border-base-200 px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
           <div><h2 class="text-lg font-semibold">Exemption items</h2><p class="mt-1 text-sm text-base-content/55">Review the procurement details and exemption grounds attached to each item.</p></div>
           <button v-if="editable" type="button" class="btn btn-outline btn-sm" @click="openAddItems"><Icon name="lucide:rows-3" />Add more items</button>
@@ -36,7 +41,7 @@
         </div>
       </section>
 
-      <section class="rounded-box border border-base-300 bg-base-100">
+      <section v-show="activeTab === 'history'" role="tabpanel" class="rounded-b-box border border-t-0 border-base-300 bg-base-100">
         <div class="flex flex-wrap items-center justify-between gap-2 border-b border-base-200 px-5 py-4 sm:px-6"><div><h2 class="text-lg font-semibold">Application history</h2><p class="mt-1 text-sm text-base-content/55">Comments and workflow decisions in chronological order.</p></div><span class="badge badge-ghost">{{ store.history.length }} update{{ store.history.length === 1 ? '' : 's' }}</span></div>
         <div class="p-5 sm:p-6"><div v-if="!store.history.length" class="rounded-box border border-dashed border-base-300 py-10 text-center text-sm text-base-content/50"><Icon name="lucide:messages-square" class="mx-auto mb-2 h-7 w-7" />No history has been recorded yet.</div><ol v-else class="space-y-4"><li v-for="entry in store.history" :key="entry.id" class="flex items-start gap-3"><div class="avatar placeholder shrink-0"><div class="w-10 rounded-full bg-primary text-primary-content"><span class="text-sm font-semibold">{{ initials(entry.user || entry.actor) }}</span></div></div><article class="min-w-0 flex-1 rounded-box border border-base-200 bg-base-100"><header class="flex flex-wrap items-start justify-between gap-2 border-b border-base-200 px-4 py-3"><div><p class="font-semibold">{{ person(entry.user || entry.actor) }}</p><p v-if="(entry.user || entry.actor)?.email" class="text-xs text-base-content/50">{{ (entry.user || entry.actor).email }}</p></div><time class="flex items-center gap-1 whitespace-nowrap text-xs text-base-content/50" :datetime="entry.created_at"><Icon name="lucide:clock-3" class="h-3.5 w-3.5" />{{ formatDateTime(entry.created_at) }}</time></header><div class="space-y-3 px-4 py-3"><div class="flex flex-wrap items-center gap-2"><span class="badge badge-primary badge-sm">{{ format(entry.action) }}</span><span class="badge badge-ghost badge-sm">{{ format(entry.from_status) }}</span><Icon name="lucide:arrow-right" class="h-3.5 w-3.5 text-base-content/40" /><span class="badge badge-outline badge-sm">{{ format(entry.to_status) }}</span></div><p v-if="entry.comment" class="whitespace-pre-wrap text-sm leading-6">{{ entry.comment }}</p><p v-else class="text-sm italic text-base-content/45">No comment was added.</p></div></article></li></ol></div>
       </section>
@@ -64,6 +69,7 @@ const route = useRoute();
 const store = useExemptionStore();
 const exemption = computed(() => store.current);
 const editable = computed(() => ['DRAFT', 'RETURNED'].includes(exemption.value?.status));
+const activeTab = ref('items');
 const itemCount = computed(() => exemption.value?.items?.length || 0);
 const totalValue = computed(() => (exemption.value?.items || []).reduce((sum, item) => sum + Number(item.total_cost ?? Number(item.quantity || 0) * Number(item.unit_cost || 0)), 0));
 const actionValue = action => action?.action || action;
@@ -92,11 +98,6 @@ onMounted(async () => { await Promise.all([store.fetchOne(route.params.uuid), st
 <style scoped>
 .exemption-items-grid { width: max-content; min-width: 100%; border-collapse: separate; border-spacing: 0; }
 .exemption-items-grid th { position: sticky; top: 0; z-index: 2; white-space: nowrap; background: var(--color-base-200); }
-.exemption-items-grid tr > :nth-child(1) { --column-width: 4rem; --column-left: 0rem; }
-.exemption-items-grid tr > :nth-child(2) { --column-width: 16rem; --column-left: 4rem; }
-.exemption-items-grid tr > :nth-child(3) { --column-width: 14rem; --column-left: 20rem; }
-.exemption-items-grid tr > :nth-child(4) { --column-width: 10rem; --column-left: 34rem; }
-.exemption-items-grid tr > :nth-child(-n + 4):not(.empty-grid) { position: sticky; left: var(--column-left); z-index: 3; box-sizing: border-box; width: var(--column-width); min-width: var(--column-width); max-width: var(--column-width); background: var(--color-base-100); overflow-wrap: anywhere; }
-.exemption-items-grid thead tr > :nth-child(-n + 4) { z-index: 4; background: var(--color-base-200); }
-.exemption-items-grid tr > :nth-child(4) { border-right: 2px solid var(--color-base-300); }
+.exemption-items-grid tr > :nth-child(2):not(.empty-grid) { position: sticky; left: 0; z-index: 3; box-sizing: border-box; width: 18rem; min-width: 18rem; max-width: 18rem; border-right: 2px solid var(--color-base-300); background: var(--color-base-100); overflow-wrap: anywhere; }
+.exemption-items-grid thead tr > :nth-child(2) { z-index: 4; background: var(--color-base-200); }
 </style>
