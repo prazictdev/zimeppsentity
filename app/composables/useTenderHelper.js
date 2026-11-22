@@ -738,6 +738,15 @@ export const useTenderHelper = () => {
     }
   }
 
+  const deleteTenderBidBond = async (uuid) => {
+    try {
+      const data = await client(`/api/v1/me/tenders/${uuid}/bid-bond`, { method: 'DELETE' })
+      return { data: ref(data), status: ref(true), error: ref(null) }
+    } catch (err) {
+      return { data: ref(null), status: ref(false), error: ref(err) }
+    }
+  }
+
   const getTenderWorkflowActions = async (uuid) => {
     try {
       const data = await client(`/api/v1/me/tenders/${uuid}/workflow-actions`, { method: 'GET' })
@@ -1405,6 +1414,7 @@ export const useTenderHelper = () => {
     runTenderComplianceAnalysis,
     getTenderFees,
     saveTenderBidBond,
+    deleteTenderBidBond,
     getTenderWorkflowActions,
     getTenderTransitions,
     transitionTender,
