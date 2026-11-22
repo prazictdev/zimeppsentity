@@ -155,12 +155,16 @@
                 </td>
                 <td class="text-right font-semibold tabular-nums">{{ product.quantity }}</td>
                 <td>
-                  <dl v-if="product.specifications?.length" class="space-y-1.5">
-                    <div v-for="(spec, index) in product.specifications" :key="spec.id ?? `${spec.label}-${index}`" class="flex gap-2 text-xs leading-4">
-                      <dt class="min-w-24 font-medium text-base-content/55">{{ spec.label }}</dt>
-                      <dd class="font-medium" :title="spec.acceptance_policy ? acceptancePolicyLabel(spec.acceptance_policy) : undefined">{{ spec.value || '—' }}</dd>
-                    </div>
-                  </dl>
+                  <button
+                    v-if="product.specifications?.length"
+                    type="button"
+                    class="btn btn-ghost btn-sm"
+                    @click="openSpecifications(product)"
+                  >
+                    <Icon name="lucide:list-checks" class="h-4 w-4" />
+                    <span class="badge badge-neutral badge-sm">{{ product.specifications.length }}</span>
+                    View specifications
+                  </button>
                   <span v-else class="text-xs text-base-content/40">No specifications</span>
                 </td>
                 <td v-if="isAppLine" class="text-right font-medium tabular-nums">{{ formatMoney(product.unit_price) }}</td>
@@ -183,6 +187,56 @@
           </table>
         </div>
     </div>
+
+    <dialog ref="specificationDialog" class="modal">
+      <div class="modal-box max-w-4xl p-0">
+        <header class="flex items-start gap-4 border-b border-base-200 px-6 py-5">
+          <div class="grid h-10 w-10 shrink-0 place-items-center rounded-box bg-base-200 text-base-content/60">
+            <Icon name="lucide:list-checks" class="h-5 w-5" />
+          </div>
+          <div class="min-w-0 flex-1">
+            <div class="flex flex-wrap items-center gap-2">
+              <h3 class="text-lg font-semibold">Technical specifications</h3>
+              <span class="badge badge-neutral badge-sm">{{ selectedSpecificationProduct?.specifications?.length ?? 0 }}</span>
+            </div>
+            <p class="mt-1 text-sm text-base-content/55">{{ selectedSpecificationProduct?.description }}</p>
+          </div>
+          <button type="button" class="btn btn-ghost btn-square btn-sm" aria-label="Close specifications" @click="closeSpecifications">
+            <Icon name="lucide:x" class="h-4 w-4" />
+          </button>
+        </header>
+
+        <div class="max-h-[65vh] overflow-auto p-6">
+          <div class="overflow-x-auto rounded-field border border-base-300">
+            <table class="table">
+              <thead class="bg-base-200/60">
+                <tr class="text-xs text-base-content/55">
+                  <th class="w-14">#</th>
+                  <th>Specification</th>
+                  <th>Required value</th>
+                  <th class="w-52">Acceptance policy</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="(spec, index) in selectedSpecificationProduct?.specifications ?? []" :key="spec.id ?? `${spec.label}-${index}`">
+                  <td class="text-base-content/40">{{ index + 1 }}</td>
+                  <td class="font-medium">{{ spec.label }}</td>
+                  <td>{{ spec.value || 'Not specified' }}</td>
+                  <td>
+                    <span class="badge badge-ghost badge-sm">{{ acceptancePolicyLabel(spec.acceptance_policy) || 'Not specified' }}</span>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="modal-action m-0 border-t border-base-200 px-6 py-4">
+          <button type="button" class="btn" @click="closeSpecifications">Close</button>
+        </div>
+      </div>
+      <form method="dialog" class="modal-backdrop"><button type="button" @click="closeSpecifications">Close</button></form>
+    </dialog>
 
     <TendersProductFormModal
       ref="productModal"
@@ -216,6 +270,8 @@ const {
 } = useTenderHelper()
 
 const productModal = ref(null)
+const specificationDialog = ref(null)
+const selectedSpecificationProduct = ref(null)
 const productMode = ref('create')
 const editingProduct = ref(null)
 
@@ -316,6 +372,16 @@ function acceptancePolicyLabel(policy) {
     .toLowerCase()
     .replaceAll('_', ' ')
     .replace(/^./, character => character.toUpperCase())
+}
+
+function openSpecifications(product) {
+  selectedSpecificationProduct.value = product
+  specificationDialog.value?.showModal()
+}
+
+function closeSpecifications() {
+  specificationDialog.value?.close()
+  selectedSpecificationProduct.value = null
 }
 
 function allocatedBudgetForPlanItem(planItemId, excludingProductId = null) {
