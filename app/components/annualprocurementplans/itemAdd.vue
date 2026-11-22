@@ -1,58 +1,84 @@
 <template>
   <div>
-      <div class="flex min-w-0 flex-col rounded-xl border border-base-300 bg-base-100 p-4 shadow-sm sm:p-6">
-        <div class="flex flex-col gap-4 border-b border-base-200 pb-4 lg:flex-row lg:items-center lg:justify-between">
+      <div class="flex min-w-0 flex-col rounded-xl border border-base-300 bg-base-100 shadow-sm">
+        <div class="flex flex-col gap-4 border-b border-base-200 px-4 py-5 sm:px-6 lg:flex-row lg:items-center lg:justify-between">
           <div>
             <div class="mb-1 flex items-center gap-2">
               <span class="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 text-primary"><Icon name="lucide:list-plus" class="h-5 w-5" /></span>
               <h1 class="text-xl font-bold">{{ pageTitle }}</h1>
             </div>
-            <p class="max-w-3xl text-sm text-base-content/60">Prepare and classify items in a local draft, then upload them together to this {{ targetLabel }}.</p>
+            <p class="max-w-3xl text-sm text-base-content/60">Add the items you plan to procure, complete their details, then upload them to this {{ targetLabel }}.</p>
           </div>
-          <div class="flex w-fit overflow-hidden rounded-lg border border-base-300 bg-base-100 shadow-xs">
-            <div class="px-4 py-2 text-center"><span class="block text-lg font-bold tabular-nums">{{ rows.length }}</span><span class="text-xs text-base-content/60">Draft items</span></div>
-            <div class="border-l border-base-300 px-4 py-2 text-center"><span class="block text-lg font-bold tabular-nums" :class="unclassifiedRows ? 'text-warning' : 'text-success'">{{ unclassifiedRows }}</span><span class="text-xs text-base-content/60">Need UNSPSC</span></div>
+          <div v-if="rows.length" class="flex w-fit items-center gap-2 rounded-lg bg-base-200 px-3 py-2 text-sm">
+            <span class="font-semibold tabular-nums">{{ rows.length }}</span>
+            <span class="text-base-content/60">{{ rows.length === 1 ? 'item' : 'items' }} in this draft</span>
           </div>
         </div>
 
-        <div class="my-4 grid gap-3 xl:grid-cols-[minmax(20rem,1fr)_minmax(22rem,1.2fr)_18rem]">
-          <section class="rounded-xl border border-base-200 bg-base-200/40 p-4">
-            <div class="mb-3 flex items-center gap-2 text-sm font-semibold"><Icon name="lucide:plus-circle" class="text-primary" />Prepare rows</div>
-            <div class="flex flex-wrap items-end gap-2">
-              <label class="fieldset py-0"><span class="fieldset-legend pt-0 text-xs">Number of rows</span><input v-model.number="rowCount" type="number" min="1" max="5000" class="input input-sm w-28" :disabled="submitting" /></label>
-              <button class="btn btn-primary btn-sm" :disabled="submitting || !ready" @click="addRows"><Icon name="lucide:plus" />Add rows</button>
+        <div class="border-b border-base-200 px-4 py-4 sm:px-6">
+          <ul class="steps steps-horizontal w-full text-xs sm:text-sm" aria-label="Item upload progress">
+            <li :class="['step', workflowStep >= 1 ? 'step-primary' : '']">Add items</li>
+            <li :class="['step', workflowStep >= 2 ? 'step-primary' : '']">Complete details</li>
+            <li :class="['step', workflowStep >= 3 ? 'step-primary' : '']">Upload to plan</li>
+          </ul>
+        </div>
+
+        <div class="p-4 sm:p-6">
+        <section class="flex flex-col gap-4 rounded-xl border border-base-300 bg-base-200/35 p-4 lg:flex-row lg:items-end lg:justify-between">
+          <div>
+            <h2 class="font-semibold">1. Add items</h2>
+            <p class="mt-1 text-sm text-base-content/60">Choose how many blank items to add, or import them from a file.</p>
+            <div class="mt-3 flex flex-wrap items-end gap-2">
+              <label class="fieldset py-0"><span class="fieldset-legend pt-0 text-xs">Number of items</span><input v-model.number="rowCount" type="number" min="1" max="5000" class="input input-sm w-32" :disabled="submitting" /></label>
+              <button class="btn btn-primary btn-sm" :disabled="submitting || !ready" @click="addRows"><Icon name="lucide:plus" />Add items</button>
+              <span class="pb-2 text-xs text-base-content/45">or</span>
               <AnnualprocurementplansItemImport :plan-uuid="planUuid" :supplement-uuid="supplementUuid" :disabled="submitting || matching || !ready" @imported="importRows" />
             </div>
-          </section>
+          </div>
+          <div class="flex items-center gap-2 text-xs text-base-content/60" role="status">
+            <span v-if="ready" class="status status-success status-xs" />
+            {{ catalogueStatus || saveStatus || 'Preparing your draft…' }}
+          </div>
+        </section>
 
-          <section class="rounded-xl border border-base-200 bg-base-200/40 p-4">
-            <div class="mb-3 flex items-center gap-2 text-sm font-semibold"><Icon name="lucide:wrench" class="text-primary" />Draft tools</div>
-            <div class="flex flex-wrap items-center gap-2">
-              <button class="btn btn-outline btn-sm" :disabled="submitting || matching || !ready || !rows.some(row => !row.unspsc_id)" @click="runLocalMatching(rows)"><span v-if="matching" class="loading loading-spinner loading-xs" /><Icon v-else name="lucide:sparkles" />{{ matching ? 'Matching…' : 'Match UNSPSC' }}</button>
-              <button class="btn btn-ghost btn-sm" :disabled="submitting || !ready" @click="saveDraft"><Icon name="lucide:save" />Save locally</button>
+        <div v-if="rows.length" class="mt-4 flex flex-col gap-3 rounded-xl border border-base-300 px-4 py-3 lg:flex-row lg:items-center lg:justify-between">
+          <div class="flex items-start gap-3">
+            <span :class="['mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full', incompleteRows ? 'bg-warning/15 text-warning' : 'bg-success/15 text-success']">
+              <Icon :name="incompleteRows ? 'lucide:circle-alert' : 'lucide:circle-check'" class="h-4 w-4" />
+            </span>
+            <div>
+              <p class="text-sm font-semibold">{{ incompleteRows ? `${incompleteRows} ${incompleteRows === 1 ? 'item needs' : 'items need'} attention` : 'All items are ready to upload' }}</p>
+              <p class="mt-0.5 text-xs text-base-content/60">{{ incompleteRows ? 'Complete the highlighted item fields below.' : `Upload these items to the ${targetLabel}.` }}</p>
             </div>
-            <div class="mt-3 flex min-h-5 items-center gap-2 text-xs text-base-content/60" role="status"><span v-if="ready" class="status status-success status-xs" />{{ catalogueStatus || saveStatus || 'Preparing local draft…' }}</div>
-          </section>
-
-          <section class="flex flex-col justify-between rounded-xl border border-primary/25 bg-primary/5 p-4">
-            <div><div class="text-sm font-semibold">Upload draft</div><p class="mt-1 text-xs text-base-content/60">Validate and add all draft items to the {{ targetLabel }}.</p></div>
-            <button class="btn btn-primary mt-4 w-full" :disabled="submitting || !ready || !rows.length" @click="upload"><span v-if="submitting" class="loading loading-spinner loading-sm" /><Icon v-else name="lucide:cloud-upload" />{{ submitting ? 'Uploading…' : `Bulk upload ${rows.length || ''}` }}</button>
-          </section>
+          </div>
+          <div class="flex flex-wrap items-center gap-2">
+            <button v-if="unclassifiedRows" class="btn btn-outline btn-sm" :disabled="submitting || matching || !ready" @click="runLocalMatching(rows)"><span v-if="matching" class="loading loading-spinner loading-xs" /><Icon v-else name="lucide:sparkles" />{{ matching ? 'Matching…' : `Match ${unclassifiedRows} UNSPSC` }}</button>
+            <button class="btn btn-primary btn-sm" :disabled="submitting || !ready || incompleteRows > 0" @click="upload"><span v-if="submitting" class="loading loading-spinner loading-sm" /><Icon v-else name="lucide:cloud-upload" />{{ submitting ? 'Uploading…' : `Upload ${rows.length} ${rows.length === 1 ? 'item' : 'items'}` }}</button>
+          </div>
         </div>
 
-        <div class="mb-4 flex flex-col gap-2 rounded-lg border border-base-200 px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
-          <p class="flex items-center gap-2 text-xs text-base-content/60"><Icon name="lucide:shield-check" class="h-4 w-4 text-success" />Draft changes remain in this browser until they are uploaded.</p>
-          <button class="btn btn-ghost btn-sm text-error hover:bg-error/10" :disabled="submitting || !ready || !unsavedRows.length" title="Delete all items that have not been uploaded" @click="openDeleteAll"><Icon name="lucide:trash-2" />Delete all draft items</button>
-        </div>
         <p v-if="notice" class="mb-3 text-sm text-success" role="status">{{ notice }}</p><div v-if="errorMessage" class="alert alert-error mb-3" role="alert">{{ errorMessage }}</div>
         <p v-if="rows.some(row => row._sent)" class="alert mb-3 text-sm">Some rows await upload confirmation. Retry Bulk upload to confirm them safely before editing.</p>
-        <div class="mb-3 flex flex-wrap items-center gap-2" aria-label="Filter rows by UNSPSC status">
+
+        <div v-if="!rows.length" class="mt-4 grid min-h-72 place-items-center rounded-xl border border-dashed border-base-300 bg-base-200/20 px-6 py-12 text-center">
+          <div class="max-w-md">
+            <span class="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary"><Icon name="lucide:rows-3" class="h-6 w-6" /></span>
+            <h2 class="mt-4 text-lg font-semibold">Start with your procurement items</h2>
+            <p class="mt-2 text-sm leading-6 text-base-content/60">Add blank items for manual entry, or import an existing list. Your work saves automatically in this browser.</p>
+          </div>
+        </div>
+
+        <template v-else>
+        <div class="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div class="flex flex-wrap items-center gap-2" aria-label="Filter rows by UNSPSC status">
           <span class="text-sm font-medium">Show:</span>
           <button type="button" :class="['btn btn-sm', rowFilter === 'all' ? 'btn-primary' : 'btn-outline']" @click="rowFilter = 'all'">All {{ rows.length }}</button>
           <button type="button" :class="['btn btn-sm', rowFilter === 'unmatched' ? 'btn-warning' : 'btn-outline']" @click="rowFilter = 'unmatched'"><Icon name="lucide:circle-alert" />Unmatched {{ unclassifiedRows }}</button>
           <button type="button" :class="['btn btn-sm', rowFilter === 'matched' ? 'btn-success' : 'btn-outline']" @click="rowFilter = 'matched'"><Icon name="lucide:circle-check" />Matched {{ matchedRows }}</button>
+          </div>
+          <button class="btn btn-ghost btn-sm text-error hover:bg-error/10" :disabled="submitting || !ready || !unsavedRows.length" title="Delete all items that have not been uploaded" @click="openDeleteAll"><Icon name="lucide:trash-2" />Delete draft</button>
         </div>
-        <p class="mb-2 text-xs text-base-content/60">Scroll horizontally to complete the item fields. Row, Description, UNSPSC, Reference and Method stay fixed. Calculated values appear in the plan's data grid after upload.</p>
+        <p class="mb-2 mt-3 text-xs text-base-content/60">Complete each item below. The first five columns stay visible while you scroll across the remaining details.</p>
         <fieldset :disabled="submitting" class="max-h-[65vh] min-h-0 min-w-0 flex-1 overflow-auto rounded-xl border border-base-300">
           <table class="item-grid table table-sm">
             <thead><tr><th>Row</th><th>Description *</th><th>UNSPSC *</th><th>Reference</th><th v-for="column in lookupColumns" :key="column.key">{{ column.label }}</th><th v-if="exemptionMode">Exemption grounds *</th><th v-if="exemptionMode">Evidence document key</th><th>Quantity</th><th>Unit cost</th><th>Quarter</th><th>Expense</th><th>Award type</th><th v-for="column in dayColumns" :key="column.key">{{ column.label }}</th><th v-for="column in flagColumns" :key="column.key">{{ column.label }}</th><th v-for="column in dateColumns" :key="column.key">{{ column.label }}</th><th>MSDS (Minimum Service Delivery Standard)</th></tr></thead>
@@ -78,6 +104,8 @@
           </table>
         </fieldset>
         <div class="mt-3 flex items-center justify-between gap-3"><p class="text-xs text-base-content/60">{{ uploadNote }}</p><div class="flex items-center gap-2"><button class="btn btn-sm" :disabled="page <= 1 || submitting" @click="page--">Previous</button><span class="text-sm">{{ page }} / {{ lastPage }}</span><button class="btn btn-sm" :disabled="page >= lastPage || submitting" @click="page++">Next</button></div></div>
+        </template>
+        </div>
       </div>
     <dialog ref="deleteAllDialog" class="modal" @cancel.prevent="closeDeleteAll">
       <div class="modal-box">
@@ -128,6 +156,11 @@ const visibleRows = computed(() => filteredRows.value.slice((page.value - 1) * 2
 const lastPage = computed(() => Math.max(1, Math.ceil(filteredRows.value.length / 25)));
 const unclassifiedRows = computed(() => rows.value.filter(row => !row.unspsc_id).length);
 const matchedRows = computed(() => rows.value.length - unclassifiedRows.value);
+const incompleteRows = computed(() => rows.value.filter(row => {
+  const hasPricing = [row.quantity, row.unit_cost].every(value => value !== '' && Number.isFinite(Number(value)) && Number(value) >= 0);
+  return !row.description?.trim() || !row.unspsc_id || !hasPricing || (exemptionMode.value && Boolean(groundsValidationError(row)));
+}).length);
+const workflowStep = computed(() => !rows.value.length ? 1 : (incompleteRows.value ? 2 : 3));
 const unsavedRows = computed(() => rows.value.filter(row => !row._sent));
 const emptyGridMessage = computed(() => {
   if (!rows.value.length) return 'Choose how many rows you need and click Add rows.';

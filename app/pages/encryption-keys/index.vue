@@ -36,6 +36,17 @@
           </div>
 
           <div class="px-5 py-5 sm:px-6">
+            <div v-if="actionError" role="alert" class="alert alert-error alert-soft mb-4">
+              <Icon name="lucide:circle-alert" class="h-5 w-5" />
+              <div>
+                <p class="font-semibold">Encryption key generation failed</p>
+                <p class="text-sm">{{ actionError }}</p>
+              </div>
+              <button class="btn btn-ghost btn-sm" type="button" aria-label="Dismiss error" @click="actionError = ''">
+                Dismiss
+              </button>
+            </div>
+
             <div
               :class="[
                 'flex flex-col gap-4 rounded-box border p-4 sm:flex-row sm:items-center sm:justify-between',
@@ -157,6 +168,7 @@ const keys = ref([]);
 const company = ref(null);
 const loading = ref(false);
 const acting = ref(false);
+const actionError = ref('');
 
 const activeKey = computed(() => keys.value.find((k) => k.status === 'ACTIVE') ?? null);
 
@@ -180,10 +192,19 @@ const confirmGenerate = async () => {
     : 'Generate a new encryption keypair for your PE?';
   if (!window.confirm(msg)) return;
   const notes = window.prompt('Optional notes (e.g. "Annual rotation"):', '');
+  if (notes === null) return;
+  actionError.value = '';
   acting.value = true;
-  await helper.generate({ notes: notes || null });
+  const { status, error } = await helper.generate({ notes: notes || null });
+  if (!status.value) {
+    actionError.value = error.value?.data?.message
+      || error.value?.response?._data?.message
+      || error.value?.message
+      || 'The server could not generate the keypair.';
+  } else {
+    await fetchAll();
+  }
   acting.value = false;
-  await fetchAll();
 };
 
 const confirmCompromise = async (k) => {
