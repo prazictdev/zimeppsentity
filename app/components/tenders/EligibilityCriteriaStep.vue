@@ -1,10 +1,6 @@
 <template>
   <div class="w-full space-y-5">
-    <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-      <div>
-        <h2 class="text-lg font-semibold">Eligibility criteria</h2>
-        <p class="text-sm text-base-content/60">Define the required documents and the grouped eligibility form bidders must complete.</p>
-      </div>
+    <div class="flex justify-end">
       <button class="btn btn-ghost btn-sm" type="button" @click="emit('back')"><Icon name="lucide:arrow-left" class="h-4 w-4" /> Back</button>
     </div>
 

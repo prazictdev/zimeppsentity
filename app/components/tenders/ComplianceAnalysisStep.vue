@@ -1,16 +1,7 @@
 <template>
   <div class="w-full space-y-4">
-    <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-      <div>
-        <div class="flex flex-wrap items-center gap-2">
-          <h2 class="text-lg font-semibold">Preview &amp; compliance analysis</h2>
-          <span class="badge badge-ghost badge-sm">Optional</span>
-        </div>
-        <p class="text-sm text-base-content/60">
-          Optionally run the EGP AI application to review the information captured in steps 1–8. You can finish
-          the draft review without running this analysis.
-        </p>
-      </div>
+    <div class="flex flex-wrap items-center justify-between gap-2">
+      <span class="badge badge-ghost badge-sm">Optional</span>
       <div class="flex flex-wrap items-center gap-2">
         <button class="btn btn-ghost btn-sm" type="button" @click="emit('back')">
           <Icon name="lucide:arrow-left" class="h-4 w-4" />

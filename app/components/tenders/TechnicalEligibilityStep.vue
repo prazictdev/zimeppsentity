@@ -1,7 +1,6 @@
 <template>
   <div class="w-full space-y-4">
-    <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-      <div><h2 class="text-lg font-semibold">Technical proposal and evaluation</h2><p class="text-sm text-base-content/60">Define what shortlisted bidders must submit, then publish exactly how their technical proposals will be scored.</p></div>
+    <div class="flex justify-end">
       <button class="btn btn-ghost btn-sm" type="button" @click="emit('back')"><Icon name="lucide:arrow-left" class="h-4 w-4" /> Back</button>
     </div>
 

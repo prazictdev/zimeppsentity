@@ -1,16 +1,8 @@
 <template>
   <div class="w-full space-y-4">
-    <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-      <div>
-        <div class="flex flex-wrap items-center gap-2">
-          <h2 class="text-lg font-semibold">Finance</h2>
-          <span class="badge badge-warning badge-sm">Required</span>
-        </div>
-        <p class="text-sm text-base-content/60">
-          Preview the currency schedule bidders must complete for their financial proposal.
-        </p>
-      </div>
-      <div class="flex flex-wrap items-center gap-2">
+    <div class="flex flex-wrap items-center justify-between gap-2">
+      <span class="badge badge-warning badge-sm">Required</span>
+      <div class="flex items-center gap-2">
         <button class="btn btn-ghost btn-sm" type="button" @click="emit('back')">
           <Icon name="lucide:arrow-left" class="h-4 w-4" />
           Back

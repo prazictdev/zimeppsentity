@@ -1,23 +1,8 @@
 <template>
   <div class="w-full space-y-4">
-    <div class="overflow-hidden rounded-2xl border border-primary/20 bg-base-100 shadow-sm">
-      <div class="flex flex-col gap-5 bg-gradient-to-br from-primary/10 via-base-100 to-base-100 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-7">
-        <div class="flex items-start gap-4">
-          <div class="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-primary text-primary-content shadow-sm">
-            <Icon name="lucide:file-pen-line" class="h-6 w-6" />
-          </div>
-          <div>
-            <div class="mb-1 flex flex-wrap items-center gap-2">
-              <span class="text-xs font-semibold uppercase tracking-wider text-primary">Step 7 of 8</span>
-              <span class="badge badge-warning badge-sm">Required</span>
-            </div>
-            <h2 class="text-xl font-bold tracking-tight">Prepare the standard bidding document</h2>
-            <p class="mt-1 max-w-2xl text-sm text-base-content/65">
-              Review tender information carried forward from earlier steps, complete the contract fields, and add any tender-specific sections.
-            </p>
-          </div>
-        </div>
-        <div class="flex shrink-0 flex-wrap items-center gap-2">
+    <div class="flex flex-wrap items-center justify-between gap-2">
+      <span class="badge badge-warning badge-sm">Required</span>
+      <div class="flex shrink-0 flex-wrap items-center gap-2">
         <button class="btn btn-ghost btn-sm" type="button" @click="emit('back')">
           <Icon name="lucide:arrow-left" class="h-4 w-4" />
           Back
@@ -32,7 +17,6 @@
           <Icon v-else name="lucide:eye" class="h-4 w-4" />
           Preview document
         </button>
-        </div>
       </div>
     </div>
 
