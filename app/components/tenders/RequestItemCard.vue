@@ -128,7 +128,7 @@
             <thead class="bg-base-200/60">
               <tr class="text-xs text-base-content/55">
                 <th class="w-[24%]">Product or service</th>
-                <th class="w-[17%]">UNSPSC</th>
+                <th class="w-[19%]">Classification</th>
                 <th class="w-24 text-right">Quantity</th>
                 <th>Specifications</th>
                 <th v-if="isAppLine" class="w-32 text-right">Unit price</th>
@@ -148,10 +148,12 @@
                 </td>
                 <td>
                   <template v-if="product.unspsc">
-                    <span class="badge badge-ghost badge-sm">{{ product.unspsc.code }}</span>
-                    <p class="mt-1 text-xs leading-4 text-base-content/55">{{ product.unspsc.name }}</p>
+                    <p class="font-medium leading-5">{{ product.unspsc.name }}</p>
+                    <p class="mt-1 text-xs tabular-nums text-base-content/45">
+                      UNSPSC {{ product.unspsc.code }}
+                    </p>
                   </template>
-                  <span v-else class="text-xs text-warning">Not assigned</span>
+                  <span v-else class="text-xs text-base-content/40">Not classified</span>
                 </td>
                 <td class="text-right font-semibold tabular-nums">{{ product.quantity }}</td>
                 <td>
