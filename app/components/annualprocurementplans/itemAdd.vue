@@ -78,7 +78,7 @@
           </div>
           <button class="btn btn-ghost btn-sm text-error hover:bg-error/10" :disabled="submitting || !ready || !unsavedRows.length" title="Delete all items that have not been uploaded" @click="openDeleteAll"><Icon name="lucide:trash-2" />Delete draft</button>
         </div>
-        <p class="mb-2 mt-3 text-xs text-base-content/60">Complete each item below. The first five columns stay visible while you scroll across the remaining details.</p>
+        <p class="mb-2 mt-3 text-xs text-base-content/60">Complete each item below. The Description column stays visible while you scroll across the remaining details.</p>
         <fieldset :disabled="submitting" class="max-h-[65vh] min-h-0 min-w-0 flex-1 overflow-auto rounded-xl border border-base-300">
           <table class="item-grid table table-sm">
             <thead><tr><th>Row</th><th>Description *</th><th>UNSPSC *</th><th>Reference</th><th v-for="column in lookupColumns" :key="column.key">{{ column.label }}</th><th v-if="exemptionMode">Exemption grounds *</th><th v-if="exemptionMode">Evidence document key</th><th>Quantity</th><th>Unit cost</th><th>Quarter</th><th>Expense</th><th>Award type</th><th v-for="column in dayColumns" :key="column.key">{{ column.label }}</th><th v-for="column in flagColumns" :key="column.key">{{ column.label }}</th><th v-for="column in dateColumns" :key="column.key">{{ column.label }}</th><th>MSDS (Minimum Service Delivery Standard)</th></tr></thead>
@@ -395,34 +395,25 @@ watch(() => [props.planUuid, props.exemptionUuid, props.supplementUuid, currentU
   background: var(--color-base-200);
 }
 
-.item-grid tr > :nth-child(1) { --column-width: 4rem; --column-left: 0rem; }
-.item-grid tr > :nth-child(2) { --column-width: 16rem; --column-left: 4rem; }
-.item-grid tr > :nth-child(3) { --column-width: 13rem; --column-left: 20rem; }
-.item-grid tr > :nth-child(4) { --column-width: 9rem; --column-left: 33rem; }
-.item-grid tr > :nth-child(5) { --column-width: 11rem; --column-left: 42rem; }
-
-.item-grid tr > :nth-child(-n + 5):not(.empty-grid) {
+.item-grid tr > :nth-child(2):not(.empty-grid) {
   position: sticky;
-  left: var(--column-left);
+  left: 0;
   box-sizing: border-box;
-  width: var(--column-width);
-  min-width: var(--column-width);
-  max-width: var(--column-width);
+  width: 16rem;
+  min-width: 16rem;
+  max-width: 16rem;
   z-index: 3;
   background: var(--color-base-100);
   overflow-wrap: anywhere;
+  border-right: 2px solid var(--color-base-300);
 }
 
-.item-grid thead tr > :nth-child(-n + 5) {
+.item-grid thead tr > :nth-child(2) {
   z-index: 4;
   background: var(--color-base-200);
 }
 
-.item-grid tr > :nth-child(5) {
-  border-right: 2px solid var(--color-base-300);
-}
-
-.item-grid tr > :nth-child(-n + 5) > :is(input, select, textarea) {
+.item-grid tr > :nth-child(2) > :is(input, select, textarea) {
   width: 100%;
   min-width: 0;
 }
