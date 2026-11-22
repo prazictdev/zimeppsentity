@@ -29,20 +29,29 @@
             </div>
           </dl>
 
-          <div class="mt-3 rounded-field border border-base-300 bg-base-100 p-3">
+          <div
+            class="mt-3 rounded-field border p-3"
+            :class="item.supplier_categories?.length ? 'border-base-300 bg-base-100' : 'border-error/50 bg-error/5'"
+          >
             <div class="flex flex-wrap items-center justify-between gap-2">
-              <div>
+              <div class="min-w-0 flex-1">
                 <p class="text-xs font-semibold">Required supplier categories</p>
-                <p v-if="!item.supplier_categories?.length" class="mt-1 text-xs text-base-content/50">
-                  Open to all registered supplier categories.
-                </p>
+                <div v-if="!item.supplier_categories?.length" role="alert" class="alert alert-error alert-soft mt-2 py-2 text-xs">
+                  <Icon name="lucide:circle-alert" class="h-4 w-4 shrink-0" />
+                  <span>No categories set. Select at least one required supplier category before continuing.</span>
+                </div>
                 <div v-else class="mt-1 flex flex-wrap gap-1">
                   <span v-for="category in item.supplier_categories" :key="category.id" class="badge badge-outline badge-sm">
                     {{ category.code }} · {{ category.name }}
                   </span>
                 </div>
               </div>
-              <button type="button" class="btn btn-ghost btn-xs" @click="toggleCategoryEditor">
+              <button
+                type="button"
+                class="btn btn-xs"
+                :class="item.supplier_categories?.length ? 'btn-ghost' : 'btn-error btn-outline'"
+                @click="toggleCategoryEditor"
+              >
                 <Icon name="lucide:tags" class="h-3.5 w-3.5" />
                 {{ categoryEditorOpen ? 'Close' : 'Set categories' }}
               </button>

@@ -76,13 +76,19 @@
           Maximum quantity from APP line: {{ maxQuantity }}
         </p>
 
-        <section v-if="!budgetOnly" class="rounded-box border border-base-300 p-4">
+        <section
+          v-if="!budgetOnly"
+          class="rounded-box border p-4"
+          :class="form.supplier_category_ids.length ? 'border-base-300' : 'border-error/50 bg-error/5'"
+        >
           <div class="flex flex-wrap items-start justify-between gap-2">
             <div>
               <h4 class="text-sm font-semibold">Required supplier categories</h4>
               <p class="mt-1 text-xs text-base-content/55">Choose the registrations a supplier must hold to bid for this lot.</p>
             </div>
-            <span class="badge badge-ghost badge-sm">{{ form.supplier_category_ids.length }} selected</span>
+            <span class="badge badge-sm" :class="form.supplier_category_ids.length ? 'badge-ghost' : 'badge-error badge-soft'">
+              {{ form.supplier_category_ids.length }} selected
+            </span>
           </div>
 
           <label class="input input-sm mt-3 flex w-full items-center gap-2">
@@ -112,9 +118,10 @@
               </span>
             </label>
           </div>
-          <p v-if="!form.supplier_category_ids.length" class="mt-2 text-xs text-base-content/50">
-            No selection means the lot is open to all registered supplier categories.
-          </p>
+          <div v-if="!form.supplier_category_ids.length" role="alert" class="alert alert-error alert-soft mt-2 py-2 text-xs">
+            <Icon name="lucide:circle-alert" class="h-4 w-4 shrink-0" />
+            <span>Select at least one required supplier category before continuing with this tender.</span>
+          </div>
         </section>
 
         <div class="modal-action">
