@@ -130,6 +130,15 @@ const modules = computed(() => {
     })
   }
 
+  if (can('can.access.peusers') && !configuredUrls.has('/organisationusers')) {
+    configuredModules.push({
+      id: 'organisation-access',
+      name: 'Access administration',
+      icon: 'lucide:users-round',
+      submodules: [{ id: 'organisation-users', name: 'Organisation users', url: '/organisationusers', icon: 'lucide:user-cog' }],
+    })
+  }
+
   return configuredModules
 })
 

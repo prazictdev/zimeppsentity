@@ -175,6 +175,7 @@ useHead({ title: 'Dashboard' })
 const { getCompanyPlan } = useDashboardHelper()
 const { getTransitions } = useAnnualprocurementplanHelper()
 const { list: listBidBonds } = useBidBondManagement()
+const { can } = useCheckPermission()
 
 const loading = ref(true)
 const errorMessage = ref('')
@@ -213,7 +214,9 @@ const kpis = computed(() => [
   { label: 'Live tenders', value: stats.value.live_tenders ?? 0, caption: 'Open to supplier responses', icon: 'lucide:radio-tower', color: 'text-emerald-700', bg: 'bg-emerald-100', to: '/tenders?status=PUBLISHED' },
   { label: 'In evaluation', value: stats.value.in_evaluation ?? 0, caption: 'Closed, opened or being evaluated', icon: 'lucide:clipboard-check', color: 'text-violet-700', bg: 'bg-violet-100', to: '/tenders?status=UNDER_EVALUATION' },
   { label: 'Awards', value: stats.value.awarded ?? 0, caption: 'Award and contracting stages', icon: 'lucide:award', color: 'text-rose-700', bg: 'bg-rose-100', to: '/tenders/awards' },
-  { label: 'Organisation users', value: stats.value.active_users ?? 0, caption: 'Users connected to this account', icon: 'lucide:users', color: 'text-cyan-700', bg: 'bg-cyan-100', to: '/organisationusers' },
+  ...(can('can.access.peusers')
+    ? [{ label: 'Organisation users', value: stats.value.active_users ?? 0, caption: 'Users connected to this account', icon: 'lucide:users', color: 'text-cyan-700', bg: 'bg-cyan-100', to: '/organisationusers' }]
+    : []),
 ])
 
 function humanize(value) {
