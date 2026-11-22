@@ -5,7 +5,7 @@
     <div class="drawer-content flex min-h-screen min-w-0 flex-col bg-base-200/60">
       <Navbar :sidebar-collapsed="sidebarCollapsed" @toggle-sidebar="toggleSidebar" @toggle-sidebar-collapse="toggleSidebarCollapse" />
       <main class="flex-1 px-4 py-5 sm:px-6 lg:px-7 lg:py-7">
-        <div class="mx-auto w-full max-w-[90rem]">
+        <div :class="route.meta.fullWidth ? 'w-full' : 'mx-auto w-full max-w-[90rem]'">
           <slot />
         </div>
       </main>
@@ -21,6 +21,7 @@
 </template>
 
 <script setup>
+const route = useRoute();
 const isSidebarOpen = ref(false);
 const sidebarCollapsed = ref(false);
 

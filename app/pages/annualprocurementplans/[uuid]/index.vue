@@ -1,5 +1,5 @@
 <template>
-  <div class="p-4 sm:p-6">
+  <div class="w-full">
     <div class="breadcrumbs text-sm text-base-content/55"><ul><li><NuxtLink to="/dashboard">Home</NuxtLink></li><li><NuxtLink to="/annualprocurementplans">Annual Procurement Plans</NuxtLink></li><li>{{ store.currentPlan ? `${store.currentPlan.year} · ${store.currentPlan.company?.name ?? ''}` : '...' }}</li></ul></div>
 
     <AnnualprocurementplansDetail
@@ -20,7 +20,7 @@
 </template>
 
 <script setup>
-definePageMeta({ layout: 'default', sanctum: { authOnly: true } });
+definePageMeta({ layout: 'default', fullWidth: true, sanctum: { authOnly: true } });
 
 const route = useRoute();
 const planUuid = computed(() => String(route.params.uuid));
