@@ -123,74 +123,64 @@
           <p class="mt-1 text-xs text-base-content/50">Break this line into the actual items suppliers will price.</p>
         </div>
 
-        <div v-else class="mt-4 space-y-3">
-          <article
-            v-for="product in products"
-            :key="product.id"
-            class="overflow-hidden rounded-field border border-base-300 bg-base-100"
-          >
-            <div class="flex items-start gap-3 bg-base-200/25 p-4">
-              <div class="grid h-9 w-9 shrink-0 place-items-center rounded-box bg-base-200 text-base-content/55">
-                <Icon name="lucide:package" class="h-4 w-4" />
-              </div>
-              <div class="min-w-0 flex-1">
-                <h5 class="font-semibold leading-6">{{ product.description }}</h5>
-                <div class="mt-1 flex flex-wrap items-center gap-2 text-xs text-base-content/55">
+        <div v-else class="mt-4 overflow-x-auto rounded-field border border-base-300">
+          <table class="table min-w-[900px]">
+            <thead class="bg-base-200/60">
+              <tr class="text-xs text-base-content/55">
+                <th class="w-[24%]">Product or service</th>
+                <th class="w-[17%]">UNSPSC</th>
+                <th class="w-24 text-right">Quantity</th>
+                <th>Specifications</th>
+                <th v-if="isAppLine" class="w-32 text-right">Unit price</th>
+                <th v-if="isAppLine" class="w-36 text-right">Total</th>
+                <th class="w-24 text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="product in products" :key="product.id" class="align-top">
+                <td>
+                  <div class="flex items-start gap-3">
+                    <div class="grid h-8 w-8 shrink-0 place-items-center rounded-box bg-base-200 text-base-content/55">
+                      <Icon name="lucide:package" class="h-4 w-4" />
+                    </div>
+                    <p class="font-medium leading-5">{{ product.description }}</p>
+                  </div>
+                </td>
+                <td>
                   <template v-if="product.unspsc">
                     <span class="badge badge-ghost badge-sm">{{ product.unspsc.code }}</span>
-                    <span>{{ product.unspsc.name }}</span>
+                    <p class="mt-1 text-xs leading-4 text-base-content/55">{{ product.unspsc.name }}</p>
                   </template>
-                  <span v-else class="text-warning">UNSPSC not assigned</span>
-                </div>
-              </div>
-              <div class="flex gap-1">
-                <button type="button" class="btn btn-ghost btn-square btn-sm" aria-label="Edit product" title="Edit product" @click="openEditProduct(product)">
-                  <Icon name="lucide:pencil" class="h-4 w-4" />
-                </button>
-                <button type="button" class="btn btn-ghost btn-square btn-sm text-error" aria-label="Delete product" title="Delete product" @click="emit('delete-product', { item, product })">
-                  <Icon name="lucide:trash-2" class="h-4 w-4" />
-                </button>
-              </div>
-            </div>
-
-            <dl
-              class="grid border-t border-base-200 text-sm"
-              :class="product.annualprocurementplanitem_id ? 'sm:grid-cols-3 sm:divide-x sm:divide-base-200' : 'sm:grid-cols-1'"
-            >
-              <div class="px-4 py-3">
-                <dt class="text-xs text-base-content/45">Quantity</dt>
-                <dd class="mt-1 font-semibold tabular-nums">{{ product.quantity }}</dd>
-              </div>
-              <template v-if="product.annualprocurementplanitem_id">
-                <div class="border-t border-base-200 px-4 py-3 sm:border-t-0">
-                  <dt class="text-xs text-base-content/45">Unit price</dt>
-                  <dd class="mt-1 font-semibold tabular-nums">{{ formatMoney(product.unit_price) }}</dd>
-                </div>
-                <div class="border-t border-base-200 px-4 py-3 sm:border-t-0">
-                  <dt class="text-xs text-base-content/45">Product total</dt>
-                  <dd class="mt-1 font-semibold tabular-nums">{{ formatMoney(product.budget_amount) }}</dd>
-                  <p class="mt-0.5 text-xs text-base-content/45">{{ formatMoney(productRemainingAfterAllocation(product)) }} budget remaining</p>
-                </div>
-              </template>
-            </dl>
-
-            <div v-if="product.specifications?.length" class="border-t border-base-200 p-4">
-              <div class="mb-3 flex items-center justify-between gap-3">
-                <h6 class="text-sm font-semibold">Technical specifications</h6>
-                <span class="badge badge-ghost badge-sm">{{ product.specifications.length }}</span>
-              </div>
-              <dl class="grid overflow-hidden rounded-field border border-base-300 bg-base-300 gap-px sm:grid-cols-2 xl:grid-cols-3">
-                <div v-for="(spec, index) in product.specifications" :key="spec.id ?? `${spec.label}-${index}`" class="bg-base-100 p-3">
-                  <dt class="text-xs font-medium text-base-content/50">{{ spec.label }}</dt>
-                  <dd class="mt-1 text-sm font-medium leading-5">{{ spec.value || 'Not specified' }}</dd>
-                  <span v-if="spec.acceptance_policy" class="mt-2 inline-flex text-[0.68rem] text-base-content/40">
-                    {{ acceptancePolicyLabel(spec.acceptance_policy) }}
-                  </span>
-                </div>
-              </dl>
-            </div>
-            <div v-else class="border-t border-base-200 px-4 py-3 text-xs text-base-content/40">No technical specifications defined.</div>
-          </article>
+                  <span v-else class="text-xs text-warning">Not assigned</span>
+                </td>
+                <td class="text-right font-semibold tabular-nums">{{ product.quantity }}</td>
+                <td>
+                  <dl v-if="product.specifications?.length" class="space-y-1.5">
+                    <div v-for="(spec, index) in product.specifications" :key="spec.id ?? `${spec.label}-${index}`" class="flex gap-2 text-xs leading-4">
+                      <dt class="min-w-24 font-medium text-base-content/55">{{ spec.label }}</dt>
+                      <dd class="font-medium" :title="spec.acceptance_policy ? acceptancePolicyLabel(spec.acceptance_policy) : undefined">{{ spec.value || '—' }}</dd>
+                    </div>
+                  </dl>
+                  <span v-else class="text-xs text-base-content/40">No specifications</span>
+                </td>
+                <td v-if="isAppLine" class="text-right font-medium tabular-nums">{{ formatMoney(product.unit_price) }}</td>
+                <td v-if="isAppLine" class="text-right">
+                  <p class="font-semibold tabular-nums">{{ formatMoney(product.budget_amount) }}</p>
+                  <p class="mt-1 text-xs text-base-content/45">{{ formatMoney(productRemainingAfterAllocation(product)) }} remaining</p>
+                </td>
+                <td>
+                  <div class="flex justify-end gap-1">
+                    <button type="button" class="btn btn-ghost btn-square btn-sm" aria-label="Edit product" title="Edit product" @click="openEditProduct(product)">
+                      <Icon name="lucide:pencil" class="h-4 w-4" />
+                    </button>
+                    <button type="button" class="btn btn-ghost btn-square btn-sm text-error" aria-label="Delete product" title="Delete product" @click="emit('delete-product', { item, product })">
+                      <Icon name="lucide:trash-2" class="h-4 w-4" />
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
         </div>
     </div>
 
