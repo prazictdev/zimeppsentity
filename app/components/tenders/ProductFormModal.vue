@@ -89,29 +89,31 @@
           </div>
         </div>
 
-        <fieldset class="fieldset order-2 w-full lg:col-span-2">
-          <legend class="fieldset-legend">Quantity</legend>
-          <input
-            v-model.number="form.quantity"
-            type="number"
-            min="0.01"
-            step="0.01"
-            class="input w-full tabular-nums"
-            :disabled="submitting"
-          />
-        </fieldset>
+        <div class="order-2 grid gap-4 sm:grid-cols-2 lg:col-span-2">
+          <fieldset class="fieldset w-full">
+            <legend class="fieldset-legend">Quantity</legend>
+            <input
+              v-model.number="form.quantity"
+              type="number"
+              min="0.01"
+              step="0.01"
+              class="input w-full tabular-nums"
+              :disabled="submitting"
+            />
+          </fieldset>
 
-        <fieldset class="fieldset order-2 w-full lg:col-span-2">
-          <legend class="fieldset-legend">Unit price</legend>
-          <input
-            v-model.number="form.unit_price"
-            type="number"
-            min="0.01"
-            step="0.01"
-            class="input w-full tabular-nums"
-            :disabled="submitting"
-          />
-        </fieldset>
+          <fieldset class="fieldset w-full">
+            <legend class="fieldset-legend">Unit price</legend>
+            <input
+              v-model.number="form.unit_price"
+              type="number"
+              min="0.01"
+              step="0.01"
+              class="input w-full tabular-nums"
+              :disabled="submitting"
+            />
+          </fieldset>
+        </div>
 
         <div class="order-4 grid gap-3 rounded-box border border-base-300 bg-base-200/30 p-4 text-sm lg:col-span-2" :class="{ 'sm:grid-cols-2': budgetMode }">
           <div>
