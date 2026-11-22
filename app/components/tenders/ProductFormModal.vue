@@ -1,50 +1,67 @@
 <template>
   <dialog ref="dialogEl" class="modal">
-    <div class="modal-box max-w-2xl">
-      <h3 class="text-lg font-bold">{{ title }}</h3>
-      <p v-if="maxQuantity != null" class="mt-1 text-xs text-base-content/60">
-        Maximum quantity for this product: {{ maxQuantity }}
-        <span v-if="remainingQuantity != null"> · Remaining on line item: {{ remainingQuantity }}</span>
-      </p>
-      <p v-if="budgetMode && maxBudget != null" class="mt-1 text-xs text-base-content/60">
-        Available budget for this APP item: {{ formatMoney(maxBudget) }}
-      </p>
+    <div class="modal-box max-h-[92vh] w-[min(96vw,72rem)] max-w-none overflow-hidden p-0">
+      <header class="flex items-start gap-4 border-b border-base-200 px-6 py-5">
+        <div class="grid h-11 w-11 shrink-0 place-items-center rounded-box bg-primary/10 text-primary">
+          <Icon name="lucide:package-plus" class="h-5 w-5" />
+        </div>
+        <div class="min-w-0 flex-1">
+          <h3 class="text-xl font-semibold">{{ title }}</h3>
+          <p class="mt-1 text-sm text-base-content/55">Define the item, classify it, and capture the specifications suppliers must meet.</p>
+          <div v-if="maxQuantity != null || (budgetMode && maxBudget != null)" class="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-base-content/50">
+            <span v-if="maxQuantity != null">
+              Maximum quantity: <strong class="font-semibold text-base-content">{{ maxQuantity }}</strong>
+              <template v-if="remainingQuantity != null"> · {{ remainingQuantity }} remaining</template>
+            </span>
+            <span v-if="budgetMode && maxBudget != null">
+              Available budget: <strong class="font-semibold text-base-content">{{ formatMoney(maxBudget) }}</strong>
+            </span>
+          </div>
+        </div>
+        <button type="button" class="btn btn-ghost btn-square btn-sm" aria-label="Close dialog" :disabled="submitting" @click="close">
+          <Icon name="lucide:x" class="h-4 w-4" />
+        </button>
+      </header>
 
-      <div v-if="formError" class="alert alert-error mt-3 py-2 text-sm">{{ formError }}</div>
+      <div v-if="formError" role="alert" class="alert alert-error alert-soft mx-6 mt-5 text-sm">
+        <Icon name="lucide:circle-alert" class="h-5 w-5" />
+        <span>{{ formError }}</span>
+      </div>
 
-      <form class="mt-4 space-y-4" @submit.prevent="submit">
-        <label class="form-control w-full">
-          <span class="label-text text-xs font-medium">Description</span>
+      <form class="grid max-h-[calc(92vh-7rem)] grid-cols-1 gap-5 overflow-y-auto px-6 py-5 lg:grid-cols-2" @submit.prevent="submit">
+        <fieldset class="fieldset w-full">
+          <legend class="fieldset-legend">Description</legend>
           <textarea
             v-model="form.description"
-            class="textarea textarea-bordered w-full"
-            rows="2"
+            class="textarea h-28 w-full resize-none"
+            rows="4"
+            placeholder="Describe the product or service suppliers will price"
             :disabled="submitting"
           />
-        </label>
+        </fieldset>
 
-        <div class="space-y-2 rounded-lg border border-base-200 p-3">
+        <div class="space-y-3 rounded-box border border-base-300 bg-base-200/20 p-4">
           <div class="flex flex-wrap items-start justify-between gap-2">
             <div>
-              <span class="text-xs font-medium">UNSPSC commodity code</span>
-              <p class="text-xs text-base-content/55">Optional. Assign the most specific eight-digit code for this product or service.</p>
+              <h4 class="text-sm font-semibold">UNSPSC classification</h4>
+              <p class="mt-0.5 text-xs text-base-content/55">Assign the most specific commodity code for this item.</p>
             </div>
             <button v-if="form.unspsc_id" type="button" class="btn btn-ghost btn-xs" :disabled="submitting" @click="clearUnspsc">
               Clear
             </button>
           </div>
 
-          <div v-if="form.unspsc_id" class="rounded-md bg-base-200/60 px-3 py-2 text-sm">
-            <strong class="font-mono">{{ form.unspsc?.code }}</strong>
+          <div v-if="form.unspsc_id" class="rounded-field border border-success/25 bg-success/5 px-3 py-2.5 text-sm">
+            <strong>{{ form.unspsc?.code }}</strong>
             <span class="ml-2">{{ form.unspsc?.name }}</span>
           </div>
 
           <div class="flex flex-col gap-2 sm:flex-row">
-            <label class="input input-bordered input-sm flex min-w-0 flex-1 items-center gap-2">
+            <label class="input flex min-w-0 flex-1 items-center gap-2">
               <Icon name="lucide:search" class="h-3.5 w-3.5 text-base-content/40" />
               <input v-model.trim="unspscQuery" class="grow" minlength="2" maxlength="255" placeholder="Search by code or description" :disabled="submitting || unspscSearching" @keydown.enter.prevent="searchUnspsc(1)">
             </label>
-            <button type="button" class="btn btn-outline btn-sm" :disabled="submitting || unspscSearching || unspscQuery.length < 2" @click="searchUnspsc(1)">
+            <button type="button" class="btn btn-outline" :disabled="submitting || unspscSearching || unspscQuery.length < 2" @click="searchUnspsc(1)">
               <span v-if="unspscSearching" class="loading loading-spinner loading-xs" />
               {{ unspscSearching ? 'Searching…' : 'Search codes' }}
             </button>
@@ -56,11 +73,11 @@
               v-for="candidate in unspscResults.data"
               :key="candidate.id"
               type="button"
-              :class="['block w-full rounded-md border p-2 text-left text-sm', Number(form.unspsc_id) === Number(candidate.id) ? 'border-primary bg-primary/5' : 'border-base-200 hover:bg-base-200/50']"
+              :class="['block w-full rounded-field border p-2.5 text-left text-sm', Number(form.unspsc_id) === Number(candidate.id) ? 'border-primary bg-primary/5' : 'border-base-300 hover:bg-base-200/50']"
               :disabled="submitting"
               @click="selectUnspsc(candidate)"
             >
-              <strong class="font-mono">{{ candidate.code }}</strong>
+              <strong>{{ candidate.code }}</strong>
               <span class="ml-2">{{ candidate.name }}</span>
             </button>
             <p v-if="!unspscResults.data.length" class="text-xs text-base-content/50">No matching commodity codes found.</p>
@@ -72,40 +89,47 @@
           </div>
         </div>
 
-        <label class="form-control w-full max-w-xs">
-          <span class="label-text text-xs font-medium">Quantity</span>
+        <fieldset class="fieldset w-full">
+          <legend class="fieldset-legend">Quantity</legend>
           <input
             v-model.number="form.quantity"
             type="number"
             min="0.01"
             step="0.01"
-            class="input input-bordered w-full"
+            class="input w-full tabular-nums"
             :disabled="submitting"
           />
-        </label>
+        </fieldset>
 
-        <label v-if="budgetMode" class="form-control w-full max-w-xs">
-          <span class="label-text text-xs font-medium">Unit price</span>
+        <fieldset v-if="budgetMode" class="fieldset w-full">
+          <legend class="fieldset-legend">Unit price</legend>
           <input
             v-model.number="form.unit_price"
             type="number"
             min="0.01"
             step="0.01"
-            class="input input-bordered w-full font-mono"
+            class="input w-full tabular-nums"
             :disabled="submitting"
           />
-        </label>
+        </fieldset>
 
-        <div v-if="budgetMode" class="rounded-lg bg-base-200/50 p-3 text-sm">
-          Product total: <strong class="font-mono">{{ formatMoney(productTotal) }}</strong>
-          <span v-if="maxBudget != null" class="text-base-content/60">
-            · Remaining after product: {{ formatMoney(Math.max(0, maxBudget - productTotal)) }}
-          </span>
+        <div v-if="budgetMode" class="grid gap-3 rounded-box border border-base-300 bg-base-200/30 p-4 text-sm sm:grid-cols-2 lg:col-span-2">
+          <div>
+            <p class="text-xs text-base-content/45">Product total</p>
+            <p class="mt-1 text-lg font-semibold tabular-nums">{{ formatMoney(productTotal) }}</p>
+          </div>
+          <div v-if="maxBudget != null">
+            <p class="text-xs text-base-content/45">Budget remaining after product</p>
+            <p class="mt-1 text-lg font-semibold tabular-nums">{{ formatMoney(Math.max(0, maxBudget - productTotal)) }}</p>
+          </div>
         </div>
 
-        <div class="space-y-2">
+        <section class="space-y-3 border-t border-base-200 pt-5 lg:col-span-2">
           <div class="flex flex-wrap items-center justify-between gap-2">
-            <span class="text-sm font-semibold">Specifications</span>
+            <div>
+              <h4 class="font-semibold">Technical specifications</h4>
+              <p class="mt-0.5 text-xs text-base-content/50">Add the attributes suppliers must address in their response.</p>
+            </div>
             <div class="flex flex-wrap items-center gap-1">
               <input
                 ref="specificationFileInput"
@@ -117,7 +141,7 @@
               <button
                 v-if="canImport"
                 type="button"
-                class="btn btn-outline btn-primary btn-xs"
+                class="btn btn-outline btn-sm"
                 :disabled="submitting || importing"
                 @click="specificationFileInput?.click()"
               >
@@ -125,14 +149,14 @@
                 <Icon v-else name="lucide:file-spreadsheet" class="h-3.5 w-3.5" />
                 {{ importing ? 'Uploading…' : 'Upload specifications from Excel' }}
               </button>
-              <button type="button" class="btn btn-ghost btn-xs" :disabled="submitting" @click="addSpecRow">
+              <button type="button" class="btn btn-neutral btn-sm" :disabled="submitting" @click="addSpecRow">
                 <Icon name="lucide:plus" class="h-3.5 w-3.5" />
                 Add specification
               </button>
             </div>
           </div>
 
-          <div v-if="canImport" class="text-xs text-base-content/60">
+          <div v-if="canImport" class="rounded-field bg-base-200/40 px-3 py-2 text-xs leading-5 text-base-content/60">
             Excel columns: Label (required), Value, and Acceptance Policy. Accepted policies are Mandatory, Equivalent Allowed, and Preferred.
             <button
               type="button"
@@ -146,39 +170,40 @@
             </button>
           </div>
 
-          <div v-if="importError" class="alert alert-warning py-2 text-xs">{{ importError }}</div>
+          <div v-if="importError" role="alert" class="alert alert-warning alert-soft py-2 text-xs">{{ importError }}</div>
 
-          <div v-if="form.specifications.length === 0" class="text-xs text-base-content/50">
-            No specifications yet. Add criteria such as dimensions, brand, or technical requirements.
+          <div v-if="form.specifications.length === 0" class="rounded-field border border-dashed border-base-300 p-8 text-center text-sm text-base-content/50">
+            No specifications yet. Add criteria such as dimensions, materials, or technical requirements.
           </div>
 
           <div
             v-for="(spec, idx) in form.specifications"
             :key="idx"
-            class="grid grid-cols-1 gap-2 rounded-lg border border-base-200 p-3 lg:grid-cols-[1fr_1fr_190px_auto]"
+            class="grid grid-cols-1 gap-3 rounded-field border border-base-300 bg-base-200/20 p-3 md:grid-cols-2 xl:grid-cols-[1fr_1fr_220px_auto]"
           >
             <input
               v-model="spec.label"
               type="text"
-              class="input input-bordered input-sm w-full"
+              class="input w-full"
               placeholder="Label (e.g. Colour)"
               :disabled="submitting"
             />
             <input
               v-model="spec.value"
               type="text"
-              class="input input-bordered input-sm w-full"
+              class="input w-full"
               placeholder="Value"
               :disabled="submitting"
             />
-            <select v-model="spec.acceptance_policy" class="select select-bordered select-sm w-full" :disabled="submitting">
+            <select v-model="spec.acceptance_policy" class="select w-full" :disabled="submitting">
               <option value="MANDATORY">Mandatory — exact match</option>
               <option value="EQUIVALENT_ALLOWED">Equivalent allowed</option>
               <option value="PREFERRED">Preferred</option>
             </select>
             <button
               type="button"
-              class="btn btn-ghost btn-sm text-error"
+              class="btn btn-ghost btn-square text-error"
+              aria-label="Remove specification"
               :disabled="submitting"
               @click="removeSpecRow(idx)"
             >
@@ -186,9 +211,9 @@
             </button>
           </div>
 
-        </div>
+        </section>
 
-        <div class="modal-action">
+        <div class="modal-action sticky bottom-0 -mx-6 -mb-5 border-t border-base-200 bg-base-100 px-6 py-4 lg:col-span-2">
           <button type="button" class="btn" :disabled="submitting" @click="close">Cancel</button>
           <button type="submit" class="btn btn-primary" :disabled="submitting">
             <span v-if="submitting" class="loading loading-spinner loading-sm" />
