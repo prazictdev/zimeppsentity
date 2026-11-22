@@ -124,57 +124,73 @@
         </div>
 
         <div v-else class="mt-4 space-y-3">
-          <div
+          <article
             v-for="product in products"
             :key="product.id"
-            class="rounded-field border border-base-300 bg-base-200/20 p-4"
+            class="overflow-hidden rounded-field border border-base-300 bg-base-100"
           >
-            <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+            <div class="flex items-start gap-3 bg-base-200/25 p-4">
+              <div class="grid h-9 w-9 shrink-0 place-items-center rounded-box bg-base-200 text-base-content/55">
+                <Icon name="lucide:package" class="h-4 w-4" />
+              </div>
               <div class="min-w-0 flex-1">
-                <p class="font-medium">{{ product.description }}</p>
-                <p class="mt-1 text-xs text-base-content/60">
-                  UNSPSC: <template v-if="product.unspsc"><span class="font-medium">{{ product.unspsc.code }}</span> · {{ product.unspsc.name }}</template><template v-else>Not assigned</template>
-                </p>
-                <p class="mt-1 text-xs text-base-content/60">
-                  Quantity: <span class="font-medium tabular-nums">{{ product.quantity }}</span>
-                  <template v-if="product.annualprocurementplanitem_id">
-                    · Unit price: <span class="font-medium tabular-nums">{{ formatMoney(product.unit_price) }}</span>
+                <h5 class="font-semibold leading-6">{{ product.description }}</h5>
+                <div class="mt-1 flex flex-wrap items-center gap-2 text-xs text-base-content/55">
+                  <template v-if="product.unspsc">
+                    <span class="badge badge-ghost badge-sm">{{ product.unspsc.code }}</span>
+                    <span>{{ product.unspsc.name }}</span>
                   </template>
-                </p>
-                <p v-if="product.annualprocurementplanitem_id" class="mt-1 text-xs text-base-content/70">
-                  Product total: <strong class="tabular-nums">{{ formatMoney(product.budget_amount) }}</strong>
-                  · Budget remaining: <strong class="tabular-nums">{{ formatMoney(productRemainingAfterAllocation(product)) }}</strong>
-                </p>
+                  <span v-else class="text-warning">UNSPSC not assigned</span>
+                </div>
               </div>
               <div class="flex gap-1">
-                <button type="button" class="btn btn-ghost btn-xs" @click="openEditProduct(product)">
-                  <Icon name="lucide:pencil" class="h-3.5 w-3.5" />
+                <button type="button" class="btn btn-ghost btn-square btn-sm" aria-label="Edit product" title="Edit product" @click="openEditProduct(product)">
+                  <Icon name="lucide:pencil" class="h-4 w-4" />
                 </button>
-                <button type="button" class="btn btn-ghost btn-xs text-error" @click="emit('delete-product', { item, product })">
-                  <Icon name="lucide:trash-2" class="h-3.5 w-3.5" />
+                <button type="button" class="btn btn-ghost btn-square btn-sm text-error" aria-label="Delete product" title="Delete product" @click="emit('delete-product', { item, product })">
+                  <Icon name="lucide:trash-2" class="h-4 w-4" />
                 </button>
               </div>
             </div>
 
-            <div v-if="product.specifications?.length" class="mt-3 overflow-x-auto">
-              <table class="table table-xs w-full">
-                <thead>
-                  <tr class="text-base-content/60">
-                    <th>Specification</th>
-                    <th>Value</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr v-for="spec in product.specifications" :key="spec.id">
-                    <td class="font-medium">{{ spec.label }}</td>
-                    <td>{{ spec.value || '—' }}</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-            <p v-else class="mt-2 text-xs text-base-content/40">No specifications defined.</p>
+            <dl
+              class="grid border-t border-base-200 text-sm"
+              :class="product.annualprocurementplanitem_id ? 'sm:grid-cols-3 sm:divide-x sm:divide-base-200' : 'sm:grid-cols-1'"
+            >
+              <div class="px-4 py-3">
+                <dt class="text-xs text-base-content/45">Quantity</dt>
+                <dd class="mt-1 font-semibold tabular-nums">{{ product.quantity }}</dd>
+              </div>
+              <template v-if="product.annualprocurementplanitem_id">
+                <div class="border-t border-base-200 px-4 py-3 sm:border-t-0">
+                  <dt class="text-xs text-base-content/45">Unit price</dt>
+                  <dd class="mt-1 font-semibold tabular-nums">{{ formatMoney(product.unit_price) }}</dd>
+                </div>
+                <div class="border-t border-base-200 px-4 py-3 sm:border-t-0">
+                  <dt class="text-xs text-base-content/45">Product total</dt>
+                  <dd class="mt-1 font-semibold tabular-nums">{{ formatMoney(product.budget_amount) }}</dd>
+                  <p class="mt-0.5 text-xs text-base-content/45">{{ formatMoney(productRemainingAfterAllocation(product)) }} budget remaining</p>
+                </div>
+              </template>
+            </dl>
 
-          </div>
+            <div v-if="product.specifications?.length" class="border-t border-base-200 p-4">
+              <div class="mb-3 flex items-center justify-between gap-3">
+                <h6 class="text-sm font-semibold">Technical specifications</h6>
+                <span class="badge badge-ghost badge-sm">{{ product.specifications.length }}</span>
+              </div>
+              <dl class="grid overflow-hidden rounded-field border border-base-300 bg-base-300 gap-px sm:grid-cols-2 xl:grid-cols-3">
+                <div v-for="(spec, index) in product.specifications" :key="spec.id ?? `${spec.label}-${index}`" class="bg-base-100 p-3">
+                  <dt class="text-xs font-medium text-base-content/50">{{ spec.label }}</dt>
+                  <dd class="mt-1 text-sm font-medium leading-5">{{ spec.value || 'Not specified' }}</dd>
+                  <span v-if="spec.acceptance_policy" class="mt-2 inline-flex text-[0.68rem] text-base-content/40">
+                    {{ acceptancePolicyLabel(spec.acceptance_policy) }}
+                  </span>
+                </div>
+              </dl>
+            </div>
+            <div v-else class="border-t border-base-200 px-4 py-3 text-xs text-base-content/40">No technical specifications defined.</div>
+          </article>
         </div>
     </div>
 
@@ -303,6 +319,13 @@ function formatMoney(value) {
   const n = Number(value ?? 0)
   if (!Number.isFinite(n)) return '—'
   return n.toLocaleString('en-ZW', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+}
+
+function acceptancePolicyLabel(policy) {
+  return String(policy ?? '')
+    .toLowerCase()
+    .replaceAll('_', ' ')
+    .replace(/^./, character => character.toUpperCase())
 }
 
 function allocatedBudgetForPlanItem(planItemId, excludingProductId = null) {
