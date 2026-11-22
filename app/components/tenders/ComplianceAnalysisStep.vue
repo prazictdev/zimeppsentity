@@ -156,20 +156,50 @@
     </div>
 
     <dialog ref="submissionDialog" class="modal">
-      <div class="modal-box max-w-lg">
-        <div class="flex items-start gap-3">
-          <div class="rounded-full bg-warning/15 p-2 text-warning">
-            <Icon name="lucide:triangle-alert" class="h-6 w-6" />
+      <div class="modal-box max-h-[90vh] w-11/12 max-w-5xl p-0">
+        <div class="flex items-start gap-4 border-b border-base-200 p-6">
+          <div class="rounded-xl bg-primary/10 p-3 text-primary">
+            <Icon name="lucide:git-branch" class="h-6 w-6" />
           </div>
-          <div>
-            <h3 class="text-lg font-bold">Send tender for approval?</h3>
-            <p class="mt-2 text-sm text-base-content/70">
-              Are you sure you want to send this tender for approval? It will no longer be editable unless an approver sends it back for corrections.
-            </p>
+          <div class="min-w-0 flex-1">
+            <h3 class="text-xl font-semibold">Choose the tender approval path</h3>
+            <p class="mt-1 text-sm text-base-content/65">Review happens before approval. Every selected person in a stage must act before the tender advances.</p>
           </div>
+          <button class="btn btn-ghost btn-sm btn-circle" type="button" aria-label="Close" :disabled="submitting" @click="closeSubmissionDialog"><Icon name="lucide:x" class="h-4 w-4" /></button>
         </div>
 
-        <div v-if="submissionError" class="alert alert-error mt-4 py-3 text-sm">
+        <div class="space-y-6 overflow-y-auto p-6">
+          <div v-if="loadingWorkflow" class="flex items-center justify-center gap-3 py-14 text-base-content/60"><span class="loading loading-spinner loading-md" /> Loading eligible users…</div>
+          <template v-else>
+            <section>
+              <h4 class="font-semibold">1. Select a path</h4>
+              <div class="mt-3 grid gap-3 lg:grid-cols-3">
+                <label v-for="path in approvalPaths" :key="path.value" :class="['cursor-pointer rounded-xl border p-4 transition', selectedPath === path.value ? 'border-primary bg-primary/5 ring-1 ring-primary' : 'border-base-300 hover:border-primary/40']">
+                  <div class="flex items-start gap-3"><input v-model="selectedPath" class="radio radio-primary radio-sm mt-0.5" type="radio" name="approval-path" :value="path.value" @change="resetSelections" /><div><p class="font-medium">{{ path.label }}</p><p class="mt-1 text-xs leading-5 text-base-content/60">{{ path.description }}</p></div></div>
+                </label>
+              </div>
+            </section>
+
+            <div class="grid gap-5 lg:grid-cols-2">
+              <section class="rounded-xl border border-base-300 p-4">
+                <div class="flex items-center justify-between gap-2"><div><h4 class="font-semibold">2. Tender reviewers</h4><p class="text-xs text-base-content/60">Each reviewer must comment and recommend.</p></div><span class="badge badge-primary badge-soft">{{ selectedReviewerIds.length }} selected</span></div>
+                <div v-if="!eligibleReviewers.length" class="alert alert-warning mt-4 text-sm"><Icon name="lucide:user-x" class="h-4 w-4" />No users in this entity have the Tender Reviewer role.</div>
+                <div v-else class="mt-4 max-h-60 space-y-2 overflow-y-auto pr-1">
+                  <label v-for="person in eligibleReviewers" :key="person.id" class="flex cursor-pointer items-center gap-3 rounded-lg border border-base-200 p-3 hover:bg-base-200/50"><input v-model="selectedReviewerIds" class="checkbox checkbox-primary checkbox-sm" type="checkbox" :value="person.id" :disabled="reviewerDisabled(person.id)" /><span class="min-w-0"><span class="block text-sm font-medium">{{ personName(person) }}</span><span class="block truncate text-xs text-base-content/55">{{ person.email }}</span></span></label>
+                </div>
+              </section>
+
+              <section class="rounded-xl border border-base-300 p-4">
+                <div class="flex items-center justify-between gap-2"><div><h4 class="font-semibold">3. Tender approvers</h4><p class="text-xs text-base-content/60">Approval starts only after all reviews are complete.</p></div><span class="badge badge-primary badge-soft">{{ selectedApproverIds.length }} selected</span></div>
+                <div v-if="!eligibleApprovers.length" class="alert alert-warning mt-4 text-sm"><Icon name="lucide:user-x" class="h-4 w-4" />No users in this entity have the Tender Approver role.</div>
+                <div v-else class="mt-4 max-h-60 space-y-2 overflow-y-auto pr-1">
+                  <label v-for="person in eligibleApprovers" :key="person.id" class="flex cursor-pointer items-center gap-3 rounded-lg border border-base-200 p-3 hover:bg-base-200/50"><input v-model="selectedApproverIds" class="checkbox checkbox-primary checkbox-sm" type="checkbox" :value="person.id" :disabled="approverDisabled(person.id)" /><span class="min-w-0"><span class="block text-sm font-medium">{{ personName(person) }}</span><span class="block truncate text-xs text-base-content/55">{{ person.email }}</span></span></label>
+                </div>
+              </section>
+            </div>
+          </template>
+
+        <div v-if="submissionError" class="alert alert-error py-3 text-sm">
           <Icon name="lucide:circle-alert" class="h-4 w-4 shrink-0" />
           <div>
             <p>{{ submissionError }}</p>
@@ -177,16 +207,18 @@
               <li v-for="item in submissionErrors" :key="item">{{ item }}</li>
             </ul>
           </div>
-        </div>
+        </div></div>
 
-        <div class="modal-action">
-          <button type="button" class="btn" :disabled="submitting" @click="closeSubmissionDialog">No, keep editing</button>
-          <button type="button" class="btn btn-primary" :disabled="submitting" @click="submitForApproval">
+        <div class="flex items-center justify-between gap-3 border-t border-base-200 bg-base-200/30 px-6 py-4">
+          <p class="text-xs text-base-content/60">The tender becomes read-only after submission.</p>
+          <div class="flex gap-2"><button type="button" class="btn btn-ghost" :disabled="submitting" @click="closeSubmissionDialog">Keep editing</button>
+          <button type="button" class="btn btn-primary" :disabled="submitting || loadingWorkflow || !routeSelectionValid" @click="submitForApproval">
             <span v-if="submitting" class="loading loading-spinner loading-sm" />
-            Yes, send for approval
-          </button>
+            Start approval workflow
+          </button></div>
         </div>
       </div>
+      <form method="dialog" class="modal-backdrop"><button :disabled="submitting">close</button></form>
     </dialog>
   </div>
 </template>
@@ -201,7 +233,7 @@ const props = defineProps({
 const emit = defineEmits(['saved', 'back']);
 
 const toast = useToast();
-const { getTenderComplianceAnalysis, runTenderComplianceAnalysis, transitionTender } = useTenderHelper();
+const { getTenderComplianceAnalysis, runTenderComplianceAnalysis, getTenderWorkflowActions, transitionTender } = useTenderHelper();
 
 const loading = ref(true);
 const running = ref(false);
@@ -213,7 +245,27 @@ const submissionDialog = ref(null);
 const submitting = ref(false);
 const submissionError = ref('');
 const submissionErrors = ref([]);
+const loadingWorkflow = ref(false);
+const eligibleReviewers = ref([]);
+const eligibleApprovers = ref([]);
+const selectedPath = ref('SINGLE_REVIEWER_SINGLE_APPROVER');
+const selectedReviewerIds = ref([]);
+const selectedApproverIds = ref([]);
 let pollTimer = null;
+
+const approvalPaths = [
+  { value: 'SINGLE_REVIEWER_SINGLE_APPROVER', label: 'Single review → single approval', description: 'One reviewer recommends, then one approver decides.' },
+  { value: 'MULTIPLE_REVIEWERS_SINGLE_APPROVER', label: 'Multiple reviews → single approval', description: 'All selected reviewers recommend before one approver decides.' },
+  { value: 'MULTIPLE_REVIEWERS_MULTIPLE_APPROVERS', label: 'Multiple reviews → multiple approvals', description: 'Every selected reviewer and every selected approver must act.' },
+];
+
+const routeSelectionValid = computed(() => {
+  const reviewers = selectedReviewerIds.value.length;
+  const approvers = selectedApproverIds.value.length;
+  if (selectedPath.value === 'SINGLE_REVIEWER_SINGLE_APPROVER') return reviewers === 1 && approvers === 1;
+  if (selectedPath.value === 'MULTIPLE_REVIEWERS_SINGLE_APPROVER') return reviewers >= 2 && approvers === 1;
+  return reviewers >= 2 && approvers >= 2;
+});
 
 const readinessHeading = computed(() => {
   if (!report.value?.can_publish) return 'Tender is not ready for submission.';
@@ -314,11 +366,24 @@ async function runAnalysis() {
   });
 }
 
-function openSubmissionDialog() {
+async function openSubmissionDialog() {
   submissionError.value = '';
   submissionErrors.value = [];
   submissionDialog.value?.showModal?.();
+  loadingWorkflow.value = true;
+  const { data, error } = await getTenderWorkflowActions(props.tenderUuid);
+  if (error.value) submissionError.value = error.value?.data?.message || 'Could not load eligible reviewers and approvers.';
+  else {
+    eligibleReviewers.value = data.value?.data?.eligible_reviewers ?? [];
+    eligibleApprovers.value = data.value?.data?.eligible_approvers ?? [];
+  }
+  loadingWorkflow.value = false;
 }
+
+function resetSelections() { selectedReviewerIds.value = []; selectedApproverIds.value = []; }
+function personName(person) { return [person.name, person.lastname].filter(Boolean).join(' '); }
+function reviewerDisabled(id) { return selectedPath.value === 'SINGLE_REVIEWER_SINGLE_APPROVER' && selectedReviewerIds.value.length >= 1 && !selectedReviewerIds.value.includes(id); }
+function approverDisabled(id) { return selectedPath.value !== 'MULTIPLE_REVIEWERS_MULTIPLE_APPROVERS' && selectedApproverIds.value.length >= 1 && !selectedApproverIds.value.includes(id); }
 
 function closeSubmissionDialog() {
   if (submitting.value) return;
@@ -331,7 +396,11 @@ async function submitForApproval() {
   submissionErrors.value = [];
 
   try {
-    const { data, status, error } = await transitionTender(props.tenderUuid, 'submit_for_approval');
+    const { data, status, error } = await transitionTender(props.tenderUuid, 'submit_for_approval', null, {
+      path_type: selectedPath.value,
+      reviewer_ids: selectedReviewerIds.value,
+      approver_ids: selectedApproverIds.value,
+    });
     if (!status?.value) {
       const body = error.value?.data;
       submissionError.value = body?.message || 'The tender could not be submitted for approval.';
@@ -342,7 +411,7 @@ async function submitForApproval() {
     submissionDialog.value?.close?.();
     toast.success({
       title: 'Submitted for approval',
-      message: data.value?.message || 'Approvers in your organisation have been notified.',
+      message: data.value?.message || 'The selected reviewers have been notified.',
       position: 'topRight',
       layout: 2,
     });

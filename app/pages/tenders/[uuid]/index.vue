@@ -711,11 +711,11 @@ const actionMeta = {
     prompt: 'Submit this tender for review. It will no longer be editable until it is sent back.',
   },
   review_approve: {
-    label: 'Approve review',
+    label: 'Recommend tender',
     icon: 'lucide:check',
     btnClass: 'btn-success',
-    commentRequired: false,
-    prompt: 'Approve the review and forward the tender for final approval.',
+    commentRequired: true,
+    prompt: 'Record your review comment and recommendation. The tender advances only after every assigned reviewer has recommended it.',
   },
   review_send_back: {
     label: 'Send back',
@@ -728,8 +728,8 @@ const actionMeta = {
     label: 'Approve',
     icon: 'lucide:check-check',
     btnClass: 'btn-success',
-    commentRequired: false,
-    prompt: 'Approve the tender. Once approved it can be published.',
+    commentRequired: true,
+    prompt: 'Record your approval comment. The tender is approved only after every assigned approver has acted.',
   },
   approve_send_back: {
     label: 'Send back to reviewer',
@@ -1063,6 +1063,10 @@ watch(activeTab, (tab) => {
 })
 
 function openActionDialog(action) {
+  if (action === 'submit_for_approval') {
+    navigateTo(`/tenders/new?draft=${uuid}`)
+    return
+  }
   if (action === 'open_bids') {
     navigateTo(`/tenders/${uuid}/bid-opening`)
     return
