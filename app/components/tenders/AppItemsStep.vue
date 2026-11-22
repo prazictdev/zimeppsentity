@@ -96,13 +96,27 @@
     <TendersFeesPanel v-if="tenderUuid && requestItems.length" ref="feesPanel" :tender-uuid="tenderUuid" />
 
     <div class="sticky bottom-4 z-10 flex flex-col gap-3 rounded-box border border-base-300 bg-base-100/95 p-3 shadow-lg backdrop-blur sm:flex-row sm:items-center sm:justify-between">
-      <p class="px-1 text-sm text-base-content/55">
-        {{ requestItems.length }} {{ requestItems.length === 1 ? 'line item' : 'line items' }} added
-      </p>
+      <div class="flex items-start gap-2 px-1 text-sm">
+        <Icon
+          :name="requestItems.length === 0 ? 'lucide:list-plus' : missingCategoryItems.length ? 'lucide:circle-alert' : 'lucide:circle-check'"
+          class="mt-0.5 h-4 w-4 shrink-0"
+          :class="requestItems.length === 0 ? 'text-base-content/40' : missingCategoryItems.length ? 'text-warning' : 'text-success'"
+        />
+        <div>
+          <p class="font-medium">
+            {{ requestItems.length }} {{ requestItems.length === 1 ? 'line item' : 'line items' }} added
+          </p>
+          <p v-if="requestItems.length === 0" class="text-xs text-base-content/50">Add a line item to continue.</p>
+          <p v-else-if="missingCategoryItems.length" class="text-xs text-warning">
+            {{ missingCategoryItems.length }} {{ missingCategoryItems.length === 1 ? 'lot needs' : 'lots need' }} at least one required supplier category.
+          </p>
+          <p v-else class="text-xs text-base-content/50">All lots have supplier categories.</p>
+        </div>
+      </div>
       <button
         class="btn btn-primary w-full sm:w-auto"
         type="button"
-        :disabled="loading"
+        :disabled="loading || requestItems.length === 0 || missingCategoryItems.length > 0"
         @click="saveAndContinue"
       >
         Save & continue
@@ -301,6 +315,10 @@ const isSingleLot = computed(() =>
 
 const isConsultancy = computed(() => tender.value?.procurementgroup?.code === 'CONSULTANCY')
 
+const missingCategoryItems = computed(() => requestItems.value.filter(
+  item => !Array.isArray(item.supplier_categories) || item.supplier_categories.length === 0,
+))
+
 const canAddMore = computed(() => {
   if (!props.tenderUuid) return false
   if (isSingleLot.value && requestItems.value.length >= 1) return false
@@ -402,6 +420,11 @@ async function onAppItemPicked(planItem) {
 async function saveAndContinue() {
   if (requestItems.value.length === 0) {
     errorMessage.value = 'Add at least one APP or budget line before continuing.'
+    return
+  }
+  if (missingCategoryItems.value.length > 0) {
+    const missing = missingCategoryItems.value[0]
+    errorMessage.value = `Select at least one required supplier category for “${missing.description}” before continuing.`
     return
   }
   if (isConsultancy.value) {
