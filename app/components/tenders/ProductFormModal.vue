@@ -29,7 +29,7 @@
       </div>
 
       <form class="grid max-h-[calc(92vh-7rem)] grid-cols-1 gap-5 overflow-y-auto px-6 py-5 lg:grid-cols-2" @submit.prevent="submit">
-        <fieldset class="fieldset w-full">
+        <fieldset class="fieldset order-1 w-full lg:col-span-2">
           <legend class="fieldset-legend">Description</legend>
           <textarea
             v-model="form.description"
@@ -40,7 +40,7 @@
           />
         </fieldset>
 
-        <div class="space-y-3 rounded-box border border-base-300 bg-base-200/20 p-4">
+        <div class="order-3 space-y-3 rounded-box border border-base-300 bg-base-200/20 p-4 lg:col-span-2">
           <div class="flex flex-wrap items-start justify-between gap-2">
             <div>
               <h4 class="text-sm font-semibold">UNSPSC classification</h4>
@@ -89,7 +89,7 @@
           </div>
         </div>
 
-        <fieldset class="fieldset w-full">
+        <fieldset class="fieldset order-2 w-full">
           <legend class="fieldset-legend">Quantity</legend>
           <input
             v-model.number="form.quantity"
@@ -101,7 +101,7 @@
           />
         </fieldset>
 
-        <fieldset v-if="budgetMode" class="fieldset w-full">
+        <fieldset v-if="budgetMode" class="fieldset order-2 w-full">
           <legend class="fieldset-legend">Unit price</legend>
           <input
             v-model.number="form.unit_price"
@@ -113,7 +113,7 @@
           />
         </fieldset>
 
-        <div v-if="budgetMode" class="grid gap-3 rounded-box border border-base-300 bg-base-200/30 p-4 text-sm sm:grid-cols-2 lg:col-span-2">
+        <div v-if="budgetMode" class="order-4 grid gap-3 rounded-box border border-base-300 bg-base-200/30 p-4 text-sm sm:grid-cols-2 lg:col-span-2">
           <div>
             <p class="text-xs text-base-content/45">Product total</p>
             <p class="mt-1 text-lg font-semibold tabular-nums">{{ formatMoney(productTotal) }}</p>
@@ -124,7 +124,7 @@
           </div>
         </div>
 
-        <section class="space-y-3 border-t border-base-200 pt-5 lg:col-span-2">
+        <section class="order-5 space-y-3 border-t border-base-200 pt-5 lg:col-span-2">
           <div class="flex flex-wrap items-center justify-between gap-2">
             <div>
               <h4 class="font-semibold">Technical specifications</h4>
@@ -213,7 +213,7 @@
 
         </section>
 
-        <div class="modal-action sticky bottom-0 -mx-6 -mb-5 border-t border-base-200 bg-base-100 px-6 py-4 lg:col-span-2">
+        <div class="modal-action order-6 sticky bottom-0 -mx-6 -mb-5 border-t border-base-200 bg-base-100 px-6 py-4 lg:col-span-2">
           <button type="button" class="btn" :disabled="submitting" @click="close">Cancel</button>
           <button type="submit" class="btn btn-primary" :disabled="submitting">
             <span v-if="submitting" class="loading loading-spinner loading-sm" />
