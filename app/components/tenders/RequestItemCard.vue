@@ -392,6 +392,12 @@ function allocatedBudgetForPlanItem(planItemId, excludingProductId = null) {
     .reduce((sum, product) => sum + Number(product.budget_amount ?? 0), 0)
 }
 
+function allocatedProductTotal(excludingProductId = null) {
+  return products.value
+    .filter(product => product.id !== excludingProductId)
+    .reduce((sum, product) => sum + Number(product.budget_amount ?? 0), 0)
+}
+
 function productRemainingAfterAllocation(product) {
   const publishedRemaining = Number(product.annualprocurementplanitem?.remaining_balance ?? 0)
   return Math.max(0, publishedRemaining - allocatedBudgetForPlanItem(product.annualprocurementplanitem_id))
@@ -403,11 +409,11 @@ async function openAddProduct() {
   productModalTitle.value = 'Add product / service'
   productModalSubmitLabel.value = 'Add'
   productRemainingQty.value = isAppLine.value ? null : remainingQty.value
-  productBudgetMode.value = isAppLine.value
+  productBudgetMode.value = true
   const publishedRemaining = Number(props.item?.annualprocurementplanitem?.remaining_balance ?? 0)
   productMaxBudget.value = isAppLine.value
     ? Math.max(0, publishedRemaining - allocatedBudgetForPlanItem(props.item?.annualprocurementplanitem_id))
-    : null
+    : Math.max(0, Number(props.item?.total ?? 0) - allocatedProductTotal())
   productInitial.value = {
     description: '',
     unspsc_id: null,
@@ -428,10 +434,10 @@ async function openEditProduct(product) {
   productModalSubmitLabel.value = 'Save'
   const others = allocatedQty.value - Number(product.quantity ?? 0)
   productRemainingQty.value = isAppLine.value ? null : Math.max(0, Number(props.item.quantity) - others)
-  productBudgetMode.value = Boolean(product.annualprocurementplanitem_id)
-  productMaxBudget.value = productBudgetMode.value
+  productBudgetMode.value = true
+  productMaxBudget.value = product.annualprocurementplanitem_id
     ? Math.max(0, Number(product.annualprocurementplanitem?.remaining_balance ?? 0) - allocatedBudgetForPlanItem(product.annualprocurementplanitem_id, product.id))
-    : null
+    : Math.max(0, Number(props.item?.total ?? 0) - allocatedProductTotal(product.id))
   productInitial.value = {
     description: product.description,
     unspsc_id: product.unspsc_id ?? null,

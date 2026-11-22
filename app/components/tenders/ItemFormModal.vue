@@ -57,9 +57,20 @@
           </span>
         </label>
 
-        <p v-else class="rounded-field border border-base-300 bg-base-200/30 px-3 py-2 text-xs leading-5 text-base-content/60">
-          Unit prices are captured on the products or services added to this line item.
-        </p>
+        <label v-else class="form-control w-full">
+          <span class="label-text text-xs font-medium">Item total</span>
+          <input
+            v-model.number="form.total"
+            type="number"
+            min="0.01"
+            step="0.01"
+            class="input input-bordered w-full tabular-nums"
+            :disabled="submitting"
+          />
+          <span class="mt-1 text-xs text-base-content/50">
+            The combined total of products and services cannot exceed this amount.
+          </span>
+        </label>
 
         <p v-if="!budgetOnly && maxQuantity != null" class="text-xs text-base-content/50">
           Maximum quantity from APP line: {{ maxQuantity }}
@@ -152,6 +163,10 @@ async function submit() {
     formError.value = `Amount cannot exceed the available APP budget of ${formatMoney(props.maxBudget)}.`
     return
   }
+  if (!props.budgetOnly && Number(form.total) <= 0) {
+    formError.value = 'Item total must be greater than zero.'
+    return
+  }
   if (props.maxQuantity != null && Number(form.quantity) > props.maxQuantity) {
     formError.value = `Quantity cannot exceed ${props.maxQuantity}.`
     return
@@ -161,6 +176,7 @@ async function submit() {
     : {
         description: form.description,
         quantity: form.quantity,
+        total: Number(form.total),
       })
 }
 
