@@ -89,7 +89,7 @@
           </div>
         </div>
 
-        <fieldset class="fieldset order-2 w-full">
+        <fieldset class="fieldset order-2 w-full lg:col-span-2">
           <legend class="fieldset-legend">Quantity</legend>
           <input
             v-model.number="form.quantity"
