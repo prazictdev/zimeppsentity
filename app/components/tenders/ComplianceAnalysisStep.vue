@@ -23,14 +23,14 @@
     <template v-else-if="report">
       <div
         role="alert"
-        :class="['alert text-base-content', report.can_publish ? 'alert-success border-success/30 bg-success/10' : 'alert-warning border-warning/30 bg-warning/10']"
+        :class="['alert text-base-content', tierOnePassed ? 'alert-success border-success/30 bg-success/10' : 'alert-warning border-warning/30 bg-warning/10']"
       >
-        <Icon :name="report.can_publish ? 'lucide:check-circle' : 'lucide:alert-triangle'" class="h-5 w-5 shrink-0 text-base-content" />
+        <Icon :name="tierOnePassed ? 'lucide:check-circle' : 'lucide:alert-triangle'" class="h-5 w-5 shrink-0 text-base-content" />
         <div>
           <p class="font-semibold">
             {{ readinessHeading }}
           </p>
-          <p v-if="!report.can_publish" class="text-sm">Resolve the issues below before submitting the tender for approval.</p>
+          <p v-if="!tierOnePassed" class="text-sm">Resolve the issues below before submitting the tender for approval.</p>
         </div>
       </div>
 
@@ -74,10 +74,10 @@
     </div>
 
     <div class="flex flex-col items-end gap-2 border-t border-base-200 pt-4">
-      <p v-if="!report?.can_publish" class="text-sm text-warning">
+      <p v-if="!tierOnePassed" class="text-sm text-warning">
         Complete every blocking Tier 1 requirement before submitting.
       </p>
-      <button class="btn btn-primary" type="button" :disabled="submitting || !report?.can_publish" @click="openSubmissionDialog">
+      <button class="btn btn-primary" type="button" :disabled="submitting || !tierOnePassed" @click="openSubmissionDialog">
         <span v-if="submitting" class="loading loading-spinner loading-sm" />
         Submit for approval
       </button>
@@ -191,8 +191,10 @@ const routeSelectionValid = computed(() => {
   return reviewers >= 2 && approvers >= 2;
 });
 
+const tierOnePassed = computed(() => Boolean(report.value?.tier1?.passed));
+
 const readinessHeading = computed(() => {
-  if (!report.value?.can_publish) return 'Tender is not ready for submission.';
+  if (!tierOnePassed.value) return 'Tender is not ready for submission.';
   return 'Tender passes the statutory and structural readiness checks.';
 });
 
