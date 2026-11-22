@@ -81,7 +81,7 @@
         <p class="mb-2 mt-3 text-xs text-base-content/60">Complete each item below. The Description column stays visible while you scroll across the remaining details.</p>
         <fieldset :disabled="submitting" class="max-h-[65vh] min-h-0 min-w-0 flex-1 overflow-auto rounded-xl border border-base-300">
           <table class="item-grid table table-sm">
-            <thead><tr><th>Row</th><th>Description *</th><th>UNSPSC *</th><th>Reference</th><th v-for="column in lookupColumns" :key="column.key">{{ column.label }}</th><th v-if="exemptionMode">Exemption grounds *</th><th v-if="exemptionMode">Evidence document key</th><th>Quantity</th><th>Unit cost</th><th>Quarter</th><th>Expense</th><th>Award type</th><th v-for="column in dayColumns" :key="column.key">{{ column.label }}</th><th>Pre-qualification</th><th>EOI</th><th v-for="column in flagColumns" :key="column.key">{{ column.label }}</th><th v-for="column in dateColumns" :key="column.key">{{ column.label }}</th><th>MSDS (Minimum Service Delivery Standard)</th></tr></thead>
+            <thead><tr><th>Row</th><th>Description *</th><th>UNSPSC *</th><th>Reference</th><th v-for="column in lookupColumns" :key="column.key">{{ column.label }}</th><th v-if="exemptionMode">Exemption grounds *</th><th v-if="exemptionMode">Evidence document key</th><th>Quantity</th><th>Unit cost</th><th>Quarter</th><th>Expense</th><th>Award type</th><th v-for="column in dayColumns" :key="column.key">{{ column.label }}</th><th v-if="showPrequalificationColumn">Pre-qualification</th><th v-if="showEoiColumns">EOI</th><th v-for="column in flagColumns" :key="column.key">{{ column.label }}</th><th v-for="column in displayedDateColumns" :key="column.key">{{ column.label }}</th><th>MSDS (Minimum Service Delivery Standard)</th></tr></thead>
             <tbody><template v-for="row in visibleRows" :key="row.uuid">
               <tr :class="['align-top', !row.unspsc_id ? 'bg-warning/10' : '']">
                 <td><span class="block mb-2">{{ rowNumber(row) }}</span><button type="button" class="btn btn-error btn-outline btn-xs btn-square" aria-label="Delete row" title="Delete row" :disabled="row._sent || submitting" @click="removeRow(row)"><Icon name="lucide:trash-2" /></button></td>
@@ -96,13 +96,13 @@
                 <td><select v-model="row.expensecategory" class="select select-sm w-28" :disabled="row._sent" aria-label="Expense"><option>MOOE</option><option>CapEx</option></select></td>
                 <td><select v-model="row.award_type" class="select select-sm w-36" :disabled="row._sent" aria-label="Award type"><option value="AWARD">Award</option><option value="FRAMEWORK">Framework</option></select></td>
                 <td v-for="column in dayColumns" :key="column.key"><input v-model.number="row[column.key]" type="number" min="0" :max="column.max" :disabled="row._sent" :aria-label="column.label" class="input input-sm w-36" /></td>
-                <td class="min-w-40 text-center"><input v-model="row.pre_qualification" type="checkbox" class="checkbox checkbox-sm" :disabled="row._sent || !planningApplicability(row).prequalificationAllowed" aria-label="Pre-qualification" /><span v-if="!planningApplicability(row).prequalificationAllowed" class="mt-1 block text-xs text-base-content/50">Not applicable</span></td>
-                <td class="min-w-40 text-center"><span :class="['badge badge-sm', planningApplicability(row).eoiRequired ? 'badge-success badge-soft' : 'badge-ghost']">{{ planningApplicability(row).eoiLabel }}</span></td>
+                <td v-if="showPrequalificationColumn" class="min-w-32 text-center"><input v-if="planningApplicability(row).prequalificationAllowed" v-model="row.pre_qualification" type="checkbox" class="checkbox checkbox-sm" :disabled="row._sent" aria-label="Pre-qualification" /></td>
+                <td v-if="showEoiColumns" class="min-w-24 text-center"><span v-if="planningApplicability(row).eoiRequired" class="badge badge-success badge-soft badge-sm">Required</span></td>
                 <td v-for="column in flagColumns" :key="column.key" class="text-center"><input v-model="row[column.key]" type="checkbox" class="checkbox checkbox-sm" :disabled="row._sent" :aria-label="column.label" /></td>
-                <td v-for="column in dateColumns" :key="column.key" class="min-w-44"><span v-if="column.eoiOnly && !row.eoi" class="badge badge-ghost badge-sm">Not applicable</span><input v-else v-model="row[column.key]" type="date" :disabled="row._sent" :aria-label="column.label" class="input input-sm w-44" /></td>
+                <td v-for="column in displayedDateColumns" :key="column.key" class="min-w-44"><input v-if="!column.eoiOnly || row.eoi" v-model="row[column.key]" type="date" :disabled="row._sent" :aria-label="column.label" class="input input-sm w-44" /></td>
                 <td><textarea v-model="row.msds" rows="2" class="textarea w-72" :disabled="row._sent" aria-label="MSDS (Minimum Service Delivery Standard)" /></td>
               </tr>
-            </template><tr v-if="!visibleRows.length"><td :colspan="15 + dayColumns.length + flagColumns.length + dateColumns.length + 1" class="empty-grid py-16 text-base-content/50">{{ emptyGridMessage }}</td></tr></tbody>
+            </template><tr v-if="!visibleRows.length"><td :colspan="13 + dayColumns.length + flagColumns.length + displayedDateColumns.length + Number(showPrequalificationColumn) + Number(showEoiColumns) + 1" class="empty-grid py-16 text-base-content/50">{{ emptyGridMessage }}</td></tr></tbody>
           </table>
         </fieldset>
         <div class="mt-3 flex items-center justify-between gap-3"><p class="text-xs text-base-content/60">{{ uploadNote }}</p><div class="flex items-center gap-2"><button class="btn btn-sm" :disabled="page <= 1 || submitting" @click="page--">Previous</button><span class="text-sm">{{ page }} / {{ lastPage }}</span><button class="btn btn-sm" :disabled="page >= lastPage || submitting" @click="page++">Next</button></div></div>
@@ -200,6 +200,9 @@ function planningApplicability(row) {
     eoiLabel: eoiRequired ? 'Required automatically' : (eoiApplicable ? `Not required below ${eoiRule.currency_code || 'USD'} ${Number(eoiRule.amount || 50000).toLocaleString()}` : 'Not applicable'),
   };
 }
+const showPrequalificationColumn = computed(() => rows.value.some(row => planningApplicability(row).prequalificationAllowed));
+const showEoiColumns = computed(() => rows.value.some(row => planningApplicability(row).eoiRequired));
+const displayedDateColumns = computed(() => dateColumns.filter(column => !column.eoiOnly || showEoiColumns.value));
 function reconcilePlanningApplicability(row) {
   const applicability = planningApplicability(row);
   if (!applicability.prequalificationAllowed && row.pre_qualification) row.pre_qualification = false;
