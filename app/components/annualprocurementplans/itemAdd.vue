@@ -1,7 +1,7 @@
 <template>
-  <div>
-      <div class="flex min-w-0 flex-col rounded-xl border border-base-300 bg-base-100 shadow-sm">
-        <div class="flex flex-col gap-4 border-b border-base-200 px-4 py-5 sm:px-6 lg:flex-row lg:items-center lg:justify-between">
+  <div :class="embedded ? 'h-full min-h-0' : ''">
+      <div :class="['flex min-w-0 flex-col bg-base-100', embedded ? 'h-full min-h-0' : 'rounded-xl border border-base-300 shadow-sm']">
+        <div v-if="!embedded" class="flex flex-col gap-4 border-b border-base-200 px-4 py-5 sm:px-6 lg:flex-row lg:items-center lg:justify-between">
           <div>
             <div class="mb-1 flex items-center gap-2">
               <span class="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 text-primary"><Icon name="lucide:list-plus" class="h-5 w-5" /></span>
@@ -23,7 +23,7 @@
           </ul>
         </div>
 
-        <div class="p-4 sm:p-6">
+        <div :class="['p-4 sm:p-6', embedded ? 'min-h-0 flex-1 overflow-auto' : '']">
         <section class="flex flex-col gap-4 rounded-xl border border-base-300 bg-base-200/35 p-4 lg:flex-row lg:items-end lg:justify-between">
           <div>
             <h2 class="font-semibold">1. Add items</h2>
@@ -138,6 +138,7 @@ const props = defineProps({
   planUuid: { type: String, required: true },
   exemptionUuid: { type: String, default: null },
   supplementUuid: { type: String, default: null },
+  embedded: { type: Boolean, default: false },
 });
 const emit = defineEmits(['uploaded']);
 const store = useAnnualprocurementplanStore(), exemptionStore = useExemptionStore(), identity = useSanctumUser(), client = usePeClient();
