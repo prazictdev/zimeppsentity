@@ -29,7 +29,7 @@
             </div>
           </dl>
 
-          <div v-if="isAppLine" class="mt-3 rounded-field border border-base-300 bg-base-100 p-3">
+          <div class="mt-3 rounded-field border border-base-300 bg-base-100 p-3">
             <div class="flex flex-wrap items-center justify-between gap-2">
               <div>
                 <p class="text-xs font-semibold">Required supplier categories</p>
@@ -55,7 +55,7 @@
               </label>
               <div class="mt-2 max-h-48 space-y-1 overflow-y-auto">
                 <label v-for="category in filteredSupplierCategories" :key="category.id" class="flex cursor-pointer items-start gap-2 rounded px-2 py-1.5 hover:bg-base-200/60">
-                  <input type="checkbox" class="checkbox checkbox-xs mt-0.5" :checked="selectedCategoryIds.includes(category.id)" @change="toggleCategory(category.id)">
+                  <input type="checkbox" class="checkbox checkbox-xs mt-0.5" :checked="selectedCategoryIds.includes(Number(category.id))" @change="toggleCategory(category.id)">
                   <span class="text-xs"><strong>{{ category.name }}</strong> <span class="font-mono text-base-content/50">{{ category.code }}</span></span>
                 </label>
               </div>

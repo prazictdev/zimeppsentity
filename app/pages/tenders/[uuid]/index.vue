@@ -281,7 +281,7 @@
                   </span>
                 </div>
 
-                <div v-if="isAppTenderItem(item)" class="mt-2 flex flex-wrap items-center gap-1 text-xs">
+                <div class="mt-2 flex flex-wrap items-center gap-1 text-xs">
                   <span class="text-base-content/60">Required supplier categories:</span>
                   <span v-if="!item.supplier_categories?.length" class="text-base-content/50">Open to all</span>
                   <template v-else>

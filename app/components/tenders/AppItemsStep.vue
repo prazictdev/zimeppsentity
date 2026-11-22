@@ -128,6 +128,7 @@
       :quantity-readonly="formQuantityReadonly"
       :max-quantity="formMaxQuantity"
       :max-budget="formMaxBudget"
+      :supplier-categories="supplierCategories"
       :initial="formInitial"
       @submit="onFormSubmit"
     />
@@ -268,7 +269,7 @@ const formDescriptionReadonly = ref(false)
 const formQuantityReadonly = ref(false)
 const formMaxQuantity = ref(null)
 const formMaxBudget = ref(null)
-const formInitial = ref({ description: '', quantity: 0, unit_price: 0, total: 0 })
+const formInitial = ref({ description: '', quantity: 0, unit_price: 0, total: 0, supplier_category_ids: [] })
 
 const deleteDialog = ref(null)
 const pendingDelete = ref(null)
@@ -340,6 +341,8 @@ function configureFormForManual(initial = {}) {
     quantity: Number(initial.quantity ?? 0),
     unit_price: Number(initial.unit_price ?? 0),
     total: Number(initial.total ?? 0),
+    supplier_category_ids: (initial.supplier_category_ids ?? initial.supplier_categories?.map(category => category.id) ?? [])
+      .map(id => Number(id)),
   }
 }
 
