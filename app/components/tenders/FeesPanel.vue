@@ -18,7 +18,7 @@
       </div>
     </div>
 
-    <div class="grid gap-4 p-5 lg:grid-cols-2">
+    <div class="grid gap-4 p-5">
       <section v-if="fees?.bid_bond" class="rounded-field border border-base-300 p-4">
         <div class="flex items-start gap-3">
           <div class="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-success/10 text-success">
