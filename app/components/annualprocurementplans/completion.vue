@@ -4,36 +4,54 @@
       <div class="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
         <h2 class="text-sm font-semibold">Plan readiness</h2>
         <span v-if="stages.length && !loading && !error" class="badge badge-primary badge-sm">{{ percentage }}%</span>
-        <p class="text-xs text-base-content/55" aria-live="polite">{{ loading ? 'Checking sections…' : error || `${completed} of ${stages.length} checks complete` }}</p>
+        <p class="text-xs text-base-content/55" aria-live="polite">{{ loading ? 'Checking sections…' : error || `${completed} of ${readinessStages.length} checks complete` }}</p>
       </div>
       <button type="button" class="btn btn-ghost btn-circle btn-xs" aria-label="Refresh plan completion" :disabled="loading" @click="refresh">
         <Icon name="lucide:refresh-cw" class="h-4 w-4" />
       </button>
     </div>
-    <template v-if="stages.length && !loading && !error">
-      <progress class="progress progress-primary mt-2 h-1.5 w-full" :value="percentage" max="100" aria-label="Plan completion percentage" />
-      <div class="mt-2 flex flex-wrap gap-1.5">
-        <button v-for="stage in stages" :key="stage.key" type="button" class="btn btn-ghost btn-xs h-7 gap-1.5 border border-base-200 font-normal" :title="stage.message" @click="$emit('select', stage.tab)">
-          <Icon :name="stage.complete ? 'lucide:circle-check' : 'lucide:circle'" :class="['h-3.5 w-3.5 shrink-0', stage.complete ? 'text-success' : 'text-warning']" />
-          <span>{{ stage.label }}<span class="sr-only">: {{ stage.complete ? 'Complete' : 'Incomplete' }}. {{ stage.message }}</span></span>
+    <progress v-if="stages.length && !loading && !error" class="progress progress-primary mt-2 h-1.5 w-full" :value="percentage" max="100" aria-label="Plan completion percentage" />
+    <div v-if="stages.length" class="mt-2 flex flex-wrap gap-1.5">
+        <button
+          v-for="stage in stages"
+          :key="stage.key"
+          type="button"
+          :class="['btn btn-ghost btn-xs h-7 gap-1.5 border border-base-200 font-normal', activeTab === stage.tab && stage.key !== 'analysis' ? 'btn-active' : '']"
+          :title="stage.message"
+          :aria-pressed="activeTab === stage.tab && stage.key !== 'analysis'"
+          @click="$emit('select', stage.tab)"
+        >
+          <Icon
+            :name="stage.navigationOnly ? stage.icon : (stage.complete === true ? 'lucide:circle-check' : 'lucide:circle')"
+            :class="['h-3.5 w-3.5 shrink-0', stage.navigationOnly ? 'text-base-content/55' : (stage.complete === true ? 'text-success' : (stage.complete === false ? 'text-warning' : 'text-base-content/30'))]"
+          />
+          <span>
+            {{ stage.label }}
+            <span class="sr-only">{{ stage.navigationOnly || stage.complete == null ? `: ${stage.message}` : `: ${stage.complete ? 'Complete' : 'Incomplete'}. ${stage.message}` }}</span>
+          </span>
         </button>
-      </div>
-    </template>
+    </div>
   </section>
 </template>
 
 <script setup>
 import { getPlanCompletionStages } from '~/utils/planCompletion';
 
-const props = defineProps({ planUuid: { type: String, required: true } });
+const props = defineProps({
+  planUuid: { type: String, required: true },
+  activeTab: { type: String, default: 'items' },
+});
 defineEmits(['select']);
 const store = useAnnualprocurementplanStore();
 const { analyzePlan, getItems, getPmuMembers, getUnresolved } = useAnnualprocurementplanHelper();
-const stages = ref([]);
+const fallbackStages = () => getPlanCompletionStages({ report: {}, itemCount: 0, pmuCount: 0, unresolved: 0 })
+  .map(stage => stage.navigationOnly ? stage : ({ ...stage, complete: null, message: 'Readiness status is not available yet.' }));
+const stages = ref(fallbackStages());
 const loading = ref(false);
 const error = ref('');
-const completed = computed(() => stages.value.filter(stage => stage.complete).length);
-const percentage = computed(() => stages.value.length ? Math.round(completed.value / stages.value.length * 100) : 0);
+const readinessStages = computed(() => stages.value.filter(stage => !stage.navigationOnly));
+const completed = computed(() => readinessStages.value.filter(stage => stage.complete).length);
+const percentage = computed(() => readinessStages.value.length ? Math.round(completed.value / readinessStages.value.length * 100) : 0);
 let requestId = 0;
 let refreshTimer;
 
@@ -70,7 +88,7 @@ const unsubscribe = store.$onAction(({ name, after }) => {
   });
 });
 
-watch(() => props.planUuid, () => { stages.value = []; refresh(); }, { immediate: true });
+watch(() => props.planUuid, () => { stages.value = fallbackStages(); refresh(); }, { immediate: true });
 onBeforeUnmount(() => {
   unsubscribe();
   clearTimeout(refreshTimer);

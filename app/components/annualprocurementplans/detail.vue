@@ -27,127 +27,11 @@
       </dl>
     </header>
 
-    <AnnualprocurementplansCompletion v-if="showPreparationSteps" :plan-uuid="planUuid" @select="activeTab = $event" />
+    <AnnualprocurementplansCompletion :plan-uuid="planUuid" :active-tab="activeTab" @select="activeTab = $event" />
 
-    <!-- Section navigation + active section content -->
+    <!-- Active section content; navigation lives in Plan readiness above. -->
     <div class="card overflow-hidden rounded-2xl border border-base-200 shadow-sm">
       <div class="card-body gap-0 p-0">
-        <div class="overflow-x-auto border-b border-base-200 bg-base-100 px-4 pt-2 sm:px-5">
-          <div role="tablist" aria-label="Annual procurement plan sections" class="tabs tabs-border tabs-sm w-max min-w-full flex-nowrap">
-          <button
-            role="tab"
-            class="tab gap-1 whitespace-nowrap"
-            :aria-selected="activeTab === 'items'"
-            :class="{ 'tab-active': activeTab === 'items' }"
-            @click="activeTab = 'items'"
-          >
-            <Icon name="lucide:list" />
-            Plan Items
-            <span class="badge badge-sm">{{ visiblePlanItemsCount }}</span>
-          </button>
-          <button
-            role="tab"
-            class="tab gap-1 whitespace-nowrap"
-            :aria-selected="activeTab === 'classification'"
-            :class="{ 'tab-active': activeTab === 'classification' }"
-            @click="activeTab = 'classification'"
-          >
-            <Icon name="lucide:scan-search" />
-            UNSPSC Validation
-          </button>
-          <button
-            role="tab"
-            class="tab gap-1 whitespace-nowrap"
-            :aria-selected="activeTab === 'consolidation'"
-            :class="{ 'tab-active': activeTab === 'consolidation' }"
-            @click="activeTab = 'consolidation'"
-          >
-            <Icon name="lucide:combine" />
-            Consolidation
-            <span class="badge badge-primary badge-sm">{{ consolidationCount }}</span>
-          </button>
-          <button
-            role="tab"
-            class="tab gap-1 whitespace-nowrap"
-            :aria-selected="activeTab === 'issues'"
-            :class="{ 'tab-active': activeTab === 'issues' }"
-            @click="activeTab = 'issues'"
-          >
-            <Icon name="lucide:alert-triangle" />
-            Issues
-            <span :class="['badge badge-sm', unresolvedCount > 0 ? 'badge-warning' : '']">
-              {{ unresolvedCount }}
-            </span>
-          </button>
-          <button
-            role="tab"
-            class="tab gap-1 whitespace-nowrap"
-            :aria-selected="activeTab === 'disposal'"
-            :class="{ 'tab-active': activeTab === 'disposal' }"
-            @click="activeTab = 'disposal'"
-          >
-            <Icon name="lucide:trash-2" />
-            Disposal Plan
-            <span class="badge badge-sm">{{ store.disposalPlansMeta.total }}</span>
-          </button>
-          <button
-            role="tab"
-            class="tab gap-1 whitespace-nowrap"
-            :aria-selected="activeTab === 'evaluation'"
-            :class="{ 'tab-active': activeTab === 'evaluation' }"
-            @click="activeTab = 'evaluation'"
-          >
-            <Icon name="lucide:users" />
-            Evaluation Committee
-            <span class="badge badge-sm">{{ store.committeeMembersMeta.total }}</span>
-          </button>
-          <button
-            role="tab"
-            class="tab gap-1 whitespace-nowrap"
-            :aria-selected="activeTab === 'pmu'"
-            :class="{ 'tab-active': activeTab === 'pmu' }"
-            @click="activeTab = 'pmu'"
-          >
-            <Icon name="lucide:building-2" />
-            PMU
-            <span class="badge badge-sm">{{ store.pmuMembersMeta.total }}</span>
-          </button>
-          <button
-            role="tab"
-            class="tab gap-1 whitespace-nowrap"
-            :aria-selected="activeTab === 'disposalcommittee'"
-            :class="{ 'tab-active': activeTab === 'disposalcommittee' }"
-            @click="activeTab = 'disposalcommittee'"
-          >
-            <Icon name="lucide:users" />
-            Disposal Committee
-            <span class="badge badge-sm">{{ store.disposalCommitteeMembersMeta.total }}</span>
-          </button>
-          <button
-            role="tab"
-            class="tab gap-1 whitespace-nowrap"
-            :aria-selected="activeTab === 'attachments'"
-            :class="{ 'tab-active': activeTab === 'attachments' }"
-            @click="activeTab = 'attachments'"
-          >
-            <Icon name="lucide:paperclip" />
-            Required Attachments
-            <span class="badge badge-sm">{{ store.planDocuments.length }}</span>
-          </button>
-          <button
-            role="tab"
-            class="tab gap-1 whitespace-nowrap"
-            :aria-selected="activeTab === 'history'"
-            :class="{ 'tab-active': activeTab === 'history' }"
-            @click="activeTab = 'history'"
-          >
-            <Icon name="lucide:history" />
-            Workflow History
-            <span class="badge badge-sm">{{ peTransitions.length }}</span>
-          </button>
-          </div>
-        </div>
-
         <div class="min-w-0 flex-1 space-y-4 p-4 sm:p-5">
         <!-- Plan Items -->
         <div v-if="activeTab === 'items'">
@@ -624,17 +508,9 @@ const peTransitions = computed(() =>
 );
 
 const totalItems = computed(() => plan.value?.items_count ?? store.planItemsMeta?.total ?? 0);
-const visiblePlanItemsCount = computed(() => store.planItemsMeta?.total ?? 0);
-const consolidationCount = ref(0);
-watch(
-  () => plan.value?.consolidations_count,
-  value => { consolidationCount.value = Number(value ?? 0); },
-  { immediate: true },
-);
 
 async function onConsolidationCountChange(count) {
-  consolidationCount.value = Number(count ?? 0);
-  if (plan.value) plan.value.consolidations_count = consolidationCount.value;
+  if (plan.value) plan.value.consolidations_count = Number(count ?? 0);
   await Promise.all([
     store.fetchPlanItems(props.planUuid, buildItemsOpts({ page: 1 })),
     store.fetchItemTotalsByAwardType(props.planUuid, buildItemsOpts({ page: 1 })),
