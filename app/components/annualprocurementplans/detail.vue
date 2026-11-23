@@ -32,45 +32,54 @@
         <div class="min-w-0 flex-1 space-y-4 p-4 sm:p-5">
         <!-- Plan Items -->
         <div v-if="activeTab === 'items'">
-          <div class="mt-3 flex justify-end gap-2">
-            <AnnualprocurementplansSummaryDialog
-              :plan-uuid="planUuid"
-              :method-rows="store.itemTotals"
-              :group-rows="store.itemTotalsByGroup"
-              :award-rows="store.itemTotalsByAwardType"
-              :flag-rows="store.itemTotalsByFlag"
-              :plan-total="planTotal"
-              :group-total="planGroupTotal"
-              :award-total="awardTypeTotal"
-              :total-items="totalItems"
-              :award-item-count="awardTypeItemCount"
-            />
-            <NuxtLink v-if="canAdd && canEditPlan" :to="`/annualprocurementplans/${planUuid}/add-items`" class="btn btn-success btn-sm"><Icon name="lucide:plus" />Add items</NuxtLink>
-            <AnnualprocurementplansItemBulkDelete v-if="canDelete && canEditPlan" :plan-uuid="planUuid" />
-          </div>
-          <div class="card mt-4 rounded-xl border border-base-200 shadow-sm">
-            <div class="card-body">
-              <div class="flex flex-wrap items-center justify-between gap-2 border-b border-base-200 pb-3">
-                <span class="flex items-center gap-2 text-lg font-bold">
-                  <Icon name="lucide:list-checks" class="h-5 w-5 text-primary" />
-                  Plan Items
-                </span>
+          <section class="overflow-hidden rounded-xl border border-base-200 bg-base-100">
+            <header class="border-b border-base-200 p-3 sm:p-4">
+              <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                <div class="flex min-w-0 items-center gap-3">
+                  <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                    <Icon name="lucide:list-checks" class="h-5 w-5" />
+                  </span>
+                  <div class="min-w-0">
+                    <div class="flex items-center gap-2">
+                      <h2 class="text-lg font-bold">Plan items</h2>
+                      <span class="badge badge-ghost badge-sm">{{ store.planItemsMeta.total }}</span>
+                    </div>
+                    <p class="text-xs text-base-content/50">Manage the requirements included in this procurement plan.</p>
+                  </div>
+                </div>
                 <div class="flex flex-wrap items-center gap-2">
-                  <input
-                    v-model="itemsSearch"
-                    type="text"
-                    placeholder="Search ref or description..."
-                    class="input input-bordered input-sm w-56"
-                    @input="onSearchInput"
+                  <AnnualprocurementplansSummaryDialog
+                    :plan-uuid="planUuid"
+                    :method-rows="store.itemTotals"
+                    :group-rows="store.itemTotalsByGroup"
+                    :award-rows="store.itemTotalsByAwardType"
+                    :flag-rows="store.itemTotalsByFlag"
+                    :plan-total="planTotal"
+                    :group-total="planGroupTotal"
+                    :award-total="awardTypeTotal"
+                    :total-items="totalItems"
+                    :award-item-count="awardTypeItemCount"
                   />
+                  <NuxtLink v-if="canAdd && canEditPlan" :to="`/annualprocurementplans/${planUuid}/add-items`" class="btn btn-success btn-sm"><Icon name="lucide:plus" />Add items</NuxtLink>
+                  <AnnualprocurementplansItemBulkDelete v-if="canDelete && canEditPlan" :plan-uuid="planUuid" />
+                </div>
+              </div>
 
+              <div class="mt-3 flex flex-col gap-2 border-t border-base-200 pt-3 sm:flex-row sm:items-center sm:justify-between">
+                <div class="flex flex-1 flex-col gap-2 sm:flex-row sm:items-center">
+                  <label class="input input-sm w-full sm:w-80">
+                    <Icon name="lucide:search" class="h-4 w-4 text-base-content/40" />
+                    <input v-model="itemsSearch" type="search" class="grow" placeholder="Search reference or description" @input="onSearchInput" />
+                  </label>
                   <button type="button" class="btn btn-outline btn-sm gap-1.5" @click="openFilters">
-                    <Icon name="lucide:filter" class="h-4 w-4" />
+                    <Icon name="lucide:sliders-horizontal" class="h-4 w-4" />
                     Filters
                     <span v-if="activeFilterCount > 0" class="badge badge-primary badge-xs">{{ activeFilterCount }}</span>
                   </button>
-
-                  <select v-model.number="itemsPerPage" class="select select-bordered select-sm" @change="changePerPage">
+                </div>
+                <div class="flex items-center justify-between gap-3 sm:justify-end">
+                  <span class="text-xs text-base-content/50">{{ store.planItemsMeta.total }} result{{ store.planItemsMeta.total === 1 ? '' : 's' }}</span>
+                  <select v-model.number="itemsPerPage" class="select select-sm w-32" aria-label="Items per page" @change="changePerPage">
                     <option :value="25">25 / page</option>
                     <option :value="50">50 / page</option>
                     <option :value="100">100 / page</option>
@@ -78,150 +87,76 @@
                   </select>
                 </div>
               </div>
+            </header>
 
-              <!-- Filters dialog -->
-              <dialog ref="filtersDialog" class="modal">
-                <div class="modal-box max-w-md">
-                  <div class="flex items-center justify-between">
-                    <h3 class="flex items-center gap-2 text-lg font-bold">
-                      <Icon name="lucide:filter" class="h-5 w-5 text-primary" />
-                      Filters
-                    </h3>
-                    <button type="button" class="btn btn-circle btn-ghost btn-sm" @click="closeFilters">
-                      <Icon name="lucide:x" class="h-4 w-4" />
-                    </button>
-                  </div>
-
-                  <div class="mt-4 space-y-4">
-                    <div>
-                      <div class="mb-1.5 text-sm font-semibold">Procurement flags</div>
-                      <div class="grid grid-cols-2 gap-1">
-                        <label
-                          v-for="f in FILTER_FLAGS"
-                          :key="f.key"
-                          class="flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 hover:bg-base-200"
-                        >
-                          <input
-                            type="checkbox"
-                            class="checkbox checkbox-sm"
-                            :checked="itemsFilters[f.key]"
-                            @change="toggleFlagFilter(f.key)"
-                          />
-                          <span class="text-sm">{{ f.label }}</span>
-                        </label>
-                      </div>
-                    </div>
-
-                  </div>
-
-                  <div class="modal-action">
-                    <button
-                      v-if="activeFilterCount > 0"
-                      type="button"
-                      class="btn btn-ghost btn-sm"
-                      @click="clearItemsFilters"
-                    >
-                      <Icon name="lucide:x" class="h-3 w-3" /> Clear all
-                    </button>
-                    <button type="button" class="btn btn-primary btn-sm" @click="closeFilters">Done</button>
+            <dialog ref="filtersDialog" class="modal">
+              <div class="modal-box max-w-md">
+                <div class="flex items-center justify-between">
+                  <h3 class="flex items-center gap-2 text-lg font-bold"><Icon name="lucide:filter" class="h-5 w-5 text-primary" />Filters</h3>
+                  <button type="button" class="btn btn-circle btn-ghost btn-sm" aria-label="Close filters" @click="closeFilters"><Icon name="lucide:x" class="h-4 w-4" /></button>
+                </div>
+                <div class="mt-4">
+                  <div class="mb-1.5 text-sm font-semibold">Procurement flags</div>
+                  <div class="grid grid-cols-2 gap-1">
+                    <label v-for="f in FILTER_FLAGS" :key="f.key" class="flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 hover:bg-base-200">
+                      <input type="checkbox" class="checkbox checkbox-sm" :checked="itemsFilters[f.key]" @change="toggleFlagFilter(f.key)" />
+                      <span class="text-sm">{{ f.label }}</span>
+                    </label>
                   </div>
                 </div>
-                <form method="dialog" class="modal-backdrop">
-                  <button type="button" @click="closeFilters">close</button>
-                </form>
-              </dialog>
+                <div class="modal-action">
+                  <button v-if="activeFilterCount > 0" type="button" class="btn btn-ghost btn-sm" @click="clearItemsFilters"><Icon name="lucide:x" class="h-3 w-3" />Clear all</button>
+                  <button type="button" class="btn btn-primary btn-sm" @click="closeFilters">Done</button>
+                </div>
+              </div>
+              <form method="dialog" class="modal-backdrop"><button type="button" @click="closeFilters">close</button></form>
+            </dialog>
 
-              <div v-if="store.planItemsLoading" class="flex justify-center py-10">
-                <span class="loading loading-spinner loading-lg"></span>
+            <div v-if="store.planItemsLoading" class="flex justify-center py-14"><span class="loading loading-spinner loading-lg" /></div>
+            <template v-else>
+              <div v-if="!store.planItems.length" class="px-6 py-14 text-center text-sm text-base-content/50">
+                {{ (itemsSearch || activeFilterCount > 0) ? 'No items match the current search or filters.' : 'No items yet. Add an item to start building the plan.' }}
+              </div>
+              <div v-else class="overflow-x-auto">
+                <table class="table table-sm min-w-[1100px]">
+                  <thead class="bg-base-200/70 text-base-content/65">
+                    <tr>
+                      <th class="min-w-80">Item</th>
+                      <th class="min-w-64">Procurement</th>
+                      <th class="min-w-36">Planning</th>
+                      <th class="text-right">Quantity</th>
+                      <th class="text-right">Unit cost</th>
+                      <th class="min-w-40 text-right">Budget</th>
+                      <th class="min-w-52">Status and flags</th>
+                      <th class="sticky right-0 z-20 w-32 min-w-32 border-l border-base-300 bg-base-200 text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <AnnualprocurementplansPlanItemRow
+                      v-for="it in store.planItems"
+                      :key="it.id"
+                      :item="it"
+                      :plan-uuid="planUuid"
+                      :can-edit="canEdit"
+                      :can-delete="canDelete"
+                      :can-edit-plan="canEditPlan"
+                    />
+                  </tbody>
+                </table>
               </div>
 
-              <template v-else>
-                <div class="mt-3 overflow-x-auto rounded-xl border border-base-200">
-                    <div
-                      v-if="!store.planItems.length"
-                      class="p-6 text-center text-sm text-base-content/50"
-                    >
-                      {{ (itemsSearch || activeFilterCount > 0)
-                        ? 'No items match the current search / filters.'
-                        : 'No items yet. Add an item to start building the plan.' }}
-                    </div>
-                    <table v-else class="table table-sm min-w-[1500px]">
-                      <thead class="sticky top-0 z-30 bg-base-200">
-                        <tr>
-                          <th class="sticky left-0 z-40 w-36 min-w-36 border-r border-base-300 bg-base-200">Reference</th>
-                          <th class="sticky left-36 z-40 w-80 min-w-80 border-r border-base-300 bg-base-200">Description</th>
-                          <th>Procurement group</th>
-                          <th>Procurement method</th>
-                          <th>Award type</th>
-                          <th>Quarter</th>
-                          <th class="text-right">Quantity</th>
-                          <th class="text-right">Unit cost</th>
-                          <th class="text-right">Total</th>
-                          <th class="text-right">Balance</th>
-                          <th>Status</th>
-                          <th>Flags</th>
-                          <th class="sticky right-0 z-50 w-36 min-w-36 border-l border-primary/30 bg-primary text-right text-primary-content shadow-[-8px_0_14px_-10px_rgba(0,0,0,0.45)]">Actions</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        <AnnualprocurementplansPlanItemRow
-                          v-for="it in store.planItems"
-                          :key="it.id"
-                          :item="it"
-                          :plan-uuid="planUuid"
-                          :can-edit="canEdit"
-                          :can-delete="canDelete"
-                          :can-edit-plan="canEditPlan"
-                        />
-                      </tbody>
-                    </table>
-                  </div>
-
-                  <!-- Pagination -->
-                  <div v-if="store.planItemsMeta.last_page > 1" class="mt-3 flex flex-wrap items-center justify-between gap-2">
-                    <div class="text-xs text-base-content/60">
-                      Page {{ store.planItemsMeta.current_page }} of {{ store.planItemsMeta.last_page }}
-                      · {{ store.planItemsMeta.total }} total
-                    </div>
-                    <div class="join">
-                      <button
-                        class="btn btn-sm join-item"
-                        :disabled="store.planItemsMeta.current_page <= 1 || store.planItemsLoading"
-                        @click="goToPage(1)"
-                      >
-                        <Icon name="lucide:chevrons-left" />
-                      </button>
-                      <button
-                        class="btn btn-sm join-item"
-                        :disabled="store.planItemsMeta.current_page <= 1 || store.planItemsLoading"
-                        @click="goToPage(store.planItemsMeta.current_page - 1)"
-                      >
-                        <Icon name="lucide:chevron-left" />
-                        Prev
-                      </button>
-                      <button class="btn btn-sm join-item btn-disabled">
-                        {{ store.planItemsMeta.current_page }}
-                      </button>
-                      <button
-                        class="btn btn-sm join-item"
-                        :disabled="store.planItemsMeta.current_page >= store.planItemsMeta.last_page || store.planItemsLoading"
-                        @click="goToPage(store.planItemsMeta.current_page + 1)"
-                      >
-                        Next
-                        <Icon name="lucide:chevron-right" />
-                      </button>
-                      <button
-                        class="btn btn-sm join-item"
-                        :disabled="store.planItemsMeta.current_page >= store.planItemsMeta.last_page || store.planItemsLoading"
-                        @click="goToPage(store.planItemsMeta.last_page)"
-                      >
-                        <Icon name="lucide:chevrons-right" />
-                      </button>
-                    </div>
-                  </div>
-              </template>
-            </div>
-          </div>
+              <footer v-if="store.planItemsMeta.last_page > 1" class="flex flex-wrap items-center justify-between gap-2 border-t border-base-200 px-3 py-3 sm:px-4">
+                <div class="text-xs text-base-content/60">Page {{ store.planItemsMeta.current_page }} of {{ store.planItemsMeta.last_page }} · {{ store.planItemsMeta.total }} total</div>
+                <div class="join">
+                  <button class="btn btn-sm join-item" aria-label="First page" :disabled="store.planItemsMeta.current_page <= 1 || store.planItemsLoading" @click="goToPage(1)"><Icon name="lucide:chevrons-left" /></button>
+                  <button class="btn btn-sm join-item" :disabled="store.planItemsMeta.current_page <= 1 || store.planItemsLoading" @click="goToPage(store.planItemsMeta.current_page - 1)"><Icon name="lucide:chevron-left" />Prev</button>
+                  <button class="btn btn-sm join-item btn-disabled">{{ store.planItemsMeta.current_page }}</button>
+                  <button class="btn btn-sm join-item" :disabled="store.planItemsMeta.current_page >= store.planItemsMeta.last_page || store.planItemsLoading" @click="goToPage(store.planItemsMeta.current_page + 1)">Next<Icon name="lucide:chevron-right" /></button>
+                  <button class="btn btn-sm join-item" aria-label="Last page" :disabled="store.planItemsMeta.current_page >= store.planItemsMeta.last_page || store.planItemsLoading" @click="goToPage(store.planItemsMeta.last_page)"><Icon name="lucide:chevrons-right" /></button>
+                </div>
+              </footer>
+            </template>
+          </section>
         </div>
 
         <!-- Manual consolidation -->

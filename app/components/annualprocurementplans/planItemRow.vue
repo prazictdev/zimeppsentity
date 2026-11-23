@@ -1,25 +1,40 @@
 <template>
   <tr class="group transition-colors hover:bg-base-200/50" :class="{ 'bg-warning/5': isUnresolved }">
-    <td class="sticky left-0 z-20 w-36 min-w-36 border-r border-base-200 bg-base-100 font-mono text-xs group-hover:bg-base-200">
-      <div class="flex items-center gap-1.5">
-        <Icon v-if="isUnresolved" name="lucide:alert-triangle" class="h-3.5 w-3.5 shrink-0 text-warning" title="Has unresolved values — see Issues tab" />
-        <span>{{ item.reference_no || '—' }}</span>
+    <td>
+      <div class="flex items-start gap-2.5">
+        <span class="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-md" :class="isUnresolved ? 'bg-warning/10 text-warning' : 'bg-primary/10 text-primary'">
+          <Icon :name="isUnresolved ? 'lucide:alert-triangle' : 'lucide:package'" class="h-3.5 w-3.5" />
+        </span>
+        <div class="min-w-0">
+          <div class="font-mono text-xs font-semibold text-base-content/60">{{ item.reference_no || '—' }}</div>
+          <div class="mt-0.5 line-clamp-2 font-medium" :title="item.description">{{ item.description }}</div>
+        </div>
       </div>
     </td>
-    <td class="sticky left-36 z-20 w-80 min-w-80 border-r border-base-200 bg-base-100 group-hover:bg-base-200">
-      <div class="line-clamp-2 font-medium" :title="item.description">{{ item.description }}</div>
+    <td>
+      <div :class="['font-medium', groupWarn ? 'text-warning' : '']">{{ groupLabel }}</div>
+      <div :class="['mt-1 text-xs', methodWarn ? 'text-warning' : 'text-base-content/55']">{{ methodLabel }}</div>
     </td>
-    <td class="min-w-48" :class="groupWarn ? 'text-warning' : ''">{{ groupLabel }}</td>
-    <td class="min-w-48" :class="methodWarn ? 'text-warning' : ''">{{ methodLabel }}</td>
-    <td><span class="badge badge-ghost badge-sm whitespace-nowrap">{{ item.award_type === 'FRAMEWORK' ? 'Framework' : 'Award' }}</span></td>
-    <td class="whitespace-nowrap">{{ item.quarter || '—' }}</td>
-    <td class="text-right font-mono">{{ formatAmount(item.quantity) }}</td>
-    <td class="text-right font-mono">{{ formatAmount(item.unit_cost) }}</td>
-    <td class="text-right font-mono font-semibold">{{ formatAmount(item.total_cost) }}</td>
-    <td class="text-right font-mono">{{ formatAmount(item.remaining_balance) }}</td>
-    <td><span :class="['badge badge-sm whitespace-nowrap', item.is_utilized ? 'badge-success' : 'badge-warning']">{{ item.is_utilized ? 'Utilized' : 'Available' }}</span></td>
-    <td class="min-w-48"><div class="flex flex-wrap gap-1"><span v-for="flag in activeFlags" :key="flag" class="badge badge-outline badge-xs">{{ flag }}</span><span v-if="!activeFlags.length" class="text-base-content/40">—</span></div></td>
-    <td class="sticky right-0 z-30 w-36 min-w-36 border-l border-primary/20 bg-primary/10 shadow-[-8px_0_14px_-10px_rgba(0,0,0,0.35)] group-hover:bg-primary/20">
+    <td>
+      <div class="flex items-center gap-2">
+        <span class="badge badge-ghost badge-sm whitespace-nowrap">{{ item.award_type === 'FRAMEWORK' ? 'Framework' : 'Award' }}</span>
+        <span class="text-xs text-base-content/55">{{ item.quarter || 'No quarter' }}</span>
+      </div>
+    </td>
+    <td class="text-right font-mono tabular-nums">{{ formatAmount(item.quantity) }}</td>
+    <td class="text-right font-mono tabular-nums">{{ formatAmount(item.unit_cost) }}</td>
+    <td class="text-right">
+      <div class="font-mono font-semibold tabular-nums">{{ formatAmount(item.total_cost) }}</div>
+      <div class="mt-1 text-xs text-base-content/50">Balance <span class="font-mono tabular-nums">{{ formatAmount(item.remaining_balance) }}</span></div>
+    </td>
+    <td>
+      <div class="flex flex-wrap items-center gap-1">
+        <span :class="['badge badge-sm whitespace-nowrap', item.is_utilized ? 'badge-success' : 'badge-warning']">{{ item.is_utilized ? 'Utilized' : 'Available' }}</span>
+        <span v-for="flag in activeFlags" :key="flag" class="badge badge-outline badge-xs">{{ flag }}</span>
+      </div>
+      <div v-if="!activeFlags.length" class="mt-1 text-xs text-base-content/40">No procurement flags</div>
+    </td>
+    <td class="sticky right-0 z-10 w-32 min-w-32 border-l border-base-200 bg-base-100 shadow-[-8px_0_14px_-12px_rgba(0,0,0,0.3)] group-hover:bg-base-200">
       <div class="flex items-center justify-end gap-1">
         <AnnualprocurementplansItemView :item="item" />
         <template v-if="canEdit && canEditPlan">
