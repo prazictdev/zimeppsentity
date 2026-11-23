@@ -33,56 +33,20 @@
         <!-- Plan Items -->
         <div v-if="activeTab === 'items'">
           <div class="mt-3 flex justify-end gap-2">
+            <AnnualprocurementplansSummaryDialog
+              :plan-uuid="planUuid"
+              :method-rows="store.itemTotals"
+              :group-rows="store.itemTotalsByGroup"
+              :award-rows="store.itemTotalsByAwardType"
+              :flag-rows="store.itemTotalsByFlag"
+              :plan-total="planTotal"
+              :group-total="planGroupTotal"
+              :award-total="awardTypeTotal"
+              :total-items="totalItems"
+              :award-item-count="awardTypeItemCount"
+            />
             <NuxtLink v-if="canAdd && canEditPlan" :to="`/annualprocurementplans/${planUuid}/add-items`" class="btn btn-success btn-sm"><Icon name="lucide:plus" />Add items</NuxtLink>
             <AnnualprocurementplansItemBulkDelete v-if="canDelete && canEditPlan" :plan-uuid="planUuid" />
-          </div>
-
-          <!-- Totals by procurement method / group / award type / flags -->
-          <div v-if="store.itemTotals.length || store.itemTotalsByGroup.length || hasAwardTypeData || (totalItems > 0 && store.itemTotalsByFlag.length)" class="mt-4 grid items-start gap-3 xl:grid-cols-3">
-            <AnnualprocurementplansTotalsBars
-              v-if="store.itemTotals.length"
-              title="Totals by Procurement Method"
-              icon="lucide:gavel"
-              accent="primary"
-              :rows="store.itemTotals"
-              :denominator="planTotal"
-              :total-items="totalItems"
-              :grand-total="planTotal"
-              show-footer
-            />
-            <AnnualprocurementplansTotalsBars
-              v-if="store.itemTotalsByGroup.length"
-              title="Totals by Procurement Group"
-              icon="lucide:boxes"
-              accent="secondary"
-              :rows="store.itemTotalsByGroup"
-              :denominator="planGroupTotal"
-              :total-items="totalItems"
-              :grand-total="planGroupTotal"
-              show-footer
-            />
-            <AnnualprocurementplansTotalsBars
-              v-if="hasAwardTypeData"
-              title="Award / Framework Statistics"
-              icon="lucide:award"
-              accent="primary"
-              :rows="store.itemTotalsByAwardType"
-              :denominator="awardTypeTotal"
-              :total-items="awardTypeItemCount"
-              :grand-total="awardTypeTotal"
-              show-footer
-            />
-            <AnnualprocurementplansTotalsBars
-              v-if="totalItems > 0 && store.itemTotalsByFlag.length"
-              class="xl:col-span-3"
-              title="Totals by Flag"
-              icon="lucide:flag"
-              accent="accent"
-              :rows="store.itemTotalsByFlag"
-              :denominator="planTotal"
-              :total-items="totalItems"
-              wide
-            />
           </div>
           <div class="card mt-4 rounded-xl border border-base-200 shadow-sm">
             <div class="card-body">
@@ -536,7 +500,6 @@ const awardTypeTotal = computed(() =>
 const awardTypeItemCount = computed(() =>
   (store.itemTotalsByAwardType ?? []).reduce((sum, row) => sum + (Number(row.count) || 0), 0),
 );
-const hasAwardTypeData = computed(() => awardTypeItemCount.value > 0);
 
 // Pagination state for the items table.
 const itemsPerPage = ref(50);
