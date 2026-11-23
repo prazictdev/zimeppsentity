@@ -47,7 +47,7 @@
                     <p class="text-xs text-base-content/50">Manage the requirements included in this procurement plan.</p>
                   </div>
                 </div>
-                <div class="flex flex-wrap items-center gap-2">
+                <div class="flex flex-wrap items-center gap-2 lg:justify-end">
                   <AnnualprocurementplansSummaryDialog
                     :plan-uuid="planUuid"
                     :method-rows="store.itemTotals"
@@ -60,31 +60,17 @@
                     :total-items="totalItems"
                     :award-item-count="awardTypeItemCount"
                   />
-                  <NuxtLink v-if="canAdd && canEditPlan" :to="`/annualprocurementplans/${planUuid}/add-items`" class="btn btn-success btn-sm"><Icon name="lucide:plus" />Add items</NuxtLink>
-                  <AnnualprocurementplansItemBulkDelete v-if="canDelete && canEditPlan" :plan-uuid="planUuid" />
-                </div>
-              </div>
-
-              <div class="mt-3 flex flex-col gap-2 border-t border-base-200 pt-3 sm:flex-row sm:items-center sm:justify-between">
-                <div class="flex flex-1 flex-col gap-2 sm:flex-row sm:items-center">
-                  <label class="input input-sm w-full sm:w-80">
+                  <label class="input input-sm w-full sm:w-64">
                     <Icon name="lucide:search" class="h-4 w-4 text-base-content/40" />
-                    <input v-model="itemsSearch" type="search" class="grow" placeholder="Search reference or description" @input="onSearchInput" />
+                    <input v-model="itemsSearch" type="search" class="grow" placeholder="Search items" @input="onSearchInput" />
                   </label>
                   <button type="button" class="btn btn-outline btn-sm gap-1.5" @click="openFilters">
                     <Icon name="lucide:sliders-horizontal" class="h-4 w-4" />
                     Filters
                     <span v-if="activeFilterCount > 0" class="badge badge-primary badge-xs">{{ activeFilterCount }}</span>
                   </button>
-                </div>
-                <div class="flex items-center justify-between gap-3 sm:justify-end">
-                  <span class="text-xs text-base-content/50">{{ store.planItemsMeta.total }} result{{ store.planItemsMeta.total === 1 ? '' : 's' }}</span>
-                  <select v-model.number="itemsPerPage" class="select select-sm w-32" aria-label="Items per page" @change="changePerPage">
-                    <option :value="25">25 / page</option>
-                    <option :value="50">50 / page</option>
-                    <option :value="100">100 / page</option>
-                    <option :value="200">200 / page</option>
-                  </select>
+                  <NuxtLink v-if="canAdd && canEditPlan" :to="`/annualprocurementplans/${planUuid}/add-items`" class="btn btn-success btn-sm"><Icon name="lucide:plus" />Add items</NuxtLink>
+                  <AnnualprocurementplansItemBulkDelete v-if="canDelete && canEditPlan" :plan-uuid="planUuid" />
                 </div>
               </div>
             </header>
@@ -145,14 +131,25 @@
                 </table>
               </div>
 
-              <footer v-if="store.planItemsMeta.last_page > 1" class="flex flex-wrap items-center justify-between gap-2 border-t border-base-200 px-3 py-3 sm:px-4">
-                <div class="text-xs text-base-content/60">Page {{ store.planItemsMeta.current_page }} of {{ store.planItemsMeta.last_page }} · {{ store.planItemsMeta.total }} total</div>
-                <div class="join">
+              <footer class="flex flex-wrap items-center justify-between gap-3 border-t border-base-200 bg-base-200/30 px-3 py-3 sm:px-4">
+                <div class="flex flex-wrap items-center gap-3">
+                  <span class="text-xs text-base-content/60">{{ store.planItemsMeta.total }} result{{ store.planItemsMeta.total === 1 ? '' : 's' }}</span>
+                  <select v-model.number="itemsPerPage" class="select select-sm w-32" aria-label="Items per page" @change="changePerPage">
+                    <option :value="25">25 / page</option>
+                    <option :value="50">50 / page</option>
+                    <option :value="100">100 / page</option>
+                    <option :value="200">200 / page</option>
+                  </select>
+                </div>
+                <div v-if="store.planItemsMeta.last_page > 1" class="flex flex-wrap items-center gap-3">
+                  <span class="text-xs text-base-content/60">Page {{ store.planItemsMeta.current_page }} of {{ store.planItemsMeta.last_page }}</span>
+                  <div class="join">
                   <button class="btn btn-sm join-item" aria-label="First page" :disabled="store.planItemsMeta.current_page <= 1 || store.planItemsLoading" @click="goToPage(1)"><Icon name="lucide:chevrons-left" /></button>
                   <button class="btn btn-sm join-item" :disabled="store.planItemsMeta.current_page <= 1 || store.planItemsLoading" @click="goToPage(store.planItemsMeta.current_page - 1)"><Icon name="lucide:chevron-left" />Prev</button>
                   <button class="btn btn-sm join-item btn-disabled">{{ store.planItemsMeta.current_page }}</button>
                   <button class="btn btn-sm join-item" :disabled="store.planItemsMeta.current_page >= store.planItemsMeta.last_page || store.planItemsLoading" @click="goToPage(store.planItemsMeta.current_page + 1)">Next<Icon name="lucide:chevron-right" /></button>
                   <button class="btn btn-sm join-item" aria-label="Last page" :disabled="store.planItemsMeta.current_page >= store.planItemsMeta.last_page || store.planItemsLoading" @click="goToPage(store.planItemsMeta.last_page)"><Icon name="lucide:chevrons-right" /></button>
+                  </div>
                 </div>
               </footer>
             </template>
