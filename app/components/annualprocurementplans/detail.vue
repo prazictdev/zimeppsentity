@@ -29,111 +29,121 @@
 
     <AnnualprocurementplansCompletion v-if="showPreparationSteps" :plan-uuid="planUuid" @select="activeTab = $event" />
 
-    <!-- Tabs + active tab content -->
+    <!-- Section navigation + active section content -->
     <div class="card overflow-hidden rounded-2xl border border-base-200 shadow-sm">
-      <div class="card-body gap-0 p-0 lg:flex-row">
-        <div class="shrink-0 border-b border-base-200 bg-base-100 lg:w-64 lg:border-r lg:border-b-0">
-          <div role="tablist" aria-label="Annual procurement plan sections" aria-orientation="vertical" class="plan-tabs flex flex-col gap-1 p-3">
+      <div class="card-body gap-0 p-0">
+        <div class="overflow-x-auto border-b border-base-200 bg-base-100 px-4 pt-2 sm:px-5">
+          <div role="tablist" aria-label="Annual procurement plan sections" class="tabs tabs-border tabs-sm w-max min-w-full flex-nowrap">
           <button
             role="tab"
-            class="tab"
+            class="tab gap-1 whitespace-nowrap"
+            :aria-selected="activeTab === 'items'"
             :class="{ 'tab-active': activeTab === 'items' }"
             @click="activeTab = 'items'"
           >
-            <Icon name="lucide:list" class="mr-1" />
+            <Icon name="lucide:list" />
             Plan Items
-            <span class="badge badge-sm ml-2">{{ visiblePlanItemsCount }}</span>
+            <span class="badge badge-sm">{{ visiblePlanItemsCount }}</span>
           </button>
           <button
             role="tab"
-            class="tab"
+            class="tab gap-1 whitespace-nowrap"
+            :aria-selected="activeTab === 'classification'"
             :class="{ 'tab-active': activeTab === 'classification' }"
             @click="activeTab = 'classification'"
           >
-            <Icon name="lucide:scan-search" class="mr-1" />
+            <Icon name="lucide:scan-search" />
             UNSPSC Validation
           </button>
           <button
             role="tab"
-            class="tab"
+            class="tab gap-1 whitespace-nowrap"
+            :aria-selected="activeTab === 'consolidation'"
             :class="{ 'tab-active': activeTab === 'consolidation' }"
             @click="activeTab = 'consolidation'"
           >
-            <Icon name="lucide:combine" class="mr-1" />
+            <Icon name="lucide:combine" />
             Consolidation
-            <span class="badge badge-primary badge-sm ml-2">{{ consolidationCount }}</span>
+            <span class="badge badge-primary badge-sm">{{ consolidationCount }}</span>
           </button>
           <button
             role="tab"
-            class="tab"
+            class="tab gap-1 whitespace-nowrap"
+            :aria-selected="activeTab === 'issues'"
             :class="{ 'tab-active': activeTab === 'issues' }"
             @click="activeTab = 'issues'"
           >
-            <Icon name="lucide:alert-triangle" class="mr-1" />
+            <Icon name="lucide:alert-triangle" />
             Issues
-            <span :class="['badge badge-sm ml-2', unresolvedCount > 0 ? 'badge-warning' : '']">
+            <span :class="['badge badge-sm', unresolvedCount > 0 ? 'badge-warning' : '']">
               {{ unresolvedCount }}
             </span>
           </button>
           <button
             role="tab"
-            class="tab"
+            class="tab gap-1 whitespace-nowrap"
+            :aria-selected="activeTab === 'disposal'"
             :class="{ 'tab-active': activeTab === 'disposal' }"
             @click="activeTab = 'disposal'"
           >
-            <Icon name="lucide:trash-2" class="mr-1" />
+            <Icon name="lucide:trash-2" />
             Disposal Plan
-            <span class="badge badge-sm ml-2">{{ store.disposalPlansMeta.total }}</span>
+            <span class="badge badge-sm">{{ store.disposalPlansMeta.total }}</span>
           </button>
           <button
             role="tab"
-            class="tab"
+            class="tab gap-1 whitespace-nowrap"
+            :aria-selected="activeTab === 'evaluation'"
             :class="{ 'tab-active': activeTab === 'evaluation' }"
             @click="activeTab = 'evaluation'"
           >
-            <Icon name="lucide:users" class="mr-1" />
+            <Icon name="lucide:users" />
             Evaluation Committee
-            <span class="badge badge-sm ml-2">{{ store.committeeMembersMeta.total }}</span>
+            <span class="badge badge-sm">{{ store.committeeMembersMeta.total }}</span>
           </button>
           <button
             role="tab"
-            class="tab"
+            class="tab gap-1 whitespace-nowrap"
+            :aria-selected="activeTab === 'pmu'"
             :class="{ 'tab-active': activeTab === 'pmu' }"
             @click="activeTab = 'pmu'"
           >
-            <Icon name="lucide:building-2" class="mr-1" />
+            <Icon name="lucide:building-2" />
             PMU
-            <span class="badge badge-sm ml-2">{{ store.pmuMembersMeta.total }}</span>
+            <span class="badge badge-sm">{{ store.pmuMembersMeta.total }}</span>
           </button>
           <button
             role="tab"
-            class="tab"
+            class="tab gap-1 whitespace-nowrap"
+            :aria-selected="activeTab === 'disposalcommittee'"
             :class="{ 'tab-active': activeTab === 'disposalcommittee' }"
             @click="activeTab = 'disposalcommittee'"
           >
-            <Icon name="lucide:users" class="mr-1" />
+            <Icon name="lucide:users" />
             Disposal Committee
-            <span class="badge badge-sm ml-2">{{ store.disposalCommitteeMembersMeta.total }}</span>
+            <span class="badge badge-sm">{{ store.disposalCommitteeMembersMeta.total }}</span>
           </button>
           <button
             role="tab"
-            class="tab"
+            class="tab gap-1 whitespace-nowrap"
+            :aria-selected="activeTab === 'attachments'"
             :class="{ 'tab-active': activeTab === 'attachments' }"
             @click="activeTab = 'attachments'"
           >
-            <Icon name="lucide:paperclip" class="mr-1" />
+            <Icon name="lucide:paperclip" />
             Required Attachments
-            <span class="badge badge-sm ml-2">{{ store.planDocuments.length }}</span>
+            <span class="badge badge-sm">{{ store.planDocuments.length }}</span>
           </button>
           <button
             role="tab"
-            class="tab"
+            class="tab gap-1 whitespace-nowrap"
+            :aria-selected="activeTab === 'history'"
             :class="{ 'tab-active': activeTab === 'history' }"
             @click="activeTab = 'history'"
           >
-            <Icon name="lucide:history" class="mr-1" />
+            <Icon name="lucide:history" />
             Workflow History
-            <span class="badge badge-sm ml-2">{{ peTransitions.length }}</span>
+            <span class="badge badge-sm">{{ peTransitions.length }}</span>
           </button>
           </div>
         </div>
@@ -836,38 +846,3 @@ const currencySymbol = computed(() => {
   return c.symbol ? `${c.symbol} ` : `${c.code} `;
 });
 </script>
-
-<style scoped>
-.plan-tabs > .tab {
-  width: 100%;
-  height: auto;
-  min-height: 2.75rem;
-  justify-content: flex-start;
-  padding: 0.75rem;
-  border-radius: 0.5rem;
-  text-align: left;
-  white-space: normal;
-}
-
-.plan-tabs > .tab:hover {
-  background-color: var(--color-base-200);
-}
-
-.plan-tabs > .tab-active {
-  background-color: var(--color-primary);
-  color: var(--color-primary-content);
-}
-
-.plan-tabs > .tab-active:hover {
-  background-color: var(--color-primary);
-}
-
-.plan-tabs > .tab > :deep(svg),
-.plan-tabs > .tab > .badge {
-  flex-shrink: 0;
-}
-
-.plan-tabs > .tab > .badge {
-  margin-left: auto;
-}
-</style>
