@@ -17,26 +17,28 @@
     </div>
 
     <div :class="['p-3', wide ? 'grid gap-2 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6' : 'space-y-2']">
-      <div v-for="row in rows" :key="row.key" class="rounded-lg border border-base-200 bg-base-200/30 p-2.5">
-        <div class="flex items-start justify-between gap-2">
+      <div v-for="row in rows" :key="row.key" class="stat min-w-0 rounded-lg border border-base-200 bg-base-200/30 p-2.5">
+        <div class="stat-title flex items-start justify-between gap-2 text-base-content">
           <span class="flex min-w-0 items-center gap-1.5 text-sm">
             <span class="line-clamp-2 leading-5" :class="row.unresolved ? 'text-warning' : 'text-base-content/75'" :title="row.label">
               {{ row.label }}
             </span>
             <span class="badge badge-ghost badge-xs shrink-0">{{ row.count }}</span>
           </span>
-          <span class="shrink-0 font-mono text-xs font-semibold tabular-nums">{{ formatAmount(row.total) }}</span>
         </div>
-        <div class="mt-2 flex items-center gap-2">
-          <progress
-            :class="['progress h-1.5 flex-1', row.unresolved ? 'progress-warning' : progressColor]"
-            :value="pct(row)"
-            max="100"
-            :aria-label="`${row.label}: ${pct(row).toFixed(0)}%`"
-          />
-          <span class="w-9 shrink-0 text-right text-[0.6875rem] font-medium tabular-nums text-base-content/50">
-            {{ denominator > 0 ? pct(row).toFixed(0) + '%' : '—' }}
-          </span>
+        <div class="mt-3 flex items-end justify-between gap-3">
+          <div class="min-w-0">
+            <div class="text-[0.6875rem] text-base-content/45">Value</div>
+            <div class="stat-value truncate font-mono text-base font-bold tabular-nums" :title="formatAmount(row.total)">
+              {{ formatAmount(row.total) }}
+            </div>
+          </div>
+          <div :class="['shrink-0 rounded-lg px-2.5 py-1.5 text-right', row.unresolved ? 'bg-warning/10 text-warning' : percentageSurface]">
+            <div class="text-[0.625rem] font-medium opacity-70">Share</div>
+            <div class="text-lg font-bold leading-none tabular-nums">
+              {{ denominator > 0 ? pct(row).toFixed(0) + '%' : '—' }}
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -59,13 +61,13 @@ const props = defineProps({
 
 // Literal class names so Tailwind detects them at build time.
 const ACCENTS = {
-  primary: { progress: 'progress-primary', surface: 'bg-primary/10 text-primary' },
-  secondary: { progress: 'progress-secondary', surface: 'bg-secondary/10 text-secondary' },
-  accent: { progress: 'progress-accent', surface: 'bg-accent/10 text-accent' },
+  primary: { surface: 'bg-primary/10 text-primary' },
+  secondary: { surface: 'bg-secondary/10 text-secondary' },
+  accent: { surface: 'bg-accent/10 text-accent' },
 };
 
-const progressColor = computed(() => (ACCENTS[props.accent] ?? ACCENTS.primary).progress);
 const iconSurface = computed(() => (ACCENTS[props.accent] ?? ACCENTS.primary).surface);
+const percentageSurface = computed(() => (ACCENTS[props.accent] ?? ACCENTS.primary).surface);
 
 const pct = (row) => {
   if (!props.denominator || props.denominator <= 0) return 0;
