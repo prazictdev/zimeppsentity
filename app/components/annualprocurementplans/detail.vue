@@ -2,14 +2,11 @@
   <div class="mt-3 space-y-4">
     <AnnualprocurementplansReturnAlert :transitions="store.transitions" />
     <header class="overflow-hidden rounded-box border border-base-300 bg-base-100">
-      <div class="flex flex-col gap-4 border-l-4 border-primary px-4 py-4 sm:px-5 lg:flex-row lg:items-start lg:justify-between">
-        <div class="min-w-0">
-          <div class="flex flex-wrap items-center gap-2">
-            <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary"><Icon name="lucide:clipboard-list" class="h-4 w-4" /></span>
-            <h1 class="text-xl font-bold tracking-tight sm:text-2xl">{{ plan?.year ?? '…' }} Annual Procurement Plan</h1>
-          </div>
-          <p class="mt-1 pl-10 text-sm text-base-content/55">{{ plan?.company?.name ?? 'Procurement entity' }}</p>
-          <p v-if="plan?.submitted_at" class="mt-2 flex items-center gap-1.5 pl-10 text-xs text-base-content/50"><Icon name="lucide:send" class="h-3.5 w-3.5" />Submitted by {{ plan.submitted_by_user?.name || plan.submittedBy?.name || '—' }} on {{ formatDateTime(plan.submitted_at) }}</p>
+      <div class="flex flex-col gap-2 border-l-4 border-primary px-3 py-2 sm:px-4 lg:flex-row lg:items-center lg:justify-between">
+        <div class="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
+          <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary"><Icon name="lucide:clipboard-list" class="h-4 w-4" /></span>
+          <h1 class="text-lg font-bold tracking-tight">{{ plan?.year ?? '…' }}</h1>
+          <p v-if="plan?.submitted_at" class="flex items-center gap-1.5 text-xs text-base-content/50"><Icon name="lucide:send" class="h-3.5 w-3.5" />Submitted by {{ plan.submitted_by_user?.name || plan.submittedBy?.name || '—' }} on {{ formatDateTime(plan.submitted_at) }}</p>
         </div>
         <div class="flex flex-wrap items-center gap-2 lg:justify-end">
           <AnnualprocurementplansAnalyzePlan v-if="showPreparationSteps" :plan-uuid="planUuid" :can-edit="canEditPlan" />
@@ -20,10 +17,10 @@
       <AnnualprocurementplansStatus :plan-uuid="planUuid" :plan="plan" />
 
       <dl class="grid grid-cols-2 border-t border-base-200 sm:grid-cols-4">
-        <div class="border-b border-base-200 px-4 py-3 sm:border-b-0 sm:border-r"><dt class="flex items-center gap-1.5 text-xs text-base-content/50"><Icon name="lucide:wallet" class="h-3.5 w-3.5" />Total budget</dt><dd class="mt-1 truncate font-mono text-base font-bold" :title="formatAmount(planTotal)"><span class="mr-1 text-xs text-base-content/50">{{ currencySymbol }}</span>{{ formatAmount(planTotal) }}</dd></div>
-        <div class="border-b border-base-200 px-4 py-3 sm:border-b-0 sm:border-r"><dt class="flex items-center gap-1.5 text-xs text-base-content/50"><Icon name="lucide:list" class="h-3.5 w-3.5" />Plan items</dt><dd class="mt-1 text-base font-bold">{{ totalItems }}</dd></div>
-        <div class="border-r border-base-200 px-4 py-3"><dt class="flex items-center gap-1.5 text-xs text-base-content/50"><Icon name="lucide:alert-triangle" class="h-3.5 w-3.5" />Issues</dt><dd class="mt-1 text-base font-bold" :class="unresolvedCount > 0 ? 'text-warning' : 'text-success'">{{ unresolvedCount }}</dd></div>
-        <div class="px-4 py-3"><dt class="flex items-center gap-1.5 text-xs text-base-content/50"><Icon name="lucide:coins" class="h-3.5 w-3.5" />Plan currency</dt><dd class="mt-1 text-base font-bold text-primary">{{ plan?.currency?.code || 'Not specified' }}</dd></div>
+        <div class="flex min-w-0 items-center justify-between gap-2 border-b border-base-200 px-3 py-2 sm:border-r sm:border-b-0"><dt class="flex items-center gap-1.5 text-xs text-base-content/50"><Icon name="lucide:wallet" class="h-3.5 w-3.5" />Total budget</dt><dd class="truncate font-mono text-sm font-bold" :title="formatAmount(planTotal)"><span class="mr-1 text-xs text-base-content/50">{{ currencySymbol }}</span>{{ formatAmount(planTotal) }}</dd></div>
+        <div class="flex items-center justify-between gap-2 border-b border-base-200 px-3 py-2 sm:border-r sm:border-b-0"><dt class="flex items-center gap-1.5 text-xs text-base-content/50"><Icon name="lucide:list" class="h-3.5 w-3.5" />Plan items</dt><dd class="text-sm font-bold">{{ totalItems }}</dd></div>
+        <div class="flex items-center justify-between gap-2 border-r border-base-200 px-3 py-2"><dt class="flex items-center gap-1.5 text-xs text-base-content/50"><Icon name="lucide:alert-triangle" class="h-3.5 w-3.5" />Issues</dt><dd class="text-sm font-bold" :class="unresolvedCount > 0 ? 'text-warning' : 'text-success'">{{ unresolvedCount }}</dd></div>
+        <div class="flex items-center justify-between gap-2 px-3 py-2"><dt class="flex items-center gap-1.5 text-xs text-base-content/50"><Icon name="lucide:coins" class="h-3.5 w-3.5" />Plan currency</dt><dd class="text-sm font-bold text-primary">{{ plan?.currency?.code || 'Not specified' }}</dd></div>
       </dl>
     </header>
 
