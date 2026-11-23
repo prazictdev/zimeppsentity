@@ -30,6 +30,7 @@
           </div>
           <div class="flex flex-wrap items-center gap-2">
             <button class="btn btn-primary btn-sm" :disabled="submitting || !ready" @click="openAddItems"><Icon name="lucide:plus" />Add items</button>
+            <AnnualprocurementplansItemImport :plan-uuid="planUuid" :supplement-uuid="supplementUuid" :disabled="submitting || matching || !ready" @imported="importRows" />
             <button class="btn btn-outline btn-sm" :disabled="submitting" @click="fullscreenOpen ? closeFullscreen() : openFullscreen()"><Icon :name="fullscreenOpen ? 'lucide:minimize-2' : 'lucide:maximize-2'" />{{ fullscreenOpen ? 'Exit full screen' : 'Full screen' }}</button>
             <button class="btn btn-ghost btn-sm text-error hover:bg-error/10" :disabled="submitting || !ready || !unsavedRows.length" title="Delete all items that have not been uploaded" @click="openDeleteAll"><Icon name="lucide:trash-2" />Delete draft</button>
           </div>
@@ -105,13 +106,11 @@
     </dialog>
     <dialog ref="addItemsDialog" class="modal" @cancel.prevent="closeAddItems">
       <div class="modal-box max-w-lg">
-        <div class="flex items-start justify-between gap-4"><div><h3 class="text-lg font-bold">Add items</h3><p class="mt-1 text-sm text-base-content/60">Create blank rows or import items from a file.</p></div><button class="btn btn-circle btn-ghost btn-sm" aria-label="Close add items" @click="closeAddItems"><Icon name="lucide:x" /></button></div>
+        <div class="flex items-start justify-between gap-4"><div><h3 class="text-lg font-bold">Add items</h3><p class="mt-1 text-sm text-base-content/60">Create blank rows for manual entry.</p></div><button class="btn btn-circle btn-ghost btn-sm" aria-label="Close add items" @click="closeAddItems"><Icon name="lucide:x" /></button></div>
         <div class="mt-5 rounded-lg border border-base-300 p-4">
           <label class="fieldset py-0"><span class="fieldset-legend pt-0">Number of blank items</span><input v-model.number="rowCount" type="number" min="1" max="5000" class="input w-full" :disabled="submitting" /></label>
           <button class="btn btn-primary btn-block mt-3" :disabled="submitting || !ready" @click="addRows"><Icon name="lucide:plus" />Add blank items</button>
         </div>
-        <div class="divider text-xs text-base-content/50">OR</div>
-        <div class="rounded-lg border border-base-300 p-4"><p class="mb-3 text-sm text-base-content/60">Import item details from a supported spreadsheet.</p><AnnualprocurementplansItemImport :plan-uuid="planUuid" :supplement-uuid="supplementUuid" :disabled="submitting || matching || !ready" @imported="importRows" /></div>
       </div>
       <form method="dialog" class="modal-backdrop"><button>close</button></form>
     </dialog>
@@ -342,7 +341,6 @@ async function importRows(importedRows, warnings = []) {
   errorMessage.value = '';
   notice.value = `${prepared.length} rows loaded into this browser. Assign a UNSPSC commodity to every row before bulk upload.${warnings.length ? ` ${warnings.length} lookup warning(s) need review.` : ''}`;
   saveDraft();
-  closeAddItems();
 }
 async function runLocalMatching(targetRows) {
   const candidates = targetRows.filter(row => !row.unspsc_id);

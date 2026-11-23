@@ -73,6 +73,10 @@ test('grid component compiles and adds local rows, selects UNSPSC, and restores 
   assert.match(componentSource, /workflowStep >= 4[^\n]+>Upload to plan<\/li>/);
   assert.match(componentSource, /detailIncompleteRows\.value\) return 1;[\s\S]+if \(unclassifiedRows\.value\) return 2;[\s\S]+if \(nsplUnvalidatedRows\.value\) return 3;[\s\S]+return 4;/);
   assert.match(componentSource, /ref="addItemsDialog" class="modal"/);
+  assert.match(componentSource, /<button class="btn btn-primary btn-sm"[^>]+@click="openAddItems"[\s\S]*?<AnnualprocurementplansItemImport/);
+  const addItemsDialog = componentSource.match(/<dialog ref="addItemsDialog"[\s\S]*?<\/dialog>/)?.[0] ?? '';
+  assert.doesNotMatch(addItemsDialog, /AnnualprocurementplansItemImport/);
+  assert.match(addItemsDialog, /Create blank rows for manual entry/);
   assert.match(componentSource, /ref="uploadDialog" class="modal"/);
   assert.match(componentSource, /ref="fullscreenDialog" class="modal"/);
   assert.match(componentSource, /<Teleport :to="fullscreenGridHost" :disabled="!fullscreenOpen">/);
