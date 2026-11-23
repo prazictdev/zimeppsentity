@@ -63,8 +63,14 @@ test('grid component compiles and adds local rows, selects UNSPSC, and restores 
   assert.match(componentSource, /detailIncompleteRows\.value\) return 1;[\s\S]+if \(unclassifiedRows\.value\) return 2;[\s\S]+if \(nsplUnvalidatedRows\.value\) return 3;[\s\S]+return 4;/);
   assert.match(componentSource, /ref="addItemsDialog" class="modal"/);
   assert.match(componentSource, /ref="uploadDialog" class="modal"/);
+  assert.match(componentSource, /ref="fullscreenDialog" class="modal"/);
+  assert.match(componentSource, /<Teleport :to="fullscreenGridHost" :disabled="!fullscreenOpen">/);
+  assert.match(componentSource, /'Full screen'/);
   assert.doesNotMatch(componentSource, /await runLocalMatching\(prepared\)/);
   assert.match(componentSource, /v-if="showUnspscStep">UNSPSC \*<\/th>/);
+  assert.doesNotMatch(componentSource, /Add and complete the items you plan to procure/);
+  assert.doesNotMatch(componentSource, /Add or import items, then complete their procurement details/);
+  assert.doesNotMatch(componentSource, /Complete each item below/);
   const code = `
     import { ref, computed } from '${import.meta.resolve('vue')}';
     export const local = new Map();

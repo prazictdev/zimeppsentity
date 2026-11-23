@@ -7,7 +7,6 @@
               <span class="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 text-primary"><Icon name="lucide:list-plus" class="h-5 w-5" /></span>
               <h1 class="text-xl font-bold">{{ pageTitle }}</h1>
             </div>
-            <p class="max-w-3xl text-sm text-base-content/60">Add and complete the items you plan to procure, match their UNSPSC commodities, validate their NSPL readiness, then upload them to this {{ targetLabel }}.</p>
           </div>
           <div v-if="rows.length" class="flex w-fit items-center gap-2 rounded-lg bg-base-200 px-3 py-2 text-sm">
             <span class="font-semibold tabular-nums">{{ rows.length }}</span>
@@ -28,7 +27,6 @@
         <section class="flex flex-col gap-4 rounded-xl border border-base-300 bg-base-200/35 p-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
             <h2 class="font-semibold">Draft items</h2>
-            <p class="mt-1 text-sm text-base-content/60">Add or import items, then complete their procurement details in the grid below.</p>
           </div>
           <div class="flex flex-wrap items-center gap-3">
             <div class="flex items-center gap-2 text-xs text-base-content/60" role="status">
@@ -38,23 +36,6 @@
             <button class="btn btn-primary btn-sm" :disabled="submitting || !ready" @click="openAddItems"><Icon name="lucide:plus" />Add items</button>
           </div>
         </section>
-
-        <div v-if="rows.length" class="mt-4 flex flex-col gap-3 rounded-xl border border-base-300 px-4 py-3 lg:flex-row lg:items-center lg:justify-between">
-          <div class="flex items-start gap-3">
-            <span :class="['mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full', workflowStep < 4 ? 'bg-warning/15 text-warning' : 'bg-success/15 text-success']">
-              <Icon :name="workflowStep < 4 ? 'lucide:circle-alert' : 'lucide:circle-check'" class="h-4 w-4" />
-            </span>
-            <div>
-              <p class="text-sm font-semibold">{{ workflowStatus.title }}</p>
-              <p class="mt-0.5 text-xs text-base-content/60">{{ workflowStatus.description }}</p>
-            </div>
-          </div>
-          <div class="flex flex-wrap items-center gap-2">
-            <button v-if="workflowStep === 2" class="btn btn-outline btn-sm" :disabled="submitting || matching || !ready" @click="runLocalMatching(rows)"><span v-if="matching" class="loading loading-spinner loading-xs" /><Icon v-else name="lucide:sparkles" />{{ matching ? 'Matching…' : `Match ${unclassifiedRows} UNSPSC` }}</button>
-            <button v-if="workflowStep === 3" class="btn btn-outline btn-sm" :disabled="submitting || matching || !ready" @click="validateNsplReadiness"><Icon name="lucide:shield-check" />Validate NSPL readiness</button>
-            <button v-if="workflowStep === 4" class="btn btn-primary btn-sm" :disabled="submitting || !ready" @click="openUploadDialog"><Icon name="lucide:cloud-upload" />Upload {{ rows.length }} {{ rows.length === 1 ? 'item' : 'items' }}</button>
-          </div>
-        </div>
 
         <p v-if="notice" class="mb-3 text-sm text-success" role="status">{{ notice }}</p><div v-if="errorMessage" class="alert alert-error mb-3" role="alert">{{ errorMessage }}</div>
         <p v-if="rows.some(row => row._sent)" class="alert mb-3 text-sm">Some rows await upload confirmation. Retry Bulk upload to confirm them safely before editing.</p>
@@ -69,17 +50,24 @@
         </div>
 
         <template v-else>
-        <div class="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div v-if="showUnspscStep" class="flex flex-wrap items-center gap-2" aria-label="Filter rows by UNSPSC status">
-          <span class="text-sm font-medium">Show:</span>
-          <button type="button" :class="['btn btn-sm', rowFilter === 'all' ? 'btn-primary' : 'btn-outline']" @click="rowFilter = 'all'">All {{ rows.length }}</button>
-          <button type="button" :class="['btn btn-sm', rowFilter === 'unmatched' ? 'btn-warning' : 'btn-outline']" @click="rowFilter = 'unmatched'"><Icon name="lucide:circle-alert" />Unmatched {{ unclassifiedRows }}</button>
-          <button type="button" :class="['btn btn-sm', rowFilter === 'matched' ? 'btn-success' : 'btn-outline']" @click="rowFilter = 'matched'"><Icon name="lucide:circle-check" />Matched {{ matchedRows }}</button>
+        <Teleport :to="fullscreenGridHost" :disabled="!fullscreenOpen">
+        <div :class="fullscreenOpen ? 'flex h-full min-h-0 flex-col' : ''">
+          <div class="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between" :class="fullscreenOpen ? 'mt-0' : ''">
+            <div v-if="showUnspscStep" class="flex flex-wrap items-center gap-2" aria-label="Filter rows by UNSPSC status">
+            <span class="text-sm font-medium">Show:</span>
+            <button type="button" :class="['btn btn-sm', rowFilter === 'all' ? 'btn-primary' : 'btn-outline']" @click="rowFilter = 'all'">All {{ rows.length }}</button>
+            <button type="button" :class="['btn btn-sm', rowFilter === 'unmatched' ? 'btn-warning' : 'btn-outline']" @click="rowFilter = 'unmatched'"><Icon name="lucide:circle-alert" />Unmatched {{ unclassifiedRows }}</button>
+            <button type="button" :class="['btn btn-sm', rowFilter === 'matched' ? 'btn-success' : 'btn-outline']" @click="rowFilter = 'matched'"><Icon name="lucide:circle-check" />Matched {{ matchedRows }}</button>
+            </div>
+            <div class="flex flex-wrap items-center gap-2">
+              <button v-if="workflowStep === 2" class="btn btn-outline btn-sm" :disabled="submitting || matching || !ready" @click="runLocalMatching(rows)"><span v-if="matching" class="loading loading-spinner loading-xs" /><Icon v-else name="lucide:sparkles" />{{ matching ? 'Matching…' : `Match ${unclassifiedRows} UNSPSC` }}</button>
+              <button v-if="workflowStep === 3" class="btn btn-outline btn-sm" :disabled="submitting || matching || !ready" @click="validateNsplReadiness"><Icon name="lucide:shield-check" />Validate NSPL readiness</button>
+              <button v-if="workflowStep === 4" class="btn btn-primary btn-sm" :disabled="submitting || !ready" @click="openUploadDialog"><Icon name="lucide:cloud-upload" />Upload {{ rows.length }} {{ rows.length === 1 ? 'item' : 'items' }}</button>
+              <button class="btn btn-outline btn-sm" :disabled="submitting" @click="fullscreenOpen ? closeFullscreen() : openFullscreen()"><Icon :name="fullscreenOpen ? 'lucide:minimize-2' : 'lucide:maximize-2'" />{{ fullscreenOpen ? 'Exit full screen' : 'Full screen' }}</button>
+              <button class="btn btn-ghost btn-sm text-error hover:bg-error/10" :disabled="submitting || !ready || !unsavedRows.length" title="Delete all items that have not been uploaded" @click="openDeleteAll"><Icon name="lucide:trash-2" />Delete draft</button>
+            </div>
           </div>
-          <button class="btn btn-ghost btn-sm text-error hover:bg-error/10" :disabled="submitting || !ready || !unsavedRows.length" title="Delete all items that have not been uploaded" @click="openDeleteAll"><Icon name="lucide:trash-2" />Delete draft</button>
-        </div>
-        <p class="mb-2 mt-3 text-xs text-base-content/60">Complete each item below. The Description column stays visible while you scroll across the remaining details.</p>
-        <fieldset :disabled="submitting" class="max-h-[65vh] min-h-0 min-w-0 flex-1 overflow-auto rounded-xl border border-base-300">
+        <fieldset :disabled="submitting" :class="['mt-3 min-h-0 min-w-0 flex-1 overflow-auto rounded-xl border border-base-300', fullscreenOpen ? 'h-full' : 'max-h-[65vh]']">
           <table class="item-grid table table-sm">
             <thead><tr><th>Row</th><th>Description *</th><th v-if="showUnspscStep">UNSPSC *</th><th>Reference</th><th v-for="column in lookupColumns" :key="column.key">{{ column.label }}</th><th v-if="exemptionMode">Exemption grounds *</th><th v-if="exemptionMode">Evidence document key</th><th>Quantity</th><th>Unit cost</th><th>Quarter</th><th>Expense</th><th>Award type</th><th v-for="column in dayColumns" :key="column.key">{{ column.label }}</th><th v-if="showPrequalificationColumn">Pre-qualification</th><th v-if="showEoiColumns">EOI</th><th v-for="column in flagColumns" :key="column.key">{{ column.label }}</th><th v-for="column in displayedDateColumns" :key="column.key">{{ column.label }}</th><th>MSDS (Minimum Service Delivery Standard)</th></tr></thead>
             <tbody><template v-for="row in visibleRows" :key="row.uuid">
@@ -106,9 +94,18 @@
           </table>
         </fieldset>
         <div class="mt-3 flex items-center justify-between gap-3"><p class="text-xs text-base-content/60">{{ uploadNote }}</p><div class="flex items-center gap-2"><button class="btn btn-sm" :disabled="page <= 1 || submitting" @click="page--">Previous</button><span class="text-sm">{{ page }} / {{ lastPage }}</span><button class="btn btn-sm" :disabled="page >= lastPage || submitting" @click="page++">Next</button></div></div>
+        </div>
+        </Teleport>
         </template>
         </div>
       </div>
+    <dialog ref="fullscreenDialog" class="modal" @cancel.prevent="closeFullscreen" @close="fullscreenOpen = false">
+      <div class="modal-box flex h-screen max-h-none w-screen max-w-none flex-col rounded-none p-0">
+        <div class="flex shrink-0 items-center justify-between border-b border-base-300 px-4 py-3"><div><h3 class="font-bold">Plan item rows</h3><span class="text-xs text-base-content/60">{{ rows.length }} {{ rows.length === 1 ? 'item' : 'items' }}</span></div><button class="btn btn-circle btn-ghost btn-sm" aria-label="Exit full screen" @click="closeFullscreen"><Icon name="lucide:x" /></button></div>
+        <div ref="fullscreenGridHost" class="min-h-0 flex-1 overflow-hidden p-4" />
+      </div>
+      <form method="dialog" class="modal-backdrop"><button>close</button></form>
+    </dialog>
     <dialog ref="addItemsDialog" class="modal" @cancel.prevent="closeAddItems">
       <div class="modal-box max-w-lg">
         <div class="flex items-start justify-between gap-4"><div><h3 class="text-lg font-bold">Add items</h3><p class="mt-1 text-sm text-base-content/60">Create blank rows or import items from a file.</p></div><button class="btn btn-circle btn-ghost btn-sm" aria-label="Close add items" @click="closeAddItems"><Icon name="lucide:x" /></button></div>
@@ -171,7 +168,7 @@ const uploadNote = computed(() => supplementMode.value
   ? 'Supplement items will be added to the APP after the supplement is authorized.'
   : 'Uploaded items require the NSPL scan and UNSPSC reviewer verification before submission.');
 const currentUserId = computed(() => identity.value?.data?.user?.id ?? identity.value?.user?.id ?? identity.value?.id ?? null);
-const searchDialog = ref(null), deleteAllDialog = ref(null), addItemsDialog = ref(null), uploadDialog = ref(null), rows = ref([]), rowCount = ref(10), page = ref(1), rowFilter = ref('all');
+const searchDialog = ref(null), deleteAllDialog = ref(null), addItemsDialog = ref(null), uploadDialog = ref(null), fullscreenDialog = ref(null), fullscreenGridHost = ref(null), fullscreenOpen = ref(false), rows = ref([]), rowCount = ref(10), page = ref(1), rowFilter = ref('all');
 const planningRules = ref({ prequalification: { method_codes: ['CMB'] }, eoi: { amount: 50000, currency_code: 'USD', procurement_group_code: 'CONSULTANCY', procurement_method_code: 'RFP' } });
 const ready = ref(false), submitting = ref(false), matching = ref(false), errorMessage = ref(''), notice = ref(''), saveStatus = ref(''), catalogueStatus = ref(''), rowErrors = ref({});
 const exemptionTypes = ref([]), groundDialog = ref(null), groundError = ref('');
@@ -197,24 +194,6 @@ const workflowStep = computed(() => {
   if (unclassifiedRows.value) return 2;
   if (nsplUnvalidatedRows.value) return 3;
   return 4;
-});
-const workflowStatus = computed(() => {
-  if (workflowStep.value === 1) return {
-    title: `Complete ${detailIncompleteRows.value} ${detailIncompleteRows.value === 1 ? 'item' : 'items'}`,
-    description: 'Add items and complete their required details in the grid below.',
-  };
-  if (workflowStep.value === 2) return {
-    title: `${unclassifiedRows.value} ${unclassifiedRows.value === 1 ? 'item needs' : 'items need'} a UNSPSC match`,
-    description: 'Run automatic matching, then review any unmatched items below.',
-  };
-  if (workflowStep.value === 3) return {
-    title: `${nsplUnvalidatedRows.value} ${nsplUnvalidatedRows.value === 1 ? 'item needs' : 'items need'} NSPL readiness validation`,
-    description: 'Confirm the descriptions, units, quantities, prices, and specifications are ready for the official NSPL scan.',
-  };
-  return {
-    title: 'All items are ready to upload',
-    description: `Upload these items to the ${targetLabel.value}.`,
-  };
 });
 const unsavedRows = computed(() => rows.value.filter(row => !row._sent));
 const emptyGridMessage = computed(() => {
@@ -389,6 +368,8 @@ function validateNsplReadiness() {
   saveDraft();
 }
 function removeRow(row) { if (!row._sent && !submitting.value) { rows.value.splice(rows.value.indexOf(row), 1); page.value = Math.min(page.value, lastPage.value); saveDraft(); } }
+async function openFullscreen() { fullscreenOpen.value = true; await nextTick(); fullscreenDialog.value?.showModal(); }
+function closeFullscreen() { fullscreenDialog.value?.close(); fullscreenOpen.value = false; }
 function openAddItems() { if (ready.value && !submitting.value) addItemsDialog.value?.showModal(); }
 function closeAddItems() { addItemsDialog.value?.close(); }
 function openUploadDialog() { if (workflowStep.value === 4 && !submitting.value) { errorMessage.value = ''; uploadDialog.value?.showModal(); } }
@@ -477,7 +458,7 @@ function saveBeforeLeave() { if (ready.value) saveDraft(); }
 onBeforeRouteLeave(() => !submitting.value && (!ready.value || saveDraft()));
 onMounted(() => { window.addEventListener('beforeunload', saveBeforeLeave); initializeDraft(); });
 onBeforeUnmount(() => { clearTimeout(saveTimer); searchGeneration++; saveBeforeLeave(); window.removeEventListener('beforeunload', saveBeforeLeave); });
-watch(() => [props.planUuid, props.exemptionUuid, props.supplementUuid, currentUserId.value], () => { clearTimeout(saveTimer); saveBeforeLeave(); ready.value = false; rows.value = []; draftKey = null; addItemsDialog.value?.close(); uploadDialog.value?.close(); searchDialog.value?.close(); groundDialog.value?.close(); deleteAllDialog.value?.close(); searchGeneration++; initializeDraft(); });
+watch(() => [props.planUuid, props.exemptionUuid, props.supplementUuid, currentUserId.value], () => { clearTimeout(saveTimer); saveBeforeLeave(); ready.value = false; rows.value = []; draftKey = null; closeFullscreen(); addItemsDialog.value?.close(); uploadDialog.value?.close(); searchDialog.value?.close(); groundDialog.value?.close(); deleteAllDialog.value?.close(); searchGeneration++; initializeDraft(); });
 </script>
 
 <style scoped>
