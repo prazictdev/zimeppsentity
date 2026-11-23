@@ -152,3 +152,9 @@ test('grid component compiles and adds local rows, selects UNSPSC, and restores 
   await vm.initializeDraft(); assert.equal(vm.ready.value, false);
   assert.equal(vm.errorMessage.value, 'Sign in before preparing a draft.');
 });
+
+test('downloads the Excel template for the current plan so entity lookups stay scoped', () => {
+  const source = fs.readFileSync(new URL('../app/components/annualprocurementplans/itemImport.vue', import.meta.url), 'utf8');
+  assert.match(source, /annual-procurement-plans\/\$\{props\.planUuid\}\/items\/template/);
+  assert.doesNotMatch(source, /client\('\/api\/v1\/annual-procurement-plans\/items\/template'/);
+});

@@ -127,7 +127,7 @@ async function downloadTemplate() {
   if (downloadingTemplate.value) return
   downloadingTemplate.value = true
   try {
-    const blob = await client('/api/v1/annual-procurement-plans/items/template', {
+    const blob = await client(`/api/v1/annual-procurement-plans/${props.planUuid}/items/template`, {
       method: 'GET',
       responseType: 'blob',
     })
