@@ -10,7 +10,7 @@
 </template>
 
 <script setup>
-definePageMeta({ layout: 'default', sanctum: { authOnly: true }, key: route => route.fullPath });
+definePageMeta({ layout: 'default', fullWidth: true, sanctum: { authOnly: true }, key: route => route.fullPath });
 
 const route = useRoute();
 const router = useRouter();

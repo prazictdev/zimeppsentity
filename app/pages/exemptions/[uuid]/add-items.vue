@@ -11,7 +11,7 @@
 </template>
 
 <script setup>
-definePageMeta({ layout: 'default', sanctum: { authOnly: true } });
+definePageMeta({ layout: 'default', fullWidth: true, sanctum: { authOnly: true } });
 useHead({ title: 'Add Exemption Items' });
 const route = useRoute();
 const store = useExemptionStore();

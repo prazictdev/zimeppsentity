@@ -28,12 +28,10 @@
           <div>
             <h2 class="font-semibold">Draft items</h2>
           </div>
-          <div class="flex flex-wrap items-center gap-3">
-            <div class="flex items-center gap-2 text-xs text-base-content/60" role="status">
-              <span v-if="ready" class="status status-success status-xs" />
-              {{ catalogueStatus || saveStatus || 'Preparing your draft…' }}
-            </div>
+          <div class="flex flex-wrap items-center gap-2">
             <button class="btn btn-primary btn-sm" :disabled="submitting || !ready" @click="openAddItems"><Icon name="lucide:plus" />Add items</button>
+            <button class="btn btn-outline btn-sm" :disabled="submitting" @click="fullscreenOpen ? closeFullscreen() : openFullscreen()"><Icon :name="fullscreenOpen ? 'lucide:minimize-2' : 'lucide:maximize-2'" />{{ fullscreenOpen ? 'Exit full screen' : 'Full screen' }}</button>
+            <button class="btn btn-ghost btn-sm text-error hover:bg-error/10" :disabled="submitting || !ready || !unsavedRows.length" title="Delete all items that have not been uploaded" @click="openDeleteAll"><Icon name="lucide:trash-2" />Delete draft</button>
           </div>
         </section>
 
@@ -63,8 +61,6 @@
               <button v-if="workflowStep === 2" class="btn btn-outline btn-sm" :disabled="submitting || matching || !ready" @click="runLocalMatching(rows)"><span v-if="matching" class="loading loading-spinner loading-xs" /><Icon v-else name="lucide:sparkles" />{{ matching ? 'Matching…' : `Match ${unclassifiedRows} UNSPSC` }}</button>
               <button v-if="workflowStep === 3" class="btn btn-outline btn-sm" :disabled="submitting || matching || !ready" @click="validateNsplReadiness"><Icon name="lucide:shield-check" />Validate NSPL readiness</button>
               <button v-if="workflowStep === 4" class="btn btn-primary btn-sm" :disabled="submitting || !ready" @click="openUploadDialog"><Icon name="lucide:cloud-upload" />Upload {{ rows.length }} {{ rows.length === 1 ? 'item' : 'items' }}</button>
-              <button class="btn btn-outline btn-sm" :disabled="submitting" @click="fullscreenOpen ? closeFullscreen() : openFullscreen()"><Icon :name="fullscreenOpen ? 'lucide:minimize-2' : 'lucide:maximize-2'" />{{ fullscreenOpen ? 'Exit full screen' : 'Full screen' }}</button>
-              <button class="btn btn-ghost btn-sm text-error hover:bg-error/10" :disabled="submitting || !ready || !unsavedRows.length" title="Delete all items that have not been uploaded" @click="openDeleteAll"><Icon name="lucide:trash-2" />Delete draft</button>
             </div>
           </div>
         <fieldset :disabled="submitting" :class="['mt-3 min-h-0 min-w-0 flex-1 overflow-auto rounded-xl border border-base-300', fullscreenOpen ? 'h-full' : 'max-h-[65vh]']">
@@ -93,7 +89,7 @@
             </template><tr v-if="!visibleRows.length"><td :colspan="13 + dayColumns.length + flagColumns.length + displayedDateColumns.length + Number(showPrequalificationColumn) + Number(showEoiColumns) + Number(showUnspscStep)" class="empty-grid py-16 text-base-content/50">{{ emptyGridMessage }}</td></tr></tbody>
           </table>
         </fieldset>
-        <div class="mt-3 flex items-center justify-between gap-3"><p class="text-xs text-base-content/60">{{ uploadNote }}</p><div class="flex items-center gap-2"><button class="btn btn-sm" :disabled="page <= 1 || submitting" @click="page--">Previous</button><span class="text-sm">{{ page }} / {{ lastPage }}</span><button class="btn btn-sm" :disabled="page >= lastPage || submitting" @click="page++">Next</button></div></div>
+        <div class="mt-3 flex items-center justify-between gap-3"><div class="flex items-center gap-2 text-xs text-base-content/60" role="status"><span v-if="ready" class="status status-success status-xs" />{{ catalogueStatus || saveStatus || 'Preparing your draft…' }}</div><div class="flex items-center gap-2"><button class="btn btn-sm" :disabled="page <= 1 || submitting" @click="page--">Previous</button><span class="text-sm">{{ page }} / {{ lastPage }}</span><button class="btn btn-sm" :disabled="page >= lastPage || submitting" @click="page++">Next</button></div></div>
         </div>
         </Teleport>
         </template>
