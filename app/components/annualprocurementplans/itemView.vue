@@ -124,10 +124,12 @@
             </div>
           </section>
 
-          <section v-if="item.msds" class="card card-border bg-base-100 shadow-none">
+          <section v-if="item.minimum_service_delivery_standard || item.comments" class="card card-border bg-base-100 shadow-none">
             <div class="card-body gap-2 p-4">
-              <div class="flex items-center gap-2"><Icon name="lucide:file-text" class="h-4 w-4 text-primary" /><h4 class="font-bold">Material safety data</h4></div>
-              <p class="whitespace-pre-wrap text-sm text-base-content/70">{{ item.msds }}</p>
+              <div class="flex items-center gap-2"><Icon name="lucide:badge-check" class="h-4 w-4 text-primary" /><h4 class="font-bold">Minimum service delivery standard</h4></div>
+              <p v-if="item.minimum_service_delivery_standard" class="text-sm font-medium">{{ item.minimum_service_delivery_standard.name }}</p>
+              <p v-if="item.minimum_service_delivery_standard?.description" class="whitespace-pre-wrap text-sm text-base-content/70">{{ item.minimum_service_delivery_standard.description }}</p>
+              <div v-if="item.comments" class="mt-2 border-t border-base-200 pt-3"><h5 class="text-xs font-semibold uppercase tracking-wide text-base-content/50">Comments</h5><p class="mt-1 whitespace-pre-wrap text-sm text-base-content/70">{{ item.comments }}</p></div>
             </div>
           </section>
         </main>

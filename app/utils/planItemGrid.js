@@ -8,7 +8,8 @@ export function newGridRow(uuid) {
     quantity: 0, unit_cost: 0, expensecategory: 'MOOE', award_type: 'AWARD', quarter: null,
     pre_qualification: false, eoi: false, sustainable_procurement: false, affirmative_procurement: false,
     eoi_publication_date: '', eoi_closing_date: '',
-    bid_notice_publication_date: '', expected_delivery_date: '', estimated_contract_negotiation_days: null, msds: '',
+    bid_notice_publication_date: '', expected_delivery_date: '', estimated_contract_negotiation_days: null,
+    minimum_service_delivery_standard_id: null, comments: '',
   };
 }
 export function gridPayload(row) {

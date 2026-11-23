@@ -47,7 +47,7 @@
       </section>
     </div>
     <Loader :loading="store.loading" />
-    <dialog ref="itemDialog" class="modal"><div class="modal-box max-w-5xl"><h3 class="mb-4 text-lg font-bold">{{ editingItem ? 'Edit' : 'Add' }} exemption item</h3><ExemptionsItemForm :form="itemForm" :saving="saving" @submit="saveItem" @cancel="itemDialog.close()" /></div><form method="dialog" class="modal-backdrop"><button>close</button></form></dialog>
+    <dialog ref="itemDialog" class="modal"><div class="modal-box max-w-5xl"><h3 class="mb-4 text-lg font-bold">{{ editingItem ? 'Edit' : 'Add' }} exemption item</h3><ExemptionsItemForm :form="itemForm" :saving="saving" :minimum-service-delivery-standards="serviceDeliveryStandards" @submit="saveItem" @cancel="itemDialog.close()" /></div><form method="dialog" class="modal-backdrop"><button>close</button></form></dialog>
     <dialog ref="commentDialog" class="modal"><div class="modal-box"><h3 class="text-lg font-bold">{{ format(pendingAction) }}</h3><label class="fieldset mt-3"><span class="fieldset-legend">Comment</span><textarea v-model.trim="comment" class="textarea w-full" rows="4" :required="pendingAction.includes('send_back')" /></label><div class="modal-action"><button class="btn" @click="commentDialog.close()">Cancel</button><button class="btn btn-primary" @click="confirmAction">Continue</button></div></div></dialog>
     <dialog ref="addItemsDialog" class="modal" @cancel.prevent="closeAddItems">
       <div class="modal-box flex h-dvh max-h-dvh w-screen max-w-none flex-col rounded-none p-0">
@@ -82,8 +82,10 @@ const person = user => user ? ([user.name, user.lastname].filter(Boolean).join('
 const initials = user => person(user).split(/\s+/).slice(0, 2).map(part => part[0]?.toUpperCase()).join('') || 'U';
 const formatDateTime = value => { if (!value) return 'Date unavailable'; const date = new Date(value); return Number.isNaN(date.getTime()) ? value : date.toLocaleString('en-ZW', { dateStyle: 'medium', timeStyle: 'short' }); };
 const clonePlain = value => JSON.parse(JSON.stringify(value));
-const blankItem = () => ({ description: '', grounds: [], reference_no: '', procurementmethod_id: null, procurementgroup_id: null, sourceoffunds_id: null, unitofmeasure_id: null, quantity: 1, unit_cost: 0, expensecategory: 'MOOE', award_type: 'AWARD', quarter: null, bid_notice_publication_date: '', evidence_document_key: '', msds: '' });
+const blankItem = () => ({ description: '', grounds: [], reference_no: '', procurementmethod_id: null, procurementgroup_id: null, sourceoffunds_id: null, unitofmeasure_id: null, quantity: 1, unit_cost: 0, expensecategory: 'MOOE', award_type: 'AWARD', quarter: null, bid_notice_publication_date: '', evidence_document_key: '', minimum_service_delivery_standard_id: null, comments: '' });
 const itemDialog = ref(null), commentDialog = ref(null), addItemsDialog = ref(null), saving = ref(false), editingItem = ref(null), itemForm = reactive(blankItem()), pendingAction = ref(''), comment = ref('');
+const serviceDeliveryStandards = ref([]);
+const client = usePeClient();
 const openAddItems = () => addItemsDialog.value?.showModal();
 const closeAddItems = () => addItemsDialog.value?.close();
 const handleItemsUploaded = async () => { await store.fetchOne(route.params.uuid); closeAddItems(); };
@@ -92,7 +94,14 @@ const saveItem = async () => { saving.value = true; const payload = { ...itemFor
 const removeItem = async item => { if (window.confirm(`Remove “${item.description}”?`)) await store.removeItem(route.params.uuid, item.id); };
 const runAction = action => { pendingAction.value = action; comment.value = ''; commentDialog.value.showModal(); };
 const confirmAction = async () => { if (pendingAction.value.includes('send_back') && !comment.value) return; const ok = await store.transition(route.params.uuid, pendingAction.value, comment.value || null); if (ok) commentDialog.value.close(); };
-onMounted(async () => { await Promise.all([store.fetchOne(route.params.uuid), store.refreshWorkflow(route.params.uuid)]); });
+onMounted(async () => {
+  const [, , standardsResponse] = await Promise.all([
+    store.fetchOne(route.params.uuid),
+    store.refreshWorkflow(route.params.uuid),
+    client('/api/v1/minimum-service-delivery-standards/list'),
+  ]);
+  serviceDeliveryStandards.value = standardsResponse?.data ?? standardsResponse ?? [];
+});
 </script>
 
 <style scoped>

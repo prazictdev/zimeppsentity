@@ -47,6 +47,7 @@ export const AnnualprocurementplanItemSchema = yup.object({
 
   expensecategory: yup.string().oneOf(['MOOE', 'CapEx']).default('MOOE'),
   award_type: yup.string().oneOf(['AWARD', 'FRAMEWORK']).required('Award type is required').default('AWARD'),
-  msds: yup.string().nullable(),
+  minimum_service_delivery_standard_id: optionalId,
+  comments: yup.string().nullable().max(5000, 'Comments are too long'),
   quarter: yup.string().oneOf(['Q1', 'Q2', 'Q3', 'Q4']).nullable(),
 });

@@ -22,6 +22,17 @@ test('restores local rows and UNSPSC selections only for their user and plan', (
   assert.equal(local.getItem(key), '{broken');
 });
 
+test('serializes the selected service standard and optional comments without a free-text MSDS field', () => {
+  const payload = gridPayload({
+    ...row(1),
+    minimum_service_delivery_standard_id: 14,
+    comments: 'Deliver support within four business hours.',
+  });
+  assert.equal(payload.minimum_service_delivery_standard_id, 14);
+  assert.equal(payload.comments, 'Deliver support within four business hours.');
+  assert.equal('msds' in payload, false);
+});
+
 test('uploads 250 rows in batches and removes only acknowledged rows from local storage', async () => {
   const rows = Array.from({ length: 250 }, (_, i) => row(i)), local = storage(), batches = [];
   const uploaded = await uploadGridRows(rows, async items => {
@@ -68,6 +79,9 @@ test('grid component compiles and adds local rows, selects UNSPSC, and restores 
   assert.match(componentSource, /'Full screen'/);
   assert.doesNotMatch(componentSource, /await runLocalMatching\(prepared\)/);
   assert.match(componentSource, /v-if="showUnspscStep">UNSPSC \*<\/th>/);
+  assert.match(componentSource, /v-model="row.minimum_service_delivery_standard_id"/);
+  assert.match(componentSource, /v-model="row.comments"/);
+  assert.doesNotMatch(componentSource, /v-model="row.msds"/);
   assert.doesNotMatch(componentSource, /Add and complete the items you plan to procure/);
   assert.doesNotMatch(componentSource, /Add or import items, then complete their procurement details/);
   assert.doesNotMatch(componentSource, /Complete each item below/);

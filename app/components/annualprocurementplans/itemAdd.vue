@@ -65,7 +65,7 @@
           </div>
         <fieldset :disabled="submitting" :class="['mt-3 min-h-0 min-w-0 flex-1 overflow-auto rounded-xl border border-base-300', fullscreenOpen ? 'h-full' : 'max-h-[65vh]']">
           <table class="item-grid table table-sm">
-            <thead><tr><th>Row</th><th>Description *</th><th v-if="showUnspscStep">UNSPSC *</th><th>Reference</th><th v-for="column in lookupColumns" :key="column.key">{{ column.label }}</th><th v-if="exemptionMode">Exemption grounds *</th><th v-if="exemptionMode">Evidence document key</th><th>Quantity</th><th>Unit cost</th><th>Quarter</th><th>Expense</th><th>Award type</th><th v-for="column in dayColumns" :key="column.key">{{ column.label }}</th><th v-if="showPrequalificationColumn">Pre-qualification</th><th v-if="showEoiColumns">EOI</th><th v-for="column in flagColumns" :key="column.key">{{ column.label }}</th><th v-for="column in displayedDateColumns" :key="column.key">{{ column.label }}</th><th>MSDS (Minimum Service Delivery Standard)</th></tr></thead>
+            <thead><tr><th>Row</th><th>Description *</th><th v-if="showUnspscStep">UNSPSC *</th><th>Reference</th><th v-for="column in lookupColumns" :key="column.key">{{ column.label }}</th><th v-if="exemptionMode">Exemption grounds *</th><th v-if="exemptionMode">Evidence document key</th><th>Quantity</th><th>Unit cost</th><th>Quarter</th><th>Expense</th><th>Award type</th><th v-for="column in dayColumns" :key="column.key">{{ column.label }}</th><th v-if="showPrequalificationColumn">Pre-qualification</th><th v-if="showEoiColumns">EOI</th><th v-for="column in flagColumns" :key="column.key">{{ column.label }}</th><th v-for="column in displayedDateColumns" :key="column.key">{{ column.label }}</th><th>Minimum service delivery standard</th><th>Comments</th></tr></thead>
             <tbody><template v-for="row in visibleRows" :key="row.uuid">
               <tr :class="['align-top', showUnspscStep && !row.unspsc_id ? 'bg-warning/10' : '']">
                 <td><span class="block mb-2">{{ rowNumber(row) }}</span><button type="button" class="btn btn-error btn-outline btn-xs btn-square" aria-label="Delete row" title="Delete row" :disabled="row._sent || submitting" @click="removeRow(row)"><Icon name="lucide:trash-2" /></button></td>
@@ -84,9 +84,10 @@
                 <td v-if="showEoiColumns" class="min-w-24 text-center"><span v-if="planningApplicability(row).eoiRequired" class="badge badge-success badge-soft badge-sm">Required</span></td>
                 <td v-for="column in flagColumns" :key="column.key" class="text-center"><input v-model="row[column.key]" type="checkbox" class="checkbox checkbox-sm" :disabled="row._sent" :aria-label="column.label" /></td>
                 <td v-for="column in displayedDateColumns" :key="column.key" class="min-w-44"><input v-if="!column.eoiOnly || row.eoi" v-model="row[column.key]" type="date" :disabled="row._sent" :aria-label="column.label" class="input input-sm w-44" /></td>
-                <td><textarea v-model="row.msds" rows="2" class="textarea w-72" :disabled="row._sent" aria-label="MSDS (Minimum Service Delivery Standard)" /></td>
+                <td><select v-model="row.minimum_service_delivery_standard_id" class="select select-sm w-72" :disabled="row._sent" aria-label="Minimum service delivery standard"><option :value="null">Not applicable</option><option v-for="standard in serviceDeliveryStandards" :key="standard.id" :value="standard.id">{{ standard.name }}</option></select></td>
+                <td><textarea v-model="row.comments" rows="2" class="textarea w-72" :disabled="row._sent" aria-label="Optional comments" maxlength="5000" placeholder="Optional" /></td>
               </tr>
-            </template><tr v-if="!visibleRows.length"><td :colspan="13 + dayColumns.length + flagColumns.length + displayedDateColumns.length + Number(showPrequalificationColumn) + Number(showEoiColumns) + Number(showUnspscStep)" class="empty-grid py-16 text-base-content/50">{{ emptyGridMessage }}</td></tr></tbody>
+            </template><tr v-if="!visibleRows.length"><td :colspan="14 + dayColumns.length + flagColumns.length + displayedDateColumns.length + Number(showPrequalificationColumn) + Number(showEoiColumns) + Number(showUnspscStep) + (exemptionMode ? 2 : 0)" class="empty-grid py-16 text-base-content/50">{{ emptyGridMessage }}</td></tr></tbody>
           </table>
         </fieldset>
         <div class="mt-3 flex items-center justify-between gap-3"><div class="flex items-center gap-2 text-xs text-base-content/60" role="status"><span v-if="ready" class="status status-success status-xs" />{{ catalogueStatus || saveStatus || 'Preparing your draft…' }}</div><div class="flex items-center gap-2"><button class="btn btn-sm" :disabled="page <= 1 || submitting" @click="page--">Previous</button><span class="text-sm">{{ page }} / {{ lastPage }}</span><button class="btn btn-sm" :disabled="page >= lastPage || submitting" @click="page++">Next</button></div></div>
@@ -166,6 +167,7 @@ const uploadNote = computed(() => supplementMode.value
 const currentUserId = computed(() => identity.value?.data?.user?.id ?? identity.value?.user?.id ?? identity.value?.id ?? null);
 const searchDialog = ref(null), deleteAllDialog = ref(null), addItemsDialog = ref(null), uploadDialog = ref(null), fullscreenDialog = ref(null), fullscreenGridHost = ref(null), fullscreenOpen = ref(false), rows = ref([]), rowCount = ref(10), page = ref(1), rowFilter = ref('all');
 const planningRules = ref({ prequalification: { method_codes: ['CMB'] }, eoi: { amount: 50000, currency_code: 'USD', procurement_group_code: 'CONSULTANCY', procurement_method_code: 'RFP' } });
+const serviceDeliveryStandards = ref([]);
 const ready = ref(false), submitting = ref(false), matching = ref(false), errorMessage = ref(''), notice = ref(''), saveStatus = ref(''), catalogueStatus = ref(''), rowErrors = ref({});
 const exemptionTypes = ref([]), groundDialog = ref(null), groundError = ref('');
 let groundRow = null;
@@ -182,7 +184,7 @@ const detailIncompleteRows = computed(() => rows.value.filter(row => {
 }).length);
 const nsplReadinessSignature = row => JSON.stringify([
   row.description?.trim() || '', row.unspsc_id || null, row.quantity ?? null, row.unit_cost ?? null,
-  row.unitofmeasure_id || null, row.msds?.trim() || '',
+  row.unitofmeasure_id || null, row.minimum_service_delivery_standard_id || null,
 ]);
 const nsplUnvalidatedRows = computed(() => rows.value.filter(row => row._nspl_validation_signature !== nsplReadinessSignature(row)).length);
 const workflowStep = computed(() => {
@@ -299,11 +301,15 @@ async function initializeDraft() {
     draftKey = exemptionMode.value
       ? exemptionGridDraftKey(currentUserId.value, props.exemptionUuid)
       : (supplementMode.value ? supplementGridDraftKey(currentUserId.value, props.supplementUuid) : gridDraftKey(currentUserId.value, props.planUuid));
-    rows.value = loadGridDraft(window.localStorage, draftKey).map(row => ({ ...row, grounds: exemptionMode.value ? (row.grounds || []) : undefined, unspsc_confirmed: Boolean(row.unspsc_id) }));
+    rows.value = loadGridDraft(window.localStorage, draftKey).map(row => ({ ...newGridRow(row.uuid), ...row, minimum_service_delivery_standard_id: row.minimum_service_delivery_standard_id ?? null, comments: row.comments ?? '', grounds: exemptionMode.value ? (row.grounds || []) : undefined, unspsc_confirmed: Boolean(row.unspsc_id) }));
     page.value = 1; rowErrors.value = {}; ready.value = true; saveStatus.value = rows.value.length ? 'Local draft restored' : 'No local draft yet';
     await store.fetchItemLookups();
-    const rulesResponse = await client('/api/v1/annual-procurement-plans/items/planning-rules');
+    const [rulesResponse, standardsResponse] = await Promise.all([
+      client('/api/v1/annual-procurement-plans/items/planning-rules'),
+      client('/api/v1/minimum-service-delivery-standards/list'),
+    ]);
     planningRules.value = rulesResponse?.data ?? planningRules.value;
+    serviceDeliveryStandards.value = standardsResponse?.data ?? standardsResponse ?? [];
     rows.value.forEach(reconcilePlanningApplicability);
     if (exemptionMode.value) {
       const response = await client('/api/v1/exemption-types/list');

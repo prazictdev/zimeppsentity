@@ -103,7 +103,7 @@
       <div class="modal-box h-screen max-h-none w-screen max-w-none rounded-none">
         <div class="flex items-center justify-between"><h3 class="text-lg font-bold">Edit supplement item</h3><button class="btn btn-ghost btn-circle" @click="closeItemForm"><Icon name="lucide:x" /></button></div>
         <form class="mt-3" @submit.prevent="saveItem">
-          <AnnualprocurementplansItemForm v-model="itemForm" :errors="itemErrors" :procurementmethods="store.procurementmethods" :procurementgroups="store.procurementgroups" :sourceoffunds="store.sourceoffunds" :unitofmeasures="store.unitofmeasures" />
+          <AnnualprocurementplansItemForm v-model="itemForm" :errors="itemErrors" :procurementmethods="store.procurementmethods" :procurementgroups="store.procurementgroups" :sourceoffunds="store.sourceoffunds" :unitofmeasures="store.unitofmeasures" :minimum-service-delivery-standards="serviceDeliveryStandards" />
           <div class="modal-action"><button type="button" class="btn" @click="closeItemForm">Cancel</button><button type="submit" class="btn btn-primary" :disabled="itemSaving">{{ itemSaving ? 'Saving…' : 'Save' }}</button></div>
         </form>
       </div>
@@ -136,10 +136,18 @@ const editingItem = ref(null);
 const itemForm = ref({});
 const itemErrors = reactive({ description: '', quantity: '', unit_cost: '', award_type: '' });
 const itemSaving = ref(false);
+const serviceDeliveryStandards = ref([]);
+const client = usePeClient();
 
 useHead({ title: computed(() => `${supplement.value?.title || 'Supplement'} · Supplements`) });
 
-const openItemForm = async (item) => { editingItem.value = item; itemForm.value = { ...item }; await store.fetchItemLookups(); itemDialog.value?.showModal(); };
+const openItemForm = async (item) => {
+  editingItem.value = item;
+  itemForm.value = { ...item, minimum_service_delivery_standard_id: item.minimum_service_delivery_standard_id ?? null, comments: item.comments ?? '' };
+  const [, response] = await Promise.all([store.fetchItemLookups(), client('/api/v1/minimum-service-delivery-standards/list')]);
+  serviceDeliveryStandards.value = response?.data ?? response ?? [];
+  itemDialog.value?.showModal();
+};
 const closeItemForm = () => { itemDialog.value?.close(); editingItem.value = null; };
 const saveItem = async () => {
   if (!editingItem.value) return;

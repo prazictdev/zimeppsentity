@@ -237,8 +237,16 @@
     </label>
 
     <label class="fieldset md:col-span-3">
-      <span class="fieldset-legend">MSDS (Minimum Service Delivery Standard)</span>
-      <textarea v-model="form.msds" rows="2" class="textarea textarea-bordered w-full"></textarea>
+      <span class="fieldset-legend">Minimum Service Delivery Standard</span>
+      <select v-model="form.minimum_service_delivery_standard_id" class="select select-bordered w-full">
+        <option :value="null">Not applicable</option>
+        <option v-for="standard in minimumServiceDeliveryStandards" :key="standard.id" :value="standard.id">{{ standard.name }}</option>
+      </select>
+    </label>
+
+    <label class="fieldset md:col-span-3">
+      <span class="fieldset-legend">Comments <span class="text-xs text-base-content/50">(optional)</span></span>
+      <textarea v-model="form.comments" rows="3" maxlength="5000" class="textarea textarea-bordered w-full"></textarea>
     </label>
   </div>
 </template>
@@ -251,6 +259,7 @@ const props = defineProps({
   procurementgroups: { type: Array, default: () => [] },
   sourceoffunds: { type: Array, default: () => [] },
   unitofmeasures: { type: Array, default: () => [] },
+  minimumServiceDeliveryStandards: { type: Array, default: () => [] },
   planningRules: { type: Object, default: () => ({ prequalification: { method_codes: ['CMB'] }, eoi: { amount: 50000, currency_code: 'USD', procurement_group_code: 'CONSULTANCY', procurement_method_code: 'RFP' } }) },
 });
 

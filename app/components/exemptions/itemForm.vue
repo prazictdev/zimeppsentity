@@ -28,13 +28,14 @@
     <label class="fieldset"><span class="fieldset-legend">Award type</span><select v-model="form.award_type" class="select w-full"><option value="AWARD">Award</option><option value="FRAMEWORK">Framework</option></select></label>
     <label class="fieldset"><span class="fieldset-legend">Bid notice publication</span><input v-model="form.bid_notice_publication_date" type="date" class="input w-full" /></label>
     <label class="fieldset"><span class="fieldset-legend">Evidence document key</span><input v-model.trim="form.evidence_document_key" class="input w-full" placeholder="Optional Docman key" /></label>
-    <label class="fieldset md:col-span-3"><span class="fieldset-legend">MSDS</span><textarea v-model.trim="form.msds" class="textarea w-full" rows="2" /></label>
+    <label class="fieldset md:col-span-3"><span class="fieldset-legend">Minimum service delivery standard</span><select v-model="form.minimum_service_delivery_standard_id" class="select w-full"><option :value="null">Not applicable</option><option v-for="standard in minimumServiceDeliveryStandards" :key="standard.id" :value="standard.id">{{ standard.name }}</option></select></label>
+    <label class="fieldset md:col-span-3"><span class="fieldset-legend">Comments <span class="text-xs text-base-content/50">(optional)</span></span><textarea v-model.trim="form.comments" class="textarea w-full" rows="3" maxlength="5000" /></label>
     <div class="md:col-span-3 flex justify-end gap-2"><button type="button" class="btn" @click="$emit('cancel')">Cancel</button><button class="btn btn-primary" :disabled="saving"><span v-if="saving" class="loading loading-spinner loading-xs" /> Save item</button></div>
   </form>
 </template>
 
 <script setup>
-const props = defineProps({ form: { type: Object, required: true }, saving: { type: Boolean, default: false } });
+const props = defineProps({ form: { type: Object, required: true }, saving: { type: Boolean, default: false }, minimumServiceDeliveryStandards: { type: Array, default: () => [] } });
 const emit = defineEmits(['submit', 'cancel']);
 const planStore = useAnnualprocurementplanStore();
 const client = usePeClient();

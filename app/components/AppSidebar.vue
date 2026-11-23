@@ -123,6 +123,16 @@ const modules = computed(() => {
   })
 
   const configuredUrls = new Set(configuredModules.flatMap(module => (module.submodules ?? []).map(submodule => submodule.url)))
+  if (can('can.access.minimumservicedeliverystandards') && !configuredUrls.has('/minimum-service-delivery-standards')) {
+    const planningIndex = configuredModules.findIndex(module => String(module.name ?? '').toLowerCase() === 'planning')
+    const standardsMenu = { id: 'minimum-service-delivery-standards', name: 'Service standards', url: '/minimum-service-delivery-standards', icon: 'lucide:badge-check' }
+    if (planningIndex >= 0) {
+      const planning = configuredModules[planningIndex]
+      configuredModules[planningIndex] = { ...planning, submodules: [...(planning.submodules ?? []), standardsMenu] }
+    } else {
+      configuredModules.push({ id: 'planning-standards', name: 'Planning', icon: 'lucide:network', submodules: [standardsMenu] })
+    }
+  }
   if (can('can.access.exemptions') && !configuredUrls.has('/exemptions')) {
     configuredModules.push({
       id: 'exemption-workflow',

@@ -24,6 +24,7 @@
               :procurementgroups="store.procurementgroups"
               :sourceoffunds="store.sourceoffunds"
               :unitofmeasures="store.unitofmeasures"
+              :minimum-service-delivery-standards="serviceDeliveryStandards"
               :planning-rules="planningRules"
             />
           </div>
@@ -53,6 +54,7 @@ const props = defineProps({
 const store = useAnnualprocurementplanStore();
 const client = usePeClient();
 const planningRules = ref({ prequalification: { method_codes: ['CMB'] }, eoi: { amount: 50000, currency_code: 'USD', procurement_group_code: 'CONSULTANCY', procurement_method_code: 'RFP' } });
+const serviceDeliveryStandards = ref([]);
 
 const form = ref({});
 const errors = reactive({ description: '', quantity: '', unit_cost: '', award_type: '' });
@@ -84,14 +86,19 @@ const toFormShape = (it) => ({
   total_cost: it.total_cost != null ? Number(it.total_cost) : null,
   expensecategory: it.expensecategory ?? 'MOOE',
   award_type: it.award_type ?? 'AWARD',
-  msds: it.msds ?? '',
+  minimum_service_delivery_standard_id: it.minimum_service_delivery_standard_id ?? null,
+  comments: it.comments ?? '',
   quarter: it.quarter ?? null,
 });
 
 const openModal = async () => {
   await store.fetchItemLookups();
-  const rulesResponse = await client('/api/v1/annual-procurement-plans/items/planning-rules');
+  const [rulesResponse, standardsResponse] = await Promise.all([
+    client('/api/v1/annual-procurement-plans/items/planning-rules'),
+    client('/api/v1/minimum-service-delivery-standards/list'),
+  ]);
   planningRules.value = rulesResponse?.data ?? planningRules.value;
+  serviceDeliveryStandards.value = standardsResponse?.data ?? standardsResponse ?? [];
   form.value = toFormShape(props.item);
   document.getElementById(`edit_apitem_modal_${props.item.id}`).showModal();
 };
