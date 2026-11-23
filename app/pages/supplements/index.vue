@@ -29,6 +29,8 @@
               <select v-model="statusFilter" class="select w-full bg-white sm:w-52" @change="reload">
                 <option value="">All statuses</option>
                 <option value="DRAFT">Draft</option>
+                <option value="PENDING_REVIEW">Pending Internal Review</option>
+                <option value="PENDING_INTERNAL_APPROVAL">Pending PE Approval</option>
                 <option value="PENDING_ADMIN_AUTHORIZATION">Pending Admin Authorization</option>
                 <option value="PENDING_MANAGER_REVIEW">Pending Manager Review</option>
                 <option value="PENDING_APPROVER_DECISION">Pending Approver Decision</option>
@@ -68,7 +70,7 @@
                   <p class="text-xs text-base-content/60">{{ s.plan?.company?.name || '—' }}</p>
                 </td>
                 <td class="max-w-md">
-                  <p class="font-medium">{{ s.title || '—' }}</p>
+                  <div class="flex items-center gap-2"><p class="font-medium">{{ s.title || '—' }}</p><span v-if="s.request_type === 'ITEM_AMENDMENT'" class="badge badge-outline badge-xs">Amendment</span></div>
                   <p v-if="s.reason" class="text-xs text-base-content/60 truncate" :title="s.reason">{{ s.reason }}</p>
                 </td>
                 <td>
@@ -182,6 +184,8 @@ const formatStatus = (s) => {
 
 const statusBadge = (s) => ({
   DRAFT: 'badge-ghost',
+  PENDING_REVIEW: 'badge-warning',
+  PENDING_INTERNAL_APPROVAL: 'badge-warning',
   PENDING_ADMIN_AUTHORIZATION: 'badge-info badge-outline',
   PENDING_MANAGER_REVIEW: 'badge-info',
   PENDING_APPROVER_DECISION: 'badge-info',

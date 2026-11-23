@@ -136,6 +136,8 @@ const approverCandidates = ref([]);
 const loadingCandidates = ref(false);
 
 const COMMENT_REQUIRED = new Set([
+  'review_send_back',
+  'approve_send_back',
   'manager_disagree',
   'approver_send_back_to_manager',
   'approver_send_back_to_pe',
@@ -153,15 +155,25 @@ const canSubmitHandler = computed(() =>
 const commentRequired = computed(() => COMMENT_REQUIRED.has(activeAction.value));
 
 const actionLabel = (a) => ({
+  submit_for_review: 'Submit for internal review',
+  review_approve: 'Complete review',
+  review_send_back: 'Return to creator',
+  approve: 'Approve and send to authority',
+  approve_send_back: 'Return to reviewer',
   submit_for_authorization: 'Submit to Authority',
   manager_agree: 'Agree & forward to approver',
   manager_disagree: 'Disagree (send back to handler)',
-  approver_approve: 'Approve & merge into plan',
+  approver_approve: props.supplement.request_type === 'ITEM_AMENDMENT' ? 'Authorize & apply amendment' : 'Approve & merge into plan',
   approver_send_back_to_manager: 'Send back to manager',
   approver_send_back_to_pe: 'Send supplement back to PE',
 })[a] ?? a;
 
 const actionIcon = (a) => ({
+  submit_for_review: 'lucide:send',
+  review_approve: 'lucide:check-circle',
+  review_send_back: 'lucide:undo-2',
+  approve: 'lucide:building-2',
+  approve_send_back: 'lucide:undo-2',
   submit_for_authorization: 'lucide:send',
   manager_agree: 'lucide:check-circle',
   manager_disagree: 'lucide:undo-2',
@@ -171,6 +183,11 @@ const actionIcon = (a) => ({
 })[a] ?? 'lucide:circle';
 
 const actionClass = (a) => ({
+  submit_for_review: 'btn-success',
+  review_approve: 'btn-success',
+  review_send_back: 'btn-warning',
+  approve: 'btn-success',
+  approve_send_back: 'btn-warning',
   submit_for_authorization: 'btn-success',
   manager_agree: 'btn-success',
   manager_disagree: 'btn-warning',
@@ -180,10 +197,15 @@ const actionClass = (a) => ({
 })[a] ?? 'btn-primary';
 
 const actionDescription = (a) => ({
+  submit_for_review: 'Lock the approved item and submit the proposed correction for internal review.',
+  review_approve: 'Confirm the amendment and forward it to the PE internal approver.',
+  review_send_back: 'Return the amendment to its creator for correction. A comment is required.',
+  approve: 'Approve internally and send the amendment to the assigned regulator handler.',
+  approve_send_back: 'Return the amendment to the internal reviewer. A comment is required.',
   submit_for_authorization: 'Submit the supplement directly to the assigned authority handler.',
   manager_agree: 'Agree with the recommendation and forward to the approver.',
   manager_disagree: 'Disagree; the supplement returns to the handler. A comment is required.',
-  approver_approve: 'Approve and merge supplement items into the plan.',
+  approver_approve: props.supplement.request_type === 'ITEM_AMENDMENT' ? 'Authorize and apply the proposed values to the approved item.' : 'Approve and merge supplement items into the plan.',
   approver_send_back_to_manager: 'Bounce back to the manager. A comment is required.',
   approver_send_back_to_pe: 'Return the supplement to the PE for corrections. A comment is required.',
 })[a] ?? '';

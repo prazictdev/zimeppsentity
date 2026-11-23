@@ -101,6 +101,7 @@ const toggle = async () => {
 
 const notificationUrl = (notification) => {
   const data = notification?.data ?? {};
+  if (data.url) return data.url;
   if (data.plan_uuid) return `/annualprocurementplans/${data.plan_uuid}`;
   if (data.tender_uuid && data.type === 'BID_OPENING_REPORT') return `/tenders/${data.tender_uuid}/bid-opening`;
   if (data.tender_uuid) return `/tenders/${data.tender_uuid}`;

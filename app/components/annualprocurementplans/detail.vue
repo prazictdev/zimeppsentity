@@ -126,6 +126,7 @@
                       :can-edit="canEdit"
                       :can-delete="canDelete"
                       :can-edit-plan="canEditPlan"
+                      :plan-status="plan?.status"
                     />
                   </tbody>
                 </table>

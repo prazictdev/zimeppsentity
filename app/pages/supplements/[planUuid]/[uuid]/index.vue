@@ -21,7 +21,8 @@
           <div class="flex flex-wrap items-start justify-between gap-3">
             <div>
               <div class="flex flex-wrap items-center gap-2">
-                <h1 class="text-2xl font-bold">{{ supplement.title || 'Supplement' }}</h1>
+                <h1 class="text-2xl font-bold">{{ supplement.title || requestLabel }}</h1>
+                <span v-if="isAmendment" class="badge badge-outline">Item amendment</span>
                 <span :class="['badge', statusBadge(supplement.status)]">{{ formatStatus(supplement.status) }}</span>
               </div>
               <p class="mt-1 text-sm text-base-content/60">APP {{ store.currentPlan?.year || '—' }} · {{ store.currentPlan?.company?.name || '—' }}</p>
@@ -31,12 +32,34 @@
             <div class="flex flex-wrap items-center gap-2">
               <NuxtLink v-if="canEditItems" :to="addItemsPath" class="btn btn-primary btn-sm"><Icon name="lucide:plus" />Add items</NuxtLink>
               <SupplementsEdit v-if="canEditItems" :plan-uuid="planUuid" :supplement="supplement" />
+              <AmendmentsEdit v-if="canEditAmendment" :plan-uuid="planUuid" :amendment="supplement" />
             </div>
           </div>
         </div>
       </section>
 
-      <section class="card border border-base-200">
+      <section v-if="isAmendment" class="card border border-base-200">
+        <div class="card-body gap-4">
+          <div class="flex flex-wrap items-center justify-between gap-2 border-b border-base-200 pb-3">
+            <div><h2 class="card-title">Approved item correction</h2><p class="text-sm text-base-content/55">{{ supplement.target_item?.reference_no }} · {{ supplement.target_item?.description }}</p></div>
+            <span v-if="supplement.applied_at" class="badge badge-success">Applied {{ formatTime(supplement.applied_at) }}</span>
+          </div>
+          <div class="grid gap-3 sm:grid-cols-3">
+            <div v-for="field in amendmentFields" :key="field.key" class="rounded-box border border-base-200 p-3">
+              <div class="text-xs text-base-content/55">{{ field.label }}</div>
+              <div class="mt-3 grid grid-cols-[1fr_auto_1fr] items-center gap-2">
+                <div><div class="text-xs text-base-content/45">Approved</div><div class="font-mono font-semibold">{{ amount(supplement.before_values?.[field.key]) }}</div></div>
+                <Icon name="lucide:arrow-right" class="h-4 w-4 text-base-content/35" />
+                <div class="text-right"><div class="text-xs text-base-content/45">Proposed</div><div class="font-mono font-bold text-primary">{{ amount(supplement.proposed_values?.[field.key]) }}</div></div>
+              </div>
+            </div>
+          </div>
+          <div class="rounded-box bg-base-200/60 p-3"><div class="text-xs text-base-content/55">Reason for amendment</div><p class="mt-1 text-sm">{{ supplement.reason }}</p></div>
+          <div v-if="store.supplementWorkflowActions.length" class="card-actions justify-end border-t border-base-200 pt-4"><SupplementsWorkflowActions :plan-uuid="planUuid" :supplement="supplement" /></div>
+        </div>
+      </section>
+
+      <section v-else class="card border border-base-200">
         <div class="card-body">
           <div class="flex items-center justify-between border-b border-base-200 pb-3">
             <h2 class="card-title">Supplement items</h2>
@@ -97,7 +120,15 @@ const planUuid = computed(() => String(route.params.planUuid));
 const supplementUuid = computed(() => String(route.params.uuid));
 const addItemsPath = computed(() => `/supplements/${planUuid.value}/${supplementUuid.value}/add-items`);
 const supplement = computed(() => store.currentSupplement);
-const canEditItems = computed(() => supplement.value?.status === 'DRAFT' && store.supplementIsCreator);
+const isAmendment = computed(() => supplement.value?.request_type === 'ITEM_AMENDMENT');
+const canEditItems = computed(() => !isAmendment.value && supplement.value?.status === 'DRAFT' && store.supplementIsCreator);
+const canEditAmendment = computed(() => isAmendment.value && supplement.value?.status === 'DRAFT' && store.supplementIsCreator);
+const requestLabel = computed(() => isAmendment.value ? 'Item amendment' : 'Supplement');
+const amendmentFields = [
+  { key: 'quantity', label: 'Quantity' },
+  { key: 'unit_cost', label: 'Unit cost' },
+  { key: 'total_cost', label: 'Total budget' },
+];
 const loading = ref(true);
 const loadError = ref('');
 const itemDialog = ref(null);
@@ -119,7 +150,7 @@ const saveItem = async () => {
 };
 const removeItem = async (item) => { if (window.confirm('Remove this item from the supplement?')) await store.deleteSupplementItemAction(planUuid.value, supplementUuid.value, item.id); };
 const formatStatus = value => value ? value.split('_').map(part => part.charAt(0) + part.slice(1).toLowerCase()).join(' ') : '—';
-const statusBadge = status => ({ DRAFT: 'badge-ghost', PENDING_ADMIN_AUTHORIZATION: 'badge-info badge-outline', PENDING_MANAGER_REVIEW: 'badge-info', PENDING_APPROVER_DECISION: 'badge-info', AUTHORIZED: 'badge-success', REJECTED: 'badge-error' })[status] ?? 'badge-ghost';
+const statusBadge = status => ({ DRAFT: 'badge-ghost', PENDING_REVIEW: 'badge-warning', PENDING_INTERNAL_APPROVAL: 'badge-warning', PENDING_ADMIN_AUTHORIZATION: 'badge-info badge-outline', PENDING_MANAGER_REVIEW: 'badge-info', PENDING_APPROVER_DECISION: 'badge-info', AUTHORIZED: 'badge-success', REJECTED: 'badge-error' })[status] ?? 'badge-ghost';
 const amount = value => Number.isFinite(Number(value)) ? Number(value).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '—';
 const formatTime = value => { const date = new Date(value); return value && !Number.isNaN(date.getTime()) ? date.toLocaleString() : '—'; };
 const formatUser = user => user ? ([user.name, user.lastname].filter(Boolean).join(' ') || user.email || '—') : '—';

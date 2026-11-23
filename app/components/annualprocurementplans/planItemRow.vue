@@ -37,6 +37,7 @@
     <td class="sticky right-0 z-10 w-32 min-w-32 border-l border-base-200 bg-base-100 shadow-[-8px_0_14px_-12px_rgba(0,0,0,0.3)] group-hover:bg-base-200">
       <div class="flex items-center justify-end gap-1">
         <AnnualprocurementplansItemView :item="item" />
+        <AnnualprocurementplansItemAmend v-if="canEdit && canAmend" :plan-uuid="planUuid" :item="item" />
         <template v-if="canEdit && canEditPlan">
           <button v-if="isApprovedExemptionItem" class="btn btn-info btn-xs" disabled title="Approved exemption items cannot be edited">
             <Icon name="lucide:edit" />
@@ -61,6 +62,7 @@ const props = defineProps({
   canEdit: { type: Boolean, default: false },
   canDelete: { type: Boolean, default: false },
   canEditPlan: { type: Boolean, default: false },
+  planStatus: { type: String, default: '' },
 });
 
 const formatAmount = (v) => {
@@ -72,6 +74,11 @@ const formatAmount = (v) => {
 const groupWarn = computed(() => !props.item.procurementgroup && !!props.item.raw_procurementgroup_code);
 const methodWarn = computed(() => !props.item.procurementmethod && !!props.item.raw_procurementmethod_code);
 const isApprovedExemptionItem = computed(() => props.item.exemption_request_item_id != null);
+const canAmend = computed(() =>
+  ['AUTHORIZED', 'ACTIVE'].includes(props.planStatus)
+  && !props.item.is_locked
+  && !props.item.is_utilized,
+);
 
 const groupLabel = computed(() =>
   props.item.procurementgroup?.name
