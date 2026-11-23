@@ -7,11 +7,11 @@ import { renderToString } from 'vue/server-renderer';
 
 const sample = {
   can_scan: true, can_review: true, can_change_code: true, can_set_code: true, can_submit: false,
-  affected_items: 1, total_items: 2, affected_value: 1000, affected_value_percent: 25,
+  affected_items: 1, attention_items: 0, eligible_items: 1, eligible_groups: 1, total_items: 2, affected_value: 1000, affected_value_percent: 25,
   catalogue: { version: 'Test release', source: 'Test catalogue' },
   counts: { VERIFIED: 1, NEEDS_REVIEW: 1, MISMATCH: 0, INSUFFICIENT_DETAIL: 0 },
   last_page: 1,
-  items: [{ id: 1, description: '<script>unsafe</script> Notebook computer', total_cost: 1000, status: 'NEEDS_REVIEW', reason: 'Reviewer confirmation required.', unspsc: { code: '43211503', name: 'Notebook computers' }, candidates: [{ code: '43211503', name: 'Notebook computers', reason: 'Portable computer purchase.', hierarchy: [{ code: '43211500', name: 'Computers' }] }] }],
+  items: [{ id: 1, description: '<script>unsafe</script> Notebook computer', total_cost: 1000, status: 'NEEDS_REVIEW', reason: 'Reviewer confirmation required.', bulk_eligible: true, bulk_exception: null, review_group_size: 3, unspsc: { code: '43211503', name: 'Notebook computers' }, candidates: [{ code: '43211503', name: 'Notebook computers', reason: 'Portable computer purchase.', hierarchy: [{ code: '43211500', name: 'Computers' }] }] }],
 };
 
 async function render(frontend, report) {
@@ -31,15 +31,26 @@ async function render(frontend, report) {
 for (const frontend of ['peclient', 'adminclient']) {
   test(`${frontend} shows validation status, candidates and permitted review controls`, async () => {
     const html = await render(frontend, sample);
-    for (const value of ['UNSPSC validation', '25% of plan value', '43211503', 'Computers', 'Record review']) assert.ok(html.includes(value), value);
+    for (const value of ['UNSPSC validation', '25% of plan value', '43211503', 'Computers', 'Confirm all eligible classifications', '3 identical classifications']) assert.ok(html.includes(value), value);
     assert.ok(!html.includes('<script>unsafe</script>'));
     assert.ok(html.includes('&lt;script&gt;'));
     assert.ok(!html.includes('Confidence'));
     assert.ok(!html.includes('Scan classifications'));
+    assert.ok(!html.includes('Select all eligible on this page'));
+    assert.ok(!html.includes('Review exception'));
+    const exceptionHtml = await render(frontend, {
+      ...sample,
+      eligible_items: 0,
+      eligible_groups: 0,
+      attention_items: 1,
+      items: [{ ...sample.items[0], bulk_eligible: false, bulk_exception: 'Multiple catalogue candidates require an individual decision.' }],
+    });
+    assert.ok(exceptionHtml.includes('Review exception'));
+    assert.ok(exceptionHtml.includes('Multiple catalogue candidates require an individual decision.'));
   });
   test(`${frontend} hides mutation controls from viewers`, async () => {
     const html = await render(frontend, { ...sample, can_review: false, can_scan: false, can_set_code: false });
-    assert.ok(!html.includes('Record review'));
+    assert.ok(!html.includes('Review exception'));
     assert.ok(!html.includes('Scan classifications'));
     assert.ok(!html.includes('Search / set UNSPSC'));
     assert.ok(html.includes('Reviewer confirmation required.'));
@@ -47,6 +58,6 @@ for (const frontend of ['peclient', 'adminclient']) {
   test(`${frontend} allows manual code selection without granting review authority`, async () => {
     const html = await render(frontend, { ...sample, can_review: false, can_set_code: true });
     assert.ok(html.includes('Search / set UNSPSC'));
-    assert.ok(!html.includes('Record review'));
+    assert.ok(!html.includes('Review exception'));
   });
 }

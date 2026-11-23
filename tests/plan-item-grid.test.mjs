@@ -97,7 +97,11 @@ test('grid component compiles and adds local rows, selects UNSPSC, and restores 
     const onMounted = () => {}, onBeforeUnmount = () => {}, onBeforeRouteLeave = guard => { leaveGuard = guard; }, watch = () => {};
     export const session = ref({ data: { user: { id: 3 }, permissions: [] } });
     const useSanctumUser = () => session;
-    const useAnnualprocurementplanStore = () => ({ fetchItemLookups: async () => {}, procurementmethods: [], procurementgroups: [] });
+    const useAnnualprocurementplanStore = () => ({
+      fetchItemLookups: async () => {},
+      procurementmethods: [{ id: 11, code: 'RFP', name: 'Request for proposals' }],
+      procurementgroups: [{ id: 22, code: 'CONSULTANCY', name: 'Consultancy' }],
+    });
     const useExemptionStore = () => ({});
     const usePeClient = () => async url => url.endsWith('/unspsc-catalogue')
       ? { data: { revision: 'test', items: [{ id: 9, code: '43211503', name: 'Notebook computers' }] } }
@@ -146,6 +150,20 @@ test('grid component compiles and adds local rows, selects UNSPSC, and restores 
   vm.rows.value[0]._sent = true;
   vm.removeRow(vm.rows.value[0]);
   assert.equal(vm.rows.value.length, 2);
+  const eoiRow = vm.rows.value[0];
+  eoiRow.procurementmethod_id = 11;
+  eoiRow.procurementgroup_id = 22;
+  eoiRow.quantity = 1;
+  eoiRow.unit_cost = 50000;
+  eoiRow.eoi_publication_date = '';
+  eoiRow.eoi_closing_date = '';
+  vm.reconcilePlanningApplicability(eoiRow);
+  assert.equal(eoiRow.eoi, true);
+  assert.ok(vm.detailIncompleteRows.value > 0);
+  assert.equal(vm.workflowStep.value, 1);
+  eoiRow.eoi_publication_date = '2027-01-01';
+  eoiRow.eoi_closing_date = '2027-01-15';
+  assert.equal(vm.detailIncompleteRows.value, 0);
   module.session.value = { data: { user: { id: 4 } } };
   await vm.initializeDraft(); assert.equal(vm.rows.value.length, 0);
   module.session.value = null;
