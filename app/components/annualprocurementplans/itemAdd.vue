@@ -7,7 +7,7 @@
               <span class="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 text-primary"><Icon name="lucide:list-plus" class="h-5 w-5" /></span>
               <h1 class="text-xl font-bold">{{ pageTitle }}</h1>
             </div>
-            <p class="max-w-3xl text-sm text-base-content/60">Add the items you plan to procure, complete their details, then upload them to this {{ targetLabel }}.</p>
+            <p class="max-w-3xl text-sm text-base-content/60">Add and complete the items you plan to procure, match their UNSPSC commodities, validate their NSPL readiness, then upload them to this {{ targetLabel }}.</p>
           </div>
           <div v-if="rows.length" class="flex w-fit items-center gap-2 rounded-lg bg-base-200 px-3 py-2 text-sm">
             <span class="font-semibold tabular-nums">{{ rows.length }}</span>
@@ -17,17 +17,18 @@
 
         <div class="border-b border-base-200 px-4 py-4 sm:px-6">
           <ul class="steps steps-horizontal w-full text-xs sm:text-sm" aria-label="Item upload progress">
-            <li :class="['step', workflowStep >= 1 ? 'step-primary' : '']">Add items</li>
-            <li :class="['step', workflowStep >= 2 ? 'step-primary' : '']">Complete details</li>
-            <li :class="['step', workflowStep >= 3 ? 'step-primary' : '']">Upload to plan</li>
+            <li :class="['step', workflowStep >= 1 ? 'step-primary' : '']">Add items &amp; details</li>
+            <li :class="['step', workflowStep >= 2 ? 'step-primary' : '']">Match UNSPSC</li>
+            <li :class="['step', workflowStep >= 3 ? 'step-primary' : '']">NSPL validation</li>
+            <li :class="['step', workflowStep >= 4 ? 'step-primary' : '']">Upload to plan</li>
           </ul>
         </div>
 
         <div :class="['p-4 sm:p-6', embedded ? 'min-h-0 flex-1 overflow-auto' : '']">
         <section class="flex flex-col gap-4 rounded-xl border border-base-300 bg-base-200/35 p-4 lg:flex-row lg:items-end lg:justify-between">
           <div>
-            <h2 class="font-semibold">1. Add items</h2>
-            <p class="mt-1 text-sm text-base-content/60">Choose how many blank items to add, or import them from a file.</p>
+            <h2 class="font-semibold">1. Add items &amp; complete details</h2>
+            <p class="mt-1 text-sm text-base-content/60">Choose how many blank items to add, or import them from a file, then complete the item grid below.</p>
             <div class="mt-3 flex flex-wrap items-end gap-2">
               <label class="fieldset py-0"><span class="fieldset-legend pt-0 text-xs">Number of items</span><input v-model.number="rowCount" type="number" min="1" max="5000" class="input input-sm w-32" :disabled="submitting" /></label>
               <button class="btn btn-primary btn-sm" :disabled="submitting || !ready" @click="addRows"><Icon name="lucide:plus" />Add items</button>
@@ -43,17 +44,18 @@
 
         <div v-if="rows.length" class="mt-4 flex flex-col gap-3 rounded-xl border border-base-300 px-4 py-3 lg:flex-row lg:items-center lg:justify-between">
           <div class="flex items-start gap-3">
-            <span :class="['mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full', incompleteRows ? 'bg-warning/15 text-warning' : 'bg-success/15 text-success']">
-              <Icon :name="incompleteRows ? 'lucide:circle-alert' : 'lucide:circle-check'" class="h-4 w-4" />
+            <span :class="['mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full', workflowStep < 4 ? 'bg-warning/15 text-warning' : 'bg-success/15 text-success']">
+              <Icon :name="workflowStep < 4 ? 'lucide:circle-alert' : 'lucide:circle-check'" class="h-4 w-4" />
             </span>
             <div>
-              <p class="text-sm font-semibold">{{ incompleteRows ? `${incompleteRows} ${incompleteRows === 1 ? 'item needs' : 'items need'} attention` : 'All items are ready to upload' }}</p>
-              <p class="mt-0.5 text-xs text-base-content/60">{{ incompleteRows ? 'Complete the highlighted item fields below.' : `Upload these items to the ${targetLabel}.` }}</p>
+              <p class="text-sm font-semibold">{{ workflowStatus.title }}</p>
+              <p class="mt-0.5 text-xs text-base-content/60">{{ workflowStatus.description }}</p>
             </div>
           </div>
           <div class="flex flex-wrap items-center gap-2">
             <button v-if="unclassifiedRows" class="btn btn-outline btn-sm" :disabled="submitting || matching || !ready" @click="runLocalMatching(rows)"><span v-if="matching" class="loading loading-spinner loading-xs" /><Icon v-else name="lucide:sparkles" />{{ matching ? 'Matching…' : `Match ${unclassifiedRows} UNSPSC` }}</button>
-            <button class="btn btn-primary btn-sm" :disabled="submitting || !ready || incompleteRows > 0" @click="upload"><span v-if="submitting" class="loading loading-spinner loading-sm" /><Icon v-else name="lucide:cloud-upload" />{{ submitting ? 'Uploading…' : `Upload ${rows.length} ${rows.length === 1 ? 'item' : 'items'}` }}</button>
+            <button v-if="workflowStep === 3" class="btn btn-outline btn-sm" :disabled="submitting || matching || !ready" @click="validateNsplReadiness"><Icon name="lucide:shield-check" />Validate NSPL readiness</button>
+            <button class="btn btn-primary btn-sm" :disabled="submitting || !ready || workflowStep < 4" @click="upload"><span v-if="submitting" class="loading loading-spinner loading-sm" /><Icon v-else name="lucide:cloud-upload" />{{ submitting ? 'Uploading…' : `Upload ${rows.length} ${rows.length === 1 ? 'item' : 'items'}` }}</button>
           </div>
         </div>
 
@@ -160,12 +162,40 @@ const visibleRows = computed(() => filteredRows.value.slice((page.value - 1) * 2
 const lastPage = computed(() => Math.max(1, Math.ceil(filteredRows.value.length / 25)));
 const unclassifiedRows = computed(() => rows.value.filter(row => !row.unspsc_id).length);
 const matchedRows = computed(() => rows.value.length - unclassifiedRows.value);
-const incompleteRows = computed(() => rows.value.filter(row => {
+const detailIncompleteRows = computed(() => rows.value.filter(row => {
   const hasPricing = [row.quantity, row.unit_cost].every(value => value !== '' && Number.isFinite(Number(value)) && Number(value) >= 0);
   const missingEoiDates = row.eoi && (!row.eoi_publication_date || !row.eoi_closing_date);
-  return !row.description?.trim() || !row.unspsc_id || !row.expected_delivery_date || !hasPricing || missingEoiDates || (exemptionMode.value && Boolean(groundsValidationError(row)));
+  return !row.description?.trim() || !row.expected_delivery_date || !hasPricing || missingEoiDates || (exemptionMode.value && Boolean(groundsValidationError(row)));
 }).length);
-const workflowStep = computed(() => !rows.value.length ? 1 : (incompleteRows.value ? 2 : 3));
+const nsplReadinessSignature = row => JSON.stringify([
+  row.description?.trim() || '', row.unspsc_id || null, row.quantity ?? null, row.unit_cost ?? null,
+  row.unitofmeasure_id || null, row.msds?.trim() || '',
+]);
+const nsplUnvalidatedRows = computed(() => rows.value.filter(row => row._nspl_validation_signature !== nsplReadinessSignature(row)).length);
+const workflowStep = computed(() => {
+  if (!rows.value.length || detailIncompleteRows.value) return 1;
+  if (unclassifiedRows.value) return 2;
+  if (nsplUnvalidatedRows.value) return 3;
+  return 4;
+});
+const workflowStatus = computed(() => {
+  if (workflowStep.value === 1) return {
+    title: `Complete ${detailIncompleteRows.value} ${detailIncompleteRows.value === 1 ? 'item' : 'items'}`,
+    description: 'Add items and complete their required details in the grid below.',
+  };
+  if (workflowStep.value === 2) return {
+    title: `${unclassifiedRows.value} ${unclassifiedRows.value === 1 ? 'item needs' : 'items need'} a UNSPSC match`,
+    description: 'Run automatic matching, then review any unmatched items below.',
+  };
+  if (workflowStep.value === 3) return {
+    title: `${nsplUnvalidatedRows.value} ${nsplUnvalidatedRows.value === 1 ? 'item needs' : 'items need'} NSPL readiness validation`,
+    description: 'Confirm the descriptions, units, quantities, prices, and specifications are ready for the official NSPL scan.',
+  };
+  return {
+    title: 'All items are ready to upload',
+    description: `Upload these items to the ${targetLabel.value}.`,
+  };
+});
 const unsavedRows = computed(() => rows.value.filter(row => !row._sent));
 const emptyGridMessage = computed(() => {
   if (!rows.value.length) return 'Choose how many rows you need and click Add rows.';
@@ -330,6 +360,13 @@ async function runLocalMatching(targetRows) {
     catalogueStatus.value = '';
     errorMessage.value = error.data?.message || error.message || 'Could not load the UNSPSC catalogue for local matching.';
   } finally { matching.value = false; }
+}
+function validateNsplReadiness() {
+  if (workflowStep.value !== 3) return;
+  rows.value.forEach(row => { row._nspl_validation_signature = nsplReadinessSignature(row); });
+  notice.value = `${rows.value.length} ${rows.value.length === 1 ? 'item is' : 'items are'} ready for the official NSPL catalogue scan after upload.`;
+  errorMessage.value = '';
+  saveDraft();
 }
 function removeRow(row) { if (!row._sent && !submitting.value) { rows.value.splice(rows.value.indexOf(row), 1); page.value = Math.min(page.value, lastPage.value); saveDraft(); } }
 function openDeleteAll() { if (unsavedRows.value.length && !submitting.value) deleteAllDialog.value.showModal(); }

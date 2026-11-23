@@ -51,10 +51,16 @@ test('validation failures unlock rows for correction and storage failures preven
 });
 
 test('grid component compiles and adds local rows, selects UNSPSC, and restores draft', async () => {
-  const { descriptor } = parse(fs.readFileSync(new URL('../app/components/annualprocurementplans/itemAdd.vue', import.meta.url), 'utf8'));
+  const componentSource = fs.readFileSync(new URL('../app/components/annualprocurementplans/itemAdd.vue', import.meta.url), 'utf8');
+  const { descriptor } = parse(componentSource);
   const script = compileScript(descriptor, { id: 'grid' });
   const template = compileTemplate({ source: descriptor.template.content, id: 'grid', filename: 'itemAdd.vue', compilerOptions: { bindingMetadata: script.bindings } });
   assert.deepEqual(template.errors, []);
+  assert.match(componentSource, />Add items &amp; details<\/li>/);
+  assert.match(componentSource, />Match UNSPSC<\/li>/);
+  assert.match(componentSource, />NSPL validation<\/li>/);
+  assert.match(componentSource, /workflowStep >= 4[^\n]+>Upload to plan<\/li>/);
+  assert.match(componentSource, /detailIncompleteRows\.value\) return 1;[\s\S]+if \(unclassifiedRows\.value\) return 2;[\s\S]+if \(nsplUnvalidatedRows\.value\) return 3;[\s\S]+return 4;/);
   const code = `
     import { ref, computed } from '${import.meta.resolve('vue')}';
     export const local = new Map();
@@ -63,9 +69,14 @@ test('grid component compiles and adds local rows, selects UNSPSC, and restores 
     const onMounted = () => {}, onBeforeUnmount = () => {}, onBeforeRouteLeave = guard => { leaveGuard = guard; }, watch = () => {};
     export const session = ref({ data: { user: { id: 3 }, permissions: [] } });
     const useSanctumUser = () => session;
-    const useAnnualprocurementplanStore = () => ({ fetchItemLookups: async () => {} });
-    const usePeClient = () => async () => ({ data: { data: [{ id: 9, code: '43211503', name: 'Notebook computers' }], current_page: 1, last_page: 1 } });
-    ${script.content.replace("'../../utils/planItemGrid'", JSON.stringify(new URL('../app/utils/planItemGrid.js', import.meta.url).href))}
+    const useAnnualprocurementplanStore = () => ({ fetchItemLookups: async () => {}, procurementmethods: [], procurementgroups: [] });
+    const useExemptionStore = () => ({});
+    const usePeClient = () => async url => url.endsWith('/unspsc-catalogue')
+      ? { data: { revision: 'test', items: [{ id: 9, code: '43211503', name: 'Notebook computers' }] } }
+      : { data: {} };
+    ${script.content
+      .replace("'../../utils/planItemGrid'", JSON.stringify(new URL('../app/utils/planItemGrid.js', import.meta.url).href))
+      .replace("'../../utils/unspscBrowserCatalogue'", JSON.stringify(new URL('../app/utils/unspscBrowserCatalogue.js', import.meta.url).href))}
   `;
   const module = await import(`data:text/javascript;base64,${Buffer.from(code).toString('base64')}`);
   const vm = module.default.setup({ planUuid: 'plan1' }, { expose() {} });
@@ -76,6 +87,20 @@ test('grid component compiles and adds local rows, selects UNSPSC, and restores 
   vm.rowCount.value = 3; vm.addRows();
   assert.ok(module.local.has(gridDraftKey(3, 'plan1')));
   assert.equal(vm.rows.value.length, 3);
+  assert.equal(vm.workflowStep.value, 1);
+  vm.rows.value.forEach((draftRow, index) => {
+    draftRow.description = `Office laptop ${index + 1}`;
+    draftRow.expected_delivery_date = '2027-01-15';
+  });
+  assert.equal(vm.workflowStep.value, 2);
+  vm.rows.value.forEach(draftRow => { draftRow.unspsc_id = 9; });
+  assert.equal(vm.workflowStep.value, 3);
+  vm.validateNsplReadiness();
+  assert.equal(vm.workflowStep.value, 4);
+  vm.rows.value[0].unit_cost = 25;
+  assert.equal(vm.workflowStep.value, 3);
+  vm.validateNsplReadiness();
+  assert.equal(vm.workflowStep.value, 4);
   assert.equal(module.leaveGuard(), true);
   vm.submitting.value = true;
   assert.equal(module.leaveGuard(), false);
