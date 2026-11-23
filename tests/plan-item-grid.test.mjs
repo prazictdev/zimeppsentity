@@ -61,6 +61,10 @@ test('grid component compiles and adds local rows, selects UNSPSC, and restores 
   assert.match(componentSource, />NSPL validation<\/li>/);
   assert.match(componentSource, /workflowStep >= 4[^\n]+>Upload to plan<\/li>/);
   assert.match(componentSource, /detailIncompleteRows\.value\) return 1;[\s\S]+if \(unclassifiedRows\.value\) return 2;[\s\S]+if \(nsplUnvalidatedRows\.value\) return 3;[\s\S]+return 4;/);
+  assert.match(componentSource, /ref="addItemsDialog" class="modal"/);
+  assert.match(componentSource, /ref="uploadDialog" class="modal"/);
+  assert.doesNotMatch(componentSource, /await runLocalMatching\(prepared\)/);
+  assert.match(componentSource, /v-if="showUnspscStep">UNSPSC \*<\/th>/);
   const code = `
     import { ref, computed } from '${import.meta.resolve('vue')}';
     export const local = new Map();

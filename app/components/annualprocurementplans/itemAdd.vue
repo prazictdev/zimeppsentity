@@ -25,20 +25,17 @@
         </div>
 
         <div :class="['p-4 sm:p-6', embedded ? 'min-h-0 flex-1 overflow-auto' : '']">
-        <section class="flex flex-col gap-4 rounded-xl border border-base-300 bg-base-200/35 p-4 lg:flex-row lg:items-end lg:justify-between">
+        <section class="flex flex-col gap-4 rounded-xl border border-base-300 bg-base-200/35 p-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
-            <h2 class="font-semibold">1. Add items &amp; complete details</h2>
-            <p class="mt-1 text-sm text-base-content/60">Choose how many blank items to add, or import them from a file, then complete the item grid below.</p>
-            <div class="mt-3 flex flex-wrap items-end gap-2">
-              <label class="fieldset py-0"><span class="fieldset-legend pt-0 text-xs">Number of items</span><input v-model.number="rowCount" type="number" min="1" max="5000" class="input input-sm w-32" :disabled="submitting" /></label>
-              <button class="btn btn-primary btn-sm" :disabled="submitting || !ready" @click="addRows"><Icon name="lucide:plus" />Add items</button>
-              <span class="pb-2 text-xs text-base-content/45">or</span>
-              <AnnualprocurementplansItemImport :plan-uuid="planUuid" :supplement-uuid="supplementUuid" :disabled="submitting || matching || !ready" @imported="importRows" />
-            </div>
+            <h2 class="font-semibold">Draft items</h2>
+            <p class="mt-1 text-sm text-base-content/60">Add or import items, then complete their procurement details in the grid below.</p>
           </div>
-          <div class="flex items-center gap-2 text-xs text-base-content/60" role="status">
-            <span v-if="ready" class="status status-success status-xs" />
-            {{ catalogueStatus || saveStatus || 'Preparing your draft…' }}
+          <div class="flex flex-wrap items-center gap-3">
+            <div class="flex items-center gap-2 text-xs text-base-content/60" role="status">
+              <span v-if="ready" class="status status-success status-xs" />
+              {{ catalogueStatus || saveStatus || 'Preparing your draft…' }}
+            </div>
+            <button class="btn btn-primary btn-sm" :disabled="submitting || !ready" @click="openAddItems"><Icon name="lucide:plus" />Add items</button>
           </div>
         </section>
 
@@ -53,9 +50,9 @@
             </div>
           </div>
           <div class="flex flex-wrap items-center gap-2">
-            <button v-if="unclassifiedRows" class="btn btn-outline btn-sm" :disabled="submitting || matching || !ready" @click="runLocalMatching(rows)"><span v-if="matching" class="loading loading-spinner loading-xs" /><Icon v-else name="lucide:sparkles" />{{ matching ? 'Matching…' : `Match ${unclassifiedRows} UNSPSC` }}</button>
+            <button v-if="workflowStep === 2" class="btn btn-outline btn-sm" :disabled="submitting || matching || !ready" @click="runLocalMatching(rows)"><span v-if="matching" class="loading loading-spinner loading-xs" /><Icon v-else name="lucide:sparkles" />{{ matching ? 'Matching…' : `Match ${unclassifiedRows} UNSPSC` }}</button>
             <button v-if="workflowStep === 3" class="btn btn-outline btn-sm" :disabled="submitting || matching || !ready" @click="validateNsplReadiness"><Icon name="lucide:shield-check" />Validate NSPL readiness</button>
-            <button class="btn btn-primary btn-sm" :disabled="submitting || !ready || workflowStep < 4" @click="upload"><span v-if="submitting" class="loading loading-spinner loading-sm" /><Icon v-else name="lucide:cloud-upload" />{{ submitting ? 'Uploading…' : `Upload ${rows.length} ${rows.length === 1 ? 'item' : 'items'}` }}</button>
+            <button v-if="workflowStep === 4" class="btn btn-primary btn-sm" :disabled="submitting || !ready" @click="openUploadDialog"><Icon name="lucide:cloud-upload" />Upload {{ rows.length }} {{ rows.length === 1 ? 'item' : 'items' }}</button>
           </div>
         </div>
 
@@ -67,12 +64,13 @@
             <span class="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary"><Icon name="lucide:rows-3" class="h-6 w-6" /></span>
             <h2 class="mt-4 text-lg font-semibold">Start with your procurement items</h2>
             <p class="mt-2 text-sm leading-6 text-base-content/60">Add blank items for manual entry, or import an existing list. Your work saves automatically in this browser.</p>
+            <button class="btn btn-primary btn-sm mt-4" :disabled="!ready" @click="openAddItems"><Icon name="lucide:plus" />Add items</button>
           </div>
         </div>
 
         <template v-else>
         <div class="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div class="flex flex-wrap items-center gap-2" aria-label="Filter rows by UNSPSC status">
+          <div v-if="showUnspscStep" class="flex flex-wrap items-center gap-2" aria-label="Filter rows by UNSPSC status">
           <span class="text-sm font-medium">Show:</span>
           <button type="button" :class="['btn btn-sm', rowFilter === 'all' ? 'btn-primary' : 'btn-outline']" @click="rowFilter = 'all'">All {{ rows.length }}</button>
           <button type="button" :class="['btn btn-sm', rowFilter === 'unmatched' ? 'btn-warning' : 'btn-outline']" @click="rowFilter = 'unmatched'"><Icon name="lucide:circle-alert" />Unmatched {{ unclassifiedRows }}</button>
@@ -83,12 +81,12 @@
         <p class="mb-2 mt-3 text-xs text-base-content/60">Complete each item below. The Description column stays visible while you scroll across the remaining details.</p>
         <fieldset :disabled="submitting" class="max-h-[65vh] min-h-0 min-w-0 flex-1 overflow-auto rounded-xl border border-base-300">
           <table class="item-grid table table-sm">
-            <thead><tr><th>Row</th><th>Description *</th><th>UNSPSC *</th><th>Reference</th><th v-for="column in lookupColumns" :key="column.key">{{ column.label }}</th><th v-if="exemptionMode">Exemption grounds *</th><th v-if="exemptionMode">Evidence document key</th><th>Quantity</th><th>Unit cost</th><th>Quarter</th><th>Expense</th><th>Award type</th><th v-for="column in dayColumns" :key="column.key">{{ column.label }}</th><th v-if="showPrequalificationColumn">Pre-qualification</th><th v-if="showEoiColumns">EOI</th><th v-for="column in flagColumns" :key="column.key">{{ column.label }}</th><th v-for="column in displayedDateColumns" :key="column.key">{{ column.label }}</th><th>MSDS (Minimum Service Delivery Standard)</th></tr></thead>
+            <thead><tr><th>Row</th><th>Description *</th><th v-if="showUnspscStep">UNSPSC *</th><th>Reference</th><th v-for="column in lookupColumns" :key="column.key">{{ column.label }}</th><th v-if="exemptionMode">Exemption grounds *</th><th v-if="exemptionMode">Evidence document key</th><th>Quantity</th><th>Unit cost</th><th>Quarter</th><th>Expense</th><th>Award type</th><th v-for="column in dayColumns" :key="column.key">{{ column.label }}</th><th v-if="showPrequalificationColumn">Pre-qualification</th><th v-if="showEoiColumns">EOI</th><th v-for="column in flagColumns" :key="column.key">{{ column.label }}</th><th v-for="column in displayedDateColumns" :key="column.key">{{ column.label }}</th><th>MSDS (Minimum Service Delivery Standard)</th></tr></thead>
             <tbody><template v-for="row in visibleRows" :key="row.uuid">
-              <tr :class="['align-top', !row.unspsc_id ? 'bg-warning/10' : '']">
+              <tr :class="['align-top', showUnspscStep && !row.unspsc_id ? 'bg-warning/10' : '']">
                 <td><span class="block mb-2">{{ rowNumber(row) }}</span><button type="button" class="btn btn-error btn-outline btn-xs btn-square" aria-label="Delete row" title="Delete row" :disabled="row._sent || submitting" @click="removeRow(row)"><Icon name="lucide:trash-2" /></button></td>
                 <td><textarea v-model="row.description" rows="2" class="textarea w-72" :disabled="row._sent" :aria-label="`Description row ${rowNumber(row)}`" maxlength="5000" /><p v-if="rowErrors[row.uuid]" class="mt-1 max-w-72 text-xs text-error">{{ rowErrors[row.uuid] }}</p><p v-if="row.import_warnings?.length" class="mt-1 max-w-72 text-xs text-warning">{{ row.import_warnings.join(' ') }}</p></td>
-                <td class="min-w-60"><div class="mb-1 max-w-64 text-xs">{{ row.unspsc_label || 'Select a commodity' }}</div><p v-if="row.imported_object_code && !row.unspsc_id" class="mb-1 text-xs text-warning">Imported code: {{ row.imported_object_code }}. Find the closest commodity from the catalogue.</p><button class="btn btn-outline btn-xs" :disabled="row._sent" @click="openSearch(row)"><Icon name="lucide:search" />Search UNSPSC</button></td>
+                <td v-if="showUnspscStep" class="min-w-60"><div class="mb-1 max-w-64 text-xs">{{ row.unspsc_label || 'Select a commodity' }}</div><p v-if="row.imported_object_code && !row.unspsc_id" class="mb-1 text-xs text-warning">Imported code: {{ row.imported_object_code }}. Find the closest commodity from the catalogue.</p><button class="btn btn-outline btn-xs" :disabled="row._sent" @click="openSearch(row)"><Icon name="lucide:search" />Search UNSPSC</button></td>
                 <td><input v-model="row.reference_no" class="input input-sm w-36" :disabled="row._sent" aria-label="Reference" maxlength="100" /></td>
                 <td v-for="column in lookupColumns" :key="column.key"><select v-model="row[column.key]" class="select select-sm w-44" :disabled="row._sent" :aria-label="column.label"><option :value="null">Select</option><option v-for="option in store[column.list]" :key="option.id" :value="option.id">{{ option.name }}</option></select></td>
                 <td v-if="exemptionMode" class="min-w-64"><div class="mb-2 flex max-w-64 flex-wrap gap-1"><span v-for="ground in row.grounds || []" :key="ground.exemption_type_id" class="badge badge-outline badge-sm">{{ typeName(ground.exemption_type_id) }}</span><span v-if="!row.grounds?.length" class="text-xs text-warning">No grounds selected</span></div><button type="button" class="btn btn-outline btn-xs" :disabled="row._sent" @click="openGrounds(row)"><Icon name="lucide:tags" />Configure grounds</button></td>
@@ -104,13 +102,34 @@
                 <td v-for="column in displayedDateColumns" :key="column.key" class="min-w-44"><input v-if="!column.eoiOnly || row.eoi" v-model="row[column.key]" type="date" :disabled="row._sent" :aria-label="column.label" class="input input-sm w-44" /></td>
                 <td><textarea v-model="row.msds" rows="2" class="textarea w-72" :disabled="row._sent" aria-label="MSDS (Minimum Service Delivery Standard)" /></td>
               </tr>
-            </template><tr v-if="!visibleRows.length"><td :colspan="13 + dayColumns.length + flagColumns.length + displayedDateColumns.length + Number(showPrequalificationColumn) + Number(showEoiColumns) + 1" class="empty-grid py-16 text-base-content/50">{{ emptyGridMessage }}</td></tr></tbody>
+            </template><tr v-if="!visibleRows.length"><td :colspan="13 + dayColumns.length + flagColumns.length + displayedDateColumns.length + Number(showPrequalificationColumn) + Number(showEoiColumns) + Number(showUnspscStep)" class="empty-grid py-16 text-base-content/50">{{ emptyGridMessage }}</td></tr></tbody>
           </table>
         </fieldset>
         <div class="mt-3 flex items-center justify-between gap-3"><p class="text-xs text-base-content/60">{{ uploadNote }}</p><div class="flex items-center gap-2"><button class="btn btn-sm" :disabled="page <= 1 || submitting" @click="page--">Previous</button><span class="text-sm">{{ page }} / {{ lastPage }}</span><button class="btn btn-sm" :disabled="page >= lastPage || submitting" @click="page++">Next</button></div></div>
         </template>
         </div>
       </div>
+    <dialog ref="addItemsDialog" class="modal" @cancel.prevent="closeAddItems">
+      <div class="modal-box max-w-lg">
+        <div class="flex items-start justify-between gap-4"><div><h3 class="text-lg font-bold">Add items</h3><p class="mt-1 text-sm text-base-content/60">Create blank rows or import items from a file.</p></div><button class="btn btn-circle btn-ghost btn-sm" aria-label="Close add items" @click="closeAddItems"><Icon name="lucide:x" /></button></div>
+        <div class="mt-5 rounded-lg border border-base-300 p-4">
+          <label class="fieldset py-0"><span class="fieldset-legend pt-0">Number of blank items</span><input v-model.number="rowCount" type="number" min="1" max="5000" class="input w-full" :disabled="submitting" /></label>
+          <button class="btn btn-primary btn-block mt-3" :disabled="submitting || !ready" @click="addRows"><Icon name="lucide:plus" />Add blank items</button>
+        </div>
+        <div class="divider text-xs text-base-content/50">OR</div>
+        <div class="rounded-lg border border-base-300 p-4"><p class="mb-3 text-sm text-base-content/60">Import item details from a supported spreadsheet.</p><AnnualprocurementplansItemImport :plan-uuid="planUuid" :supplement-uuid="supplementUuid" :disabled="submitting || matching || !ready" @imported="importRows" /></div>
+      </div>
+      <form method="dialog" class="modal-backdrop"><button>close</button></form>
+    </dialog>
+    <dialog ref="uploadDialog" class="modal" @cancel="submitting ? $event.preventDefault() : closeUploadDialog()">
+      <div class="modal-box max-w-lg">
+        <div class="flex items-start gap-3"><span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary"><Icon name="lucide:cloud-upload" class="h-5 w-5" /></span><div><h3 class="text-lg font-bold">Upload items to {{ targetLabel }}?</h3><p class="mt-1 text-sm text-base-content/60">{{ rows.length }} {{ rows.length === 1 ? 'item has' : 'items have' }} completed details, UNSPSC matching, and NSPL readiness validation.</p></div></div>
+        <div class="mt-4 rounded-lg bg-base-200/60 p-3 text-sm">{{ uploadNote }}</div>
+        <p v-if="errorMessage" class="mt-3 text-sm text-error" role="alert">{{ errorMessage }}</p>
+        <div class="modal-action"><button class="btn" :disabled="submitting" @click="closeUploadDialog">Cancel</button><button class="btn btn-primary" :disabled="submitting" @click="upload"><span v-if="submitting" class="loading loading-spinner loading-sm" /><Icon v-else name="lucide:cloud-upload" />{{ submitting ? 'Uploading…' : 'Confirm upload' }}</button></div>
+      </div>
+      <form method="dialog" class="modal-backdrop"><button :disabled="submitting">close</button></form>
+    </dialog>
     <dialog ref="deleteAllDialog" class="modal" @cancel.prevent="closeDeleteAll">
       <div class="modal-box">
         <h3 class="text-lg font-bold">Delete all unsaved items?</h3>
@@ -152,12 +171,13 @@ const uploadNote = computed(() => supplementMode.value
   ? 'Supplement items will be added to the APP after the supplement is authorized.'
   : 'Uploaded items require the NSPL scan and UNSPSC reviewer verification before submission.');
 const currentUserId = computed(() => identity.value?.data?.user?.id ?? identity.value?.user?.id ?? identity.value?.id ?? null);
-const searchDialog = ref(null), deleteAllDialog = ref(null), rows = ref([]), rowCount = ref(10), page = ref(1), rowFilter = ref('all');
+const searchDialog = ref(null), deleteAllDialog = ref(null), addItemsDialog = ref(null), uploadDialog = ref(null), rows = ref([]), rowCount = ref(10), page = ref(1), rowFilter = ref('all');
 const planningRules = ref({ prequalification: { method_codes: ['CMB'] }, eoi: { amount: 50000, currency_code: 'USD', procurement_group_code: 'CONSULTANCY', procurement_method_code: 'RFP' } });
 const ready = ref(false), submitting = ref(false), matching = ref(false), errorMessage = ref(''), notice = ref(''), saveStatus = ref(''), catalogueStatus = ref(''), rowErrors = ref({});
 const exemptionTypes = ref([]), groundDialog = ref(null), groundError = ref('');
 let groundRow = null;
-const filteredRows = computed(() => rows.value.filter(row => rowFilter.value === 'all' || (rowFilter.value === 'unmatched' ? !row.unspsc_id : Boolean(row.unspsc_id))));
+const showUnspscStep = computed(() => workflowStep.value >= 2);
+const filteredRows = computed(() => rows.value.filter(row => !showUnspscStep.value || rowFilter.value === 'all' || (rowFilter.value === 'unmatched' ? !row.unspsc_id : Boolean(row.unspsc_id))));
 const visibleRows = computed(() => filteredRows.value.slice((page.value - 1) * 25, page.value * 25));
 const lastPage = computed(() => Math.max(1, Math.ceil(filteredRows.value.length / 25)));
 const unclassifiedRows = computed(() => rows.value.filter(row => !row.unspsc_id).length);
@@ -318,7 +338,7 @@ async function initializeDraft() {
 }
 function addRows() {
   if (!Number.isInteger(rowCount.value) || rowCount.value < 1 || rows.value.length + rowCount.value > 5000) { errorMessage.value = 'Choose a whole number of rows; a draft can hold up to 5,000 rows.'; return; }
-  errorMessage.value = ''; rows.value.push(...Array.from({ length: rowCount.value }, () => exemptionMode.value ? newExemptionGridRow(crypto.randomUUID()) : newGridRow(crypto.randomUUID()))); saveDraft();
+  errorMessage.value = ''; rows.value.push(...Array.from({ length: rowCount.value }, () => exemptionMode.value ? newExemptionGridRow(crypto.randomUUID()) : newGridRow(crypto.randomUUID()))); saveDraft(); closeAddItems();
 }
 function rowNumber(row) { return rows.value.indexOf(row) + 1; }
 async function importRows(importedRows, warnings = []) {
@@ -341,7 +361,7 @@ async function importRows(importedRows, warnings = []) {
   errorMessage.value = '';
   notice.value = `${prepared.length} rows loaded into this browser. Assign a UNSPSC commodity to every row before bulk upload.${warnings.length ? ` ${warnings.length} lookup warning(s) need review.` : ''}`;
   saveDraft();
-  await runLocalMatching(prepared);
+  closeAddItems();
 }
 async function runLocalMatching(targetRows) {
   const candidates = targetRows.filter(row => !row.unspsc_id);
@@ -369,6 +389,10 @@ function validateNsplReadiness() {
   saveDraft();
 }
 function removeRow(row) { if (!row._sent && !submitting.value) { rows.value.splice(rows.value.indexOf(row), 1); page.value = Math.min(page.value, lastPage.value); saveDraft(); } }
+function openAddItems() { if (ready.value && !submitting.value) addItemsDialog.value?.showModal(); }
+function closeAddItems() { addItemsDialog.value?.close(); }
+function openUploadDialog() { if (workflowStep.value === 4 && !submitting.value) { errorMessage.value = ''; uploadDialog.value?.showModal(); } }
+function closeUploadDialog() { if (!submitting.value) uploadDialog.value?.close(); }
 function openDeleteAll() { if (unsavedRows.value.length && !submitting.value) deleteAllDialog.value.showModal(); }
 function closeDeleteAll() { deleteAllDialog.value?.close(); }
 function deleteAllUnsaved() {
@@ -417,6 +441,7 @@ async function upload() {
         : items => client(`/api/v1/annual-procurement-plans/${uploadPlan}/items/grid`, { method: 'POST', body: { items } });
     await uploadGridRows(rows.value, send, uploaded => { persist(); if (uploaded) notice.value = `${uploaded} of ${total} rows uploaded.`; }, exemptionMode.value ? exemptionGridPayload : undefined);
     notice.value = `${total} rows uploaded. Your local draft is now empty.`; page.value = 1;
+    uploadDialog.value?.close();
     emit('uploaded', total);
   } catch (error) {
     errorMessage.value = error.data?.message || error.message || 'Upload interrupted. Retry to continue with your saved rows.';
@@ -452,7 +477,7 @@ function saveBeforeLeave() { if (ready.value) saveDraft(); }
 onBeforeRouteLeave(() => !submitting.value && (!ready.value || saveDraft()));
 onMounted(() => { window.addEventListener('beforeunload', saveBeforeLeave); initializeDraft(); });
 onBeforeUnmount(() => { clearTimeout(saveTimer); searchGeneration++; saveBeforeLeave(); window.removeEventListener('beforeunload', saveBeforeLeave); });
-watch(() => [props.planUuid, props.exemptionUuid, props.supplementUuid, currentUserId.value], () => { clearTimeout(saveTimer); saveBeforeLeave(); ready.value = false; rows.value = []; draftKey = null; searchDialog.value?.close(); groundDialog.value?.close(); deleteAllDialog.value?.close(); searchGeneration++; initializeDraft(); });
+watch(() => [props.planUuid, props.exemptionUuid, props.supplementUuid, currentUserId.value], () => { clearTimeout(saveTimer); saveBeforeLeave(); ready.value = false; rows.value = []; draftKey = null; addItemsDialog.value?.close(); uploadDialog.value?.close(); searchDialog.value?.close(); groundDialog.value?.close(); deleteAllDialog.value?.close(); searchGeneration++; initializeDraft(); });
 </script>
 
 <style scoped>
