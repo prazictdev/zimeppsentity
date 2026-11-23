@@ -38,7 +38,7 @@
           </div>
 
           <!-- Totals by procurement method / group / award type / flags -->
-          <div v-if="store.itemTotals.length || store.itemTotalsByGroup.length || hasAwardTypeData || (totalItems > 0 && store.itemTotalsByFlag.length)" class="mt-4 grid gap-4 lg:grid-cols-2 xl:grid-cols-4">
+          <div v-if="store.itemTotals.length || store.itemTotalsByGroup.length || hasAwardTypeData || (totalItems > 0 && store.itemTotalsByFlag.length)" class="mt-4 grid items-start gap-3 xl:grid-cols-3">
             <AnnualprocurementplansTotalsBars
               v-if="store.itemTotals.length"
               title="Totals by Procurement Method"
@@ -74,12 +74,14 @@
             />
             <AnnualprocurementplansTotalsBars
               v-if="totalItems > 0 && store.itemTotalsByFlag.length"
+              class="xl:col-span-3"
               title="Totals by Flag"
               icon="lucide:flag"
               accent="accent"
               :rows="store.itemTotalsByFlag"
               :denominator="planTotal"
               :total-items="totalItems"
+              wide
             />
           </div>
           <div class="card mt-4 rounded-xl border border-base-200 shadow-sm">
