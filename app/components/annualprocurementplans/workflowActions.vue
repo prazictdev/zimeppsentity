@@ -91,6 +91,12 @@ const isDisabled = (action) => {
 const disabledReason = (action) => {
   if (action !== 'submit_for_review' || analysisClean.value) return null;
   if (analysisHasIssues.value) {
+    const nspl = store.analysisReport?.catalogue_scans?.steps?.NSPL;
+    if (nspl && !nspl.completed) {
+      return nspl.status === 'STALE'
+        ? 'The NSPL scan is outdated because the plan items changed. Run it again before submitting.'
+        : 'Complete the NSPL scan for all current plan items before submitting.';
+    }
     return 'Resolve all issues in the analysis report before submitting.';
   }
   return 'Run Analyze Plan first; submit unlocks once the report is clean.';

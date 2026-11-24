@@ -5,6 +5,9 @@
         <h2 class="text-sm font-semibold">Plan readiness</h2>
         <span v-if="stages.length && !loading && !error" class="badge badge-primary badge-sm">{{ percentage }}%</span>
         <p class="text-xs text-base-content/55" aria-live="polite">{{ loading ? 'Checking sections…' : error || `${completed} of ${readinessStages.length} checks complete` }}</p>
+        <span v-if="!loading && !error" :class="['badge badge-sm', submissionReady ? 'badge-success badge-soft' : 'badge-warning badge-soft']">
+          {{ submissionReady ? 'Ready to submit' : submissionStatusMessage }}
+        </span>
       </div>
       <button type="button" class="btn btn-ghost btn-circle btn-xs" aria-label="Refresh plan completion" :disabled="loading" @click="refresh">
         <Icon name="lucide:refresh-cw" class="h-4 w-4" />
@@ -47,12 +50,20 @@ const props = defineProps({
 });
 defineEmits(['select']);
 const store = useAnnualprocurementplanStore();
-const { analyzePlan, getItems, getPmuMembers, getUnresolved } = useAnnualprocurementplanHelper();
-const fallbackStages = () => getPlanCompletionStages({ report: {}, itemCount: 0, pmuCount: 0, unresolved: 0 })
+const { getGroupedItems, getPmuMembers, getUnresolved, getUnspscValidation, getConsolidationCandidates } = useAnnualprocurementplanHelper();
+const fallbackStages = () => getPlanCompletionStages({ report: {}, itemCount: 0, pmuCount: 0, unresolved: 0, classificationComplete: null, consolidationComplete: null })
   .map(stage => stage.navigationOnly ? stage : ({ ...stage, complete: null, message: 'Readiness status is not available yet.' }));
 const stages = ref(fallbackStages());
 const loading = ref(false);
 const error = ref('');
+const submissionReady = computed(() => store.analysisReport?.can_submit === true);
+const submissionStatusMessage = computed(() => {
+  const nspl = store.analysisReport?.catalogue_scans?.steps?.NSPL;
+  if (nspl && !nspl.completed) {
+    return nspl.status === 'STALE' ? 'NSPL scan is outdated' : 'NSPL scan required';
+  }
+  return store.analysisReport ? 'Submission checks pending' : 'Run submission checks';
+});
 const readinessStages = computed(() => stages.value.filter(stage => !stage.navigationOnly));
 const completed = computed(() => readinessStages.value.filter(stage => stage.complete).length);
 const percentage = computed(() => readinessStages.value.length ? Math.round(completed.value / readinessStages.value.length * 100) : 0);
@@ -65,16 +76,29 @@ const refresh = async () => {
   error.value = '';
   try {
     const results = await Promise.all([
-      analyzePlan(props.planUuid),
-      getItems(props.planUuid, { page: 1, per_page: 1 }),
+      store.runAnalysis(props.planUuid),
+      getGroupedItems(props.planUuid, { page: 1, per_page: 1 }),
       getPmuMembers(props.planUuid, { page: 1, per_page: 1 }),
       getUnresolved(props.planUuid),
+      getUnspscValidation(props.planUuid),
+      getConsolidationCandidates(props.planUuid),
     ]);
     if (id !== requestId) return;
-    if (results.some(result => result.error.value || !result.data.value?.data)) throw new Error('Incomplete response');
-    const [report, items, pmu, unresolved] = results.map(result => result.data.value.data);
-    if (!Array.isArray(report.tier1?.checks) || !Array.isArray(unresolved) || items.total == null || pmu.total == null) throw new Error('Incomplete response');
-    stages.value = getPlanCompletionStages({ report, itemCount: Number(items.total), pmuCount: Number(pmu.total), unresolved: unresolved.reduce((sum, row) => sum + Number(row.count ?? 0), 0) });
+    const [report, itemsResult, pmuResult, unresolvedResult, classificationResult, consolidationResult] = results;
+    const requestResults = [itemsResult, pmuResult, unresolvedResult, classificationResult, consolidationResult];
+    if (!report || requestResults.some(result => result.error.value || result.data.value?.data == null)) throw new Error('Incomplete response');
+    const [groupedItems, pmu, unresolved, classification, consolidations] = requestResults.map(result => result.data.value.data);
+    if (!Array.isArray(report.tier1?.checks) || !Array.isArray(groupedItems.consolidated) || !Array.isArray(unresolved) || !Array.isArray(consolidations) || groupedItems.individual?.total == null || pmu.total == null) throw new Error('Incomplete response');
+    const itemCount = Number(groupedItems.individual.total)
+      + groupedItems.consolidated.reduce((sum, group) => sum + Number(group.item_count ?? 0), 0);
+    stages.value = getPlanCompletionStages({
+      report,
+      itemCount,
+      pmuCount: Number(pmu.total),
+      unresolved: unresolved.reduce((sum, row) => sum + Number(row.count ?? 0), 0),
+      classificationComplete: classification.can_submit === true,
+      consolidationComplete: consolidations.every(group => group.is_consolidated),
+    });
   } catch {
     if (id === requestId) error.value = 'Unable to check completion. Please refresh to try again.';
   } finally {
@@ -83,7 +107,7 @@ const refresh = async () => {
 };
 
 const unsubscribe = store.$onAction(({ name, after }) => {
-  if (!/^(add|edit|remove|update|delete|bulkEdit|upload|attachSavedCommittee|applyResolve|decideClassification|runTransition|runAnalysis)/.test(name)) return;
+  if (!/^(add|edit|remove|update|delete|bulkEdit|upload|attachSavedCommittee|applyResolve|decideClassification|runTransition)/.test(name)) return;
   after(() => {
     clearTimeout(refreshTimer);
     ++requestId;
@@ -98,4 +122,6 @@ onBeforeUnmount(() => {
   clearTimeout(refreshTimer);
   ++requestId;
 });
+
+defineExpose({ refresh });
 </script>

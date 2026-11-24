@@ -24,7 +24,7 @@
       </dl>
     </header>
 
-    <AnnualprocurementplansCompletion :plan-uuid="planUuid" :active-tab="activeTab" @select="activeTab = $event" />
+    <AnnualprocurementplansCompletion ref="completionRef" :plan-uuid="planUuid" :active-tab="activeTab" @select="activeTab = $event" />
 
     <!-- Active section content; navigation lives in Plan readiness above. -->
     <div class="card overflow-hidden rounded-2xl border border-base-200 shadow-sm">
@@ -173,6 +173,7 @@
         <PlanClassificationValidation
           v-else-if="activeTab === 'classification'"
           :plan-uuid="planUuid"
+          @reviewed="refreshReadiness"
         />
 
         <div v-else-if="activeTab === 'consolidation'">
@@ -406,6 +407,7 @@ const store = useAnnualprocurementplanStore();
 const { currentPlan: plan } = storeToRefs(store);
 
 const activeTab = ref('items');
+const completionRef = ref(null);
 
 const isDraft = computed(() => store.isDraft(plan.value));
 const showPreparationSteps = computed(() => !!plan.value?.status && !['AUTHORIZED', 'ACTIVE', 'ARCHIVED'].includes(plan.value.status));
@@ -430,7 +432,10 @@ async function onConsolidationCountChange(count) {
     store.fetchPlanItems(props.planUuid, buildItemsOpts({ page: 1 })),
     store.fetchItemTotalsByAwardType(props.planUuid, buildItemsOpts({ page: 1 })),
   ]);
+  await completionRef.value?.refresh();
 }
+
+const refreshReadiness = () => completionRef.value?.refresh();
 
 // Issues badge — sum of all unresolved (field, raw_value) groups across the
 // whole plan, not just the visible page.

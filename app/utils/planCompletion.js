@@ -1,4 +1,4 @@
-export function getPlanCompletionStages({ report, itemCount, pmuCount, unresolved }) {
+export function getPlanCompletionStages({ report, itemCount, pmuCount, unresolved, classificationComplete = null, consolidationComplete = null }) {
   const checks = new Map((report?.tier1?.checks ?? []).map(check => [check.key, check]));
   const structural = (key, label, tab) => ({
     key, label, tab,
@@ -7,8 +7,8 @@ export function getPlanCompletionStages({ report, itemCount, pmuCount, unresolve
   });
   return [
     { key: 'items', label: 'Plan Items', tab: 'items', complete: itemCount > 0, message: `${itemCount} plan item(s) recorded.` },
-    { key: 'classification', label: 'UNSPSC Validation', tab: 'classification', navigationOnly: true, icon: 'lucide:scan-search', message: 'Review and validate item classifications.' },
-    { key: 'consolidation', label: 'Consolidation', tab: 'consolidation', navigationOnly: true, icon: 'lucide:combine', message: 'Review consolidated procurement requirements.' },
+    { key: 'classification', label: 'UNSPSC Validation', tab: 'classification', complete: classificationComplete, message: classificationComplete ? 'All item classifications are verified.' : 'Some item classifications still require verification.' },
+    { key: 'consolidation', label: 'Consolidation', tab: 'consolidation', complete: consolidationComplete, message: consolidationComplete ? 'All consolidation candidates are consolidated.' : 'Some repeated-reference groups still require consolidation.' },
     { key: 'issues', label: 'Issues', tab: 'issues', complete: unresolved === 0, message: `${unresolved} unresolved issue(s).` },
     structural('disposal_plan_has_records', 'Disposal Plan', 'disposal'),
     structural('evaluation_committee_has_members', 'Evaluation Committee', 'evaluation'),

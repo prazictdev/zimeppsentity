@@ -80,6 +80,24 @@ export const useAnnualprocurementplanHelper = () => {
     }
   };
 
+  const getUnspscValidation = async (planUuid) => {
+    try {
+      const data = await client(`${base}/${planUuid}/unspsc-validation`, { method: 'GET' });
+      return { data: ref(data), error: ref(null) };
+    } catch (err) {
+      return { data: ref(null), error: ref(err) };
+    }
+  };
+
+  const getConsolidationCandidates = async (planUuid) => {
+    try {
+      const data = await client(`${base}/${planUuid}/consolidations`, { method: 'GET' });
+      return { data: ref(data), error: ref(null) };
+    } catch (err) {
+      return { data: ref(null), error: ref(err) };
+    }
+  };
+
   // ─── AI compliance review ───────────────────────────────────────────────
   const getComplianceAnalysis = async (planUuid) => {
     try {
@@ -1020,6 +1038,8 @@ export const useAnnualprocurementplanHelper = () => {
     deletePlan,
     getItems,
     getGroupedItems,
+    getUnspscValidation,
+    getConsolidationCandidates,
     getComplianceAnalysis,
     startComplianceAnalysis,
     getClassificationMatches,
