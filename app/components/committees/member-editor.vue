@@ -160,10 +160,11 @@ const emptyMember = () => ({
   qualifications: [], workhistory: [],
 });
 const form = ref(emptyMember());
+const clonePlainData = value => JSON.parse(JSON.stringify(value));
 
 const open = (member = null, index = null) => {
   memberIndex.value = index;
-  form.value = member ? { ...emptyMember(), ...structuredClone(member), qualifications: structuredClone(member.qualifications ?? []), workhistory: structuredClone(member.workhistory ?? []) } : emptyMember();
+  form.value = member ? { ...emptyMember(), ...clonePlainData(member), qualifications: clonePlainData(member.qualifications ?? []), workhistory: clonePlainData(member.workhistory ?? []) } : emptyMember();
   error.value = '';
   dialog.value?.showModal();
 };

@@ -113,9 +113,10 @@ const dialogDescription = computed(() => mode.value === 'view'
   : uuid.value
     ? 'Update the committee name. Existing members are not affected.'
     : 'Set up the committee record. You can add members after it is created.');
+const clonePlainData = value => JSON.parse(JSON.stringify(value));
 const cloneCommittee = committee => ({
-  ...structuredClone(committee),
-  members: structuredClone(committee.members ?? []),
+  ...clonePlainData(committee),
+  members: clonePlainData(committee.members ?? []),
 });
 
 const open = async (committee = null, viewOnly = false) => {
@@ -154,7 +155,7 @@ const refreshViewedCommittee = () => {
 };
 const saveMember = async ({ member, index }) => {
   if (!viewedCommittee.value || !canEdit.value) return;
-  const members = structuredClone(viewedCommittee.value.members ?? []);
+  const members = clonePlainData(viewedCommittee.value.members ?? []);
   if (index === null) members.push(member);
   else members.splice(index, 1, member);
   try {
@@ -176,7 +177,7 @@ const removeMember = async ({ member, index }) => {
   error.value = '';
   saving.value = true;
   try {
-    const members = structuredClone(viewedCommittee.value.members ?? []);
+    const members = clonePlainData(viewedCommittee.value.members ?? []);
     members.splice(index, 1);
     await store.save({
       company_id: viewedCommittee.value.company_id,
