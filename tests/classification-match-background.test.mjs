@@ -12,7 +12,10 @@ async function harness(scanType = 'UNSPSC') {
     export const state = { run: null, poll: null, accepted: [], batches: [], skipped: [], fail: null, failBatch: null, closed: false, refreshed: 0, requestedTypes: [], instance: ${instance++} };
     const onMounted = () => {}; const onBeforeUnmount = () => {}; const watch = () => {};
     const setTimeout = fn => { state.poll = fn; return 1; }; const clearTimeout = () => { state.poll = null; };
-    const useAnnualprocurementplanStore = () => ({ fetchGroupedItems: async () => { state.refreshed++; } });
+    const useAnnualprocurementplanStore = () => ({
+      analysisReport: null,
+      fetchPlanItems: async () => { state.refreshed++; },
+    });
     const useAnnualprocurementplanHelper = () => ({
       getClassificationMatches: async (plan, type) => { state.requestedTypes.push(type); return { data: ref({ data: { run: state.run } }), error: ref(null) }; },
       startClassificationMatch: async () => ({ data: ref({ data: { run: state.run } }), status: ref(true), error: ref(null) }),
@@ -50,9 +53,12 @@ test('NSPL pricing shows alternatives and follows the chosen product', async () 
     { id: 20, code: 'B', price_analysis: { status: 'ABOVE_RANGE', within_range: false } },
   ] };
   assert.equal(vm.priceComparisons(match).length, 2);
+  assert.equal(vm.productOptions(match).length, 2);
   vm.nsplSelections.value[1] = 20;
   assert.equal(vm.priceComparisons(match)[0].code, 'B');
+  assert.equal(vm.selectedProduct(match).code, 'B');
   assert.equal(vm.priceStatus(vm.priceComparisons(match)[0].analysis), 'Above +10%');
+  assert.equal(vm.formatDifference({ difference_percent: -12.5 }), '-12.5% from the NSPL price');
   match.suggested_nspl_product = { id: 10, code: 'A' };
   match.price_analysis = { status: 'WITHIN_RANGE', within_range: true };
   assert.equal(vm.priceComparisons(match)[0].code, 'A');
