@@ -1,7 +1,7 @@
 <template>
-  <section aria-label="Plan and payment status" class="flex flex-col gap-2 border-t border-base-200 px-3 py-2 sm:px-4 md:flex-row md:items-center md:justify-between">
-    <div class="flex flex-wrap items-center gap-2 text-sm"><Icon name="lucide:clipboard-check" class="h-4 w-4 text-base-content/45" /><span class="text-base-content/55">Plan status</span><span :class="['badge badge-sm', authorized ? 'badge-success' : 'badge-outline']">{{ label(plan?.status) }}</span></div>
-    <div class="flex flex-wrap items-center gap-2 text-sm" aria-live="polite">
+  <section aria-label="Plan and payment status" class="flex shrink-0 items-center">
+    <div class="flex items-center gap-2 border-l border-base-200 px-4 py-3 text-sm"><Icon name="lucide:clipboard-check" class="h-4 w-4 text-base-content/45" /><span class="text-base-content/55">Plan status</span><span :class="['badge badge-sm', authorized ? 'badge-success' : 'badge-outline']">{{ label(plan?.status) }}</span></div>
+    <div class="flex items-center gap-2 border-l border-base-200 px-4 py-3 text-sm" aria-live="polite">
       <Icon name="lucide:credit-card" class="h-4 w-4 text-base-content/45" /><span class="text-base-content/55">Payment</span>
       <span v-if="loading" class="flex items-center gap-2"><span class="loading loading-spinner loading-xs" />Checking…</span>
       <span v-else-if="error" class="text-error" role="alert">{{ error }} <button class="btn btn-ghost btn-xs" @click="loadInvoice">Retry</button></span>
