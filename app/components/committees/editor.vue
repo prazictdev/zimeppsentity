@@ -112,7 +112,7 @@ import CommitteesDetails from './details.vue';
 import { CommitteeSchema } from '~/utils/CommitteeSchema';
 const emit = defineEmits(['saved']);
 const store = useCommitteeStore();
-const { canAdd, canEdit } = useCheckPermission('committees');
+const { canAdd, canEdit } = useCheckPermission('pecommittes');
 const dialog = ref(null);
 const uuid = ref(null);
 const readonly = ref(false);

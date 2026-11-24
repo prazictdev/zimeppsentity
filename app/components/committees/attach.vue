@@ -34,7 +34,7 @@
 <script setup>
 const props = defineProps({ planUuid: { type: String, required: true }, type: { type: String, required: true }, canEdit: Boolean, memberCount: { type: Number, default: 0 } });
 const { can } = useCheckPermission()
-const canAccess = computed(() => can('can.access.committes'))
+const canAccess = computed(() => can('can.access.pecommittes'))
 const api = useCommitteeHelper();
 const { getCommitteeMembers, getPmuMembers, getDisposalcommitteeMembers } = useAnnualprocurementplanHelper();
 const library = useCommitteeStore();
