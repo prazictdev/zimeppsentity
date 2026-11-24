@@ -233,7 +233,7 @@
         </template>
       </section>
 
-      <CommitteesEditor ref="editor" @saved="message = 'Committee saved successfully.'" />
+      <CommitteesEditor ref="editor" @saved="message = $event || 'Committee saved successfully.'" />
     </template>
   </div>
 </template>

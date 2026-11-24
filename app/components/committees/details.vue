@@ -1,93 +1,147 @@
 <template>
-  <div class="mt-4 space-y-6">
-    <div class="overflow-x-auto rounded-xl border border-base-200">
-      <table class="table table-zebra w-full">
-        <caption class="p-3 text-left font-semibold">Committee details</caption>
-        <thead><tr><th scope="col">Committee</th><th scope="col">Organisation</th><th scope="col">Type</th><th scope="col">Status</th><th scope="col">Members</th></tr></thead>
-        <tbody><tr>
-          <th scope="row" class="font-medium">{{ committee.name }}</th>
-          <td>{{ committee.company?.name || '—' }}</td>
-          <td>{{ labels[committee.type] }}</td>
-          <td><span :class="['badge', committee.status === 'ACTIVE' ? 'badge-success' : 'badge-ghost']">{{ committee.status === 'ACTIVE' ? 'Active' : 'Archived' }}</span></td>
-          <td>{{ committee.members.length }}</td>
-        </tr></tbody>
-      </table>
-    </div>
-    <div class="overflow-x-auto rounded-xl border border-base-200">
-      <table class="table table-zebra w-full text-sm">
-        <caption class="p-3 text-left font-semibold">Committee members</caption>
-        <thead><tr>
-          <th scope="col">#</th><th scope="col">Name</th><th scope="col">Email</th><th scope="col">Gender</th><th scope="col">Designation</th><th scope="col">Phone</th><th scope="col">Role</th>
-          <th v-if="committee.type === 'PMU'" scope="col">Head of PMU</th>
-          <th v-if="committee.type !== 'DISPOSAL'" scope="col">Experience</th>
-        </tr></thead>
-        <tbody>
-          <tr v-if="!committee.members.length"><td :colspan="columnCount" class="py-6 text-center text-base-content/60">No committee members.</td></tr>
-          <template v-for="(member, index) in committee.members" :key="member.email">
-            <tr>
-              <td>{{ index + 1 }}</td><th scope="row" class="font-medium">{{ member.name }}</th><td>{{ member.email }}</td>
-              <td class="capitalize">{{ member.gender || '—' }}</td><td>{{ member.designation || '—' }}</td><td>{{ member.phone || '—' }}</td>
-              <td>{{ roles.find(role => role.id === member.role_id)?.name || (member.role_id ? 'Role unavailable' : '—') }}</td>
-              <td v-if="committee.type === 'PMU'">{{ member.is_head ? 'Yes' : 'No' }}</td>
-              <td v-if="committee.type !== 'DISPOSAL'">
-                <button type="button" class="btn btn-outline btn-xs whitespace-nowrap" :aria-expanded="expandedMember === member.email" :aria-label="`View qualifications and work history for ${member.name}`" @click="expandedMember = expandedMember === member.email ? null : member.email">
-                  {{ member.qualifications?.length ?? 0 }} qualifications · {{ member.workhistory?.length ?? 0 }} work records
-                </button>
-              </td>
-            </tr>
-            <tr v-if="committee.type !== 'DISPOSAL' && expandedMember === member.email">
-              <td :colspan="columnCount" class="bg-base-200/30 p-4">
-                <div class="grid gap-4">
-                  <section class="overflow-hidden rounded-xl border border-base-200 bg-base-100 shadow-sm">
-                    <header class="flex min-h-14 flex-wrap items-center justify-between gap-3 border-b border-base-200 bg-base-200/40 px-4 py-2">
-                      <div>
-                        <h4 class="font-semibold">Qualifications</h4>
-                        <p class="text-xs text-base-content/60">Academic and professional qualifications for {{ member.name }}</p>
-                      </div>
-                      <button v-if="canEdit" type="button" class="btn btn-success btn-sm w-44 justify-center" @click="$emit('manage-experience', { memberIndex: index, section: 'qualifications', action: 'add' })"><Icon name="lucide:plus" />Add Qualification</button>
-                    </header>
-                    <div class="overflow-x-auto">
-                      <table class="table table-sm w-full">
-                        <thead><tr><th scope="col">Qualification</th><th scope="col">Institution</th><th scope="col">Field of study</th><th scope="col">Year obtained</th><th v-if="canEdit" scope="col" class="text-right">Actions</th></tr></thead>
-                        <tbody><tr v-for="(qualification, qi) in member.qualifications" :key="qi"><td>{{ qualification.qualification }}</td><td>{{ qualification.institution || '—' }}</td><td>{{ qualification.fieldofstudy || '—' }}</td><td>{{ qualification.yearobtained || '—' }}</td><td v-if="canEdit"><div class="flex justify-end gap-1"><button type="button" class="btn btn-info btn-xs" aria-label="Edit qualification" @click="$emit('manage-experience', { memberIndex: index, section: 'qualifications', action: 'edit', recordIndex: qi })"><Icon name="lucide:edit" /></button><button type="button" class="btn btn-error btn-xs" aria-label="Delete qualification" @click="$emit('manage-experience', { memberIndex: index, section: 'qualifications', action: 'delete', recordIndex: qi })"><Icon name="lucide:trash-2" /></button></div></td></tr>
-                          <tr v-if="!member.qualifications?.length"><td :colspan="canEdit ? 5 : 4" class="py-5 text-center text-base-content/60">No qualifications recorded.</td></tr>
-                        </tbody>
-                      </table>
-                    </div>
-                  </section>
+  <div class="space-y-5">
+    <section class="grid gap-3 rounded-xl border border-base-200 bg-base-200/35 p-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div>
+        <p class="text-xs text-base-content/50">Organisation</p>
+        <p class="mt-1 font-medium">{{ committee.company?.name || '—' }}</p>
+      </div>
+      <div>
+        <p class="text-xs text-base-content/50">Committee type</p>
+        <p class="mt-1 font-medium">{{ labels[committee.type] }}</p>
+      </div>
+      <div>
+        <p class="text-xs text-base-content/50">Members</p>
+        <p class="mt-1 font-medium">{{ members.length }}</p>
+      </div>
+      <div>
+        <p class="text-xs text-base-content/50">Status</p>
+        <span :class="['badge badge-sm mt-1', committee.status === 'ACTIVE' ? 'badge-soft badge-success' : 'badge-ghost']">
+          {{ committee.status === 'ACTIVE' ? 'Active' : 'Archived' }}
+        </span>
+      </div>
+    </section>
 
-                  <section class="overflow-hidden rounded-xl border border-base-200 bg-base-100 shadow-sm">
-                    <header class="flex min-h-14 flex-wrap items-center justify-between gap-3 border-b border-base-200 bg-base-200/40 px-4 py-2">
-                      <div>
-                        <h4 class="font-semibold">Work History</h4>
-                        <p class="text-xs text-base-content/60">Employment experience recorded for {{ member.name }}</p>
-                      </div>
-                      <button v-if="canEdit" type="button" class="btn btn-success btn-sm w-44 justify-center" @click="$emit('manage-experience', { memberIndex: index, section: 'workhistory', action: 'add' })"><Icon name="lucide:plus" />Add Work History</button>
-                    </header>
-                    <div class="overflow-x-auto">
-                      <table class="table table-sm w-full">
-                        <thead><tr><th scope="col">Employer</th><th scope="col">Position</th><th scope="col">Start date</th><th scope="col">End date</th><th scope="col">Responsibilities</th><th v-if="canEdit" scope="col" class="text-right">Actions</th></tr></thead>
-                        <tbody><tr v-for="(history, hi) in member.workhistory" :key="hi"><td>{{ history.employer }}</td><td>{{ history.position }}</td><td>{{ history.startdate }}</td><td>{{ history.enddate || 'Present' }}</td><td class="whitespace-pre-line">{{ history.responsibilities || '—' }}</td><td v-if="canEdit"><div class="flex justify-end gap-1"><button type="button" class="btn btn-info btn-xs" aria-label="Edit work history" @click="$emit('manage-experience', { memberIndex: index, section: 'workhistory', action: 'edit', recordIndex: hi })"><Icon name="lucide:edit" /></button><button type="button" class="btn btn-error btn-xs" aria-label="Delete work history" @click="$emit('manage-experience', { memberIndex: index, section: 'workhistory', action: 'delete', recordIndex: hi })"><Icon name="lucide:trash-2" /></button></div></td></tr>
-                          <tr v-if="!member.workhistory?.length"><td :colspan="canEdit ? 6 : 5" class="py-5 text-center text-base-content/60">No work history recorded.</td></tr>
-                        </tbody>
-                      </table>
-                    </div>
-                  </section>
-                </div>
-              </td>
+    <section class="overflow-hidden rounded-xl border border-base-200">
+      <header class="flex flex-wrap items-center justify-between gap-3 border-b border-base-200 bg-base-200/25 px-4 py-3">
+        <div>
+          <h3 class="font-semibold">Committee members</h3>
+          <p class="mt-0.5 text-xs text-base-content/55">People assigned to this reusable committee.</p>
+        </div>
+        <button v-if="canEdit" type="button" class="btn btn-primary btn-sm" @click="$emit('add-member')">
+          <Icon name="lucide:user-plus" class="size-4" />Add member
+        </button>
+      </header>
+
+      <div v-if="!members.length" class="px-5 py-12 text-center">
+        <div class="mx-auto grid size-12 place-items-center rounded-xl bg-base-200 text-base-content/45">
+          <Icon name="lucide:users-round" class="size-6" />
+        </div>
+        <h4 class="mt-4 font-semibold">No members added</h4>
+        <p class="mx-auto mt-1 max-w-sm text-sm text-base-content/55">Add the first member before attaching this committee to an annual procurement plan.</p>
+        <button v-if="canEdit" type="button" class="btn btn-primary btn-sm mt-4" @click="$emit('add-member')">
+          <Icon name="lucide:user-plus" class="size-4" />Add first member
+        </button>
+      </div>
+
+      <div v-else class="overflow-x-auto">
+        <table class="table w-full">
+          <thead class="bg-base-200/40 text-xs text-base-content/60">
+            <tr>
+              <th scope="col">Member</th>
+              <th scope="col">Designation</th>
+              <th scope="col">Role</th>
+              <th v-if="committee.type === 'PMU'" scope="col">PMU position</th>
+              <th v-if="committee.type !== 'DISPOSAL'" scope="col">Profile</th>
+              <th v-if="canEdit" scope="col" class="text-right">Actions</th>
             </tr>
-          </template>
-        </tbody>
-      </table>
-    </div>
+          </thead>
+          <tbody>
+            <template v-for="(member, index) in members" :key="`${member.email}-${index}`">
+              <tr class="border-base-200">
+                <th scope="row" class="font-normal">
+                  <div class="flex items-center gap-3">
+                    <div class="avatar avatar-placeholder">
+                      <div class="w-9 rounded-full bg-primary/10 text-primary"><span class="text-xs font-semibold">{{ initials(member.name) }}</span></div>
+                    </div>
+                    <div>
+                      <p class="font-medium text-base-content">{{ member.name }}</p>
+                      <p class="mt-0.5 text-xs text-base-content/55">{{ member.email }}</p>
+                    </div>
+                  </div>
+                </th>
+                <td>{{ member.designation || '—' }}</td>
+                <td>{{ roleName(member.role_id) }}</td>
+                <td v-if="committee.type === 'PMU'">
+                  <span v-if="member.is_head" class="badge badge-soft badge-primary badge-sm">Head of PMU</span>
+                  <span v-else class="text-base-content/45">Member</span>
+                </td>
+                <td v-if="committee.type !== 'DISPOSAL'">
+                  <button type="button" class="btn btn-ghost btn-sm whitespace-nowrap" :aria-expanded="expandedMember === index" @click="expandedMember = expandedMember === index ? null : index">
+                    <Icon name="lucide:graduation-cap" class="size-4" />
+                    {{ member.qualifications?.length ?? 0 }} · {{ member.workhistory?.length ?? 0 }}
+                    <Icon :name="expandedMember === index ? 'lucide:chevron-up' : 'lucide:chevron-down'" class="size-4" />
+                  </button>
+                </td>
+                <td v-if="canEdit">
+                  <div class="flex justify-end gap-1">
+                    <button type="button" class="btn btn-ghost btn-square btn-sm" :aria-label="`Edit ${member.name}`" @click="$emit('edit-member', { member, index })">
+                      <Icon name="lucide:pencil" class="size-4" />
+                    </button>
+                    <button type="button" class="btn btn-ghost btn-square btn-sm text-error" :aria-label="`Remove ${member.name}`" @click="$emit('remove-member', { member, index })">
+                      <Icon name="lucide:trash-2" class="size-4" />
+                    </button>
+                  </div>
+                </td>
+              </tr>
+              <tr v-if="committee.type !== 'DISPOSAL' && expandedMember === index">
+                <td :colspan="columnCount" class="bg-base-200/25 p-4">
+                  <div class="grid gap-4 lg:grid-cols-2">
+                    <div class="rounded-lg border border-base-200 bg-base-100 p-3">
+                      <h4 class="text-sm font-semibold">Qualifications</h4>
+                      <ul v-if="member.qualifications?.length" class="mt-2 space-y-2">
+                        <li v-for="(qualification, qualificationIndex) in member.qualifications" :key="qualificationIndex" class="text-sm">
+                          <span class="font-medium">{{ qualification.qualification }}</span>
+                          <span class="block text-xs text-base-content/55">{{ [qualification.institution, qualification.fieldofstudy, qualification.yearobtained].filter(Boolean).join(' · ') || 'No further details' }}</span>
+                        </li>
+                      </ul>
+                      <p v-else class="mt-2 text-sm text-base-content/50">No qualifications recorded.</p>
+                    </div>
+                    <div class="rounded-lg border border-base-200 bg-base-100 p-3">
+                      <h4 class="text-sm font-semibold">Work history</h4>
+                      <ul v-if="member.workhistory?.length" class="mt-2 space-y-2">
+                        <li v-for="(history, historyIndex) in member.workhistory" :key="historyIndex" class="text-sm">
+                          <span class="font-medium">{{ history.position }} at {{ history.employer }}</span>
+                          <span class="block text-xs text-base-content/55">{{ history.startdate }} – {{ history.enddate || 'Present' }}</span>
+                        </li>
+                      </ul>
+                      <p v-else class="mt-2 text-sm text-base-content/50">No work history recorded.</p>
+                    </div>
+                  </div>
+                </td>
+              </tr>
+            </template>
+          </tbody>
+        </table>
+      </div>
+    </section>
   </div>
 </template>
 
 <script setup>
-const props = defineProps({ committee: { type: Object, required: true }, roles: { type: Array, default: () => [] }, canEdit: { type: Boolean, default: false } });
-defineEmits(['manage-experience']);
+const props = defineProps({
+  committee: { type: Object, required: true },
+  roles: { type: Array, default: () => [] },
+  canEdit: { type: Boolean, default: false },
+});
+defineEmits(['add-member', 'edit-member', 'remove-member']);
 const labels = { EVALUATION: 'Evaluation', DISPOSAL: 'Disposal', PMU: 'PMU' };
 const expandedMember = ref(null);
-const columnCount = computed(() => props.committee.type === 'PMU' ? 9 : props.committee.type === 'DISPOSAL' ? 7 : 8);
-watch(() => props.committee.uuid, () => { expandedMember.value = null; });
+const members = computed(() => props.committee.members ?? []);
+const columnCount = computed(() => 3 + (props.committee.type === 'PMU' ? 1 : 0) + (props.committee.type !== 'DISPOSAL' ? 1 : 0) + (props.canEdit ? 1 : 0));
+const roleName = roleId => props.roles.find(role => role.id === roleId)?.name || '—';
+const initials = name => (name ?? '').split(/\s+/).filter(Boolean).slice(0, 2).map(part => part[0]).join('').toUpperCase() || '?';
+
+watch(() => props.committee.uuid, () => {
+  expandedMember.value = null;
+});
 </script>

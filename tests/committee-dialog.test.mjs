@@ -20,11 +20,15 @@ function componentModule(file, mocks = '', imports = {}) {
 }
 
 const detailsModule = componentModule('../app/components/committees/details.vue');
+const memberEditorModule = componentModule('../app/components/committees/member-editor.vue', '', {
+  '~/utils/CommitteeSchema': new URL('../app/utils/CommitteeSchema.js', import.meta.url).href,
+});
 const editorModule = componentModule('../app/components/committees/editor.vue', `
-  const useCommitteeStore = () => ({ companies: [{ id: 1, name: 'Test PE', roles: [], users: [] }] });
+  const useCommitteeStore = () => ({ companies: [{ id: 1, name: 'Test PE', roles: [], users: [] }], items: [], save: async () => {} });
   const useCheckPermission = () => ({ canAdd: ref(true), canEdit: ref(true) });
 `, {
   './details.vue': detailsModule,
+  './member-editor.vue': memberEditorModule,
   '~/utils/CommitteeSchema': new URL('../app/utils/CommitteeSchema.js', import.meta.url).href,
 });
 const { default: Editor } = await import(editorModule);
@@ -70,7 +74,8 @@ function mountEditor() {
   app.component('Icon', { render: () => h('span') });
   app.config.errorHandler = error => errors.push(error);
   const editor = app.mount(root);
-  return { editor, dialog: root.children[0], errors, unmount: () => app.unmount() };
+  const wrapper = root.children[0];
+  return { editor, dialog: wrapper.children[0], memberDialog: wrapper.children[1], errors, unmount: () => app.unmount() };
 }
 
 for (const type of ['EVALUATION', 'DISPOSAL', 'PMU']) {
@@ -89,7 +94,7 @@ for (const type of ['EVALUATION', 'DISPOSAL', 'PMU']) {
       await mounted.editor.open({ uuid: 'empty', name: 'Empty committee', type, status: 'ACTIVE', company_id: 1, members: null }, true);
       assert.deepEqual(mounted.errors, []);
       assert.match(mounted.dialog.openedContent, /Empty committee/);
-      assert.match(mounted.dialog.openedContent, /No committee members/);
+      assert.match(mounted.dialog.openedContent, /No members added/);
       assert.doesNotMatch(mounted.dialog.openedContent, /Jane Member/);
     } finally {
       mounted.unmount();
@@ -97,26 +102,21 @@ for (const type of ['EVALUATION', 'DISPOSAL', 'PMU']) {
   });
 }
 
-test('keeps unsaved member qualification edits separate from the displayed committee', async () => {
+test('keeps committee creation focused on committee details', async () => {
   const mounted = mountEditor();
-  const committee = {
-    uuid: 'editable', name: 'Evaluation committee', type: 'EVALUATION', company_id: 1,
-    members: [{ name: 'Jane', email: 'jane@example.com', gender: 'female', qualifications: [{ qualification: 'Diploma' }], workhistory: [] }],
-  };
   try {
-    await mounted.editor.open(committee, false);
-    const nodes = node => [node, ...node.children.flatMap(nodes)];
-    const input = nodes(mounted.dialog).find(node => node.type === 'input' && node.value === 'Diploma');
-    assert.ok(input);
-    input.props['onUpdate:modelValue']('Degree');
-    assert.equal(committee.members[0].qualifications[0].qualification, 'Diploma');
+    await mounted.editor.open();
+    assert.match(mounted.dialog.openedContent, /Create committee/);
+    assert.match(mounted.dialog.openedContent, /Committee name/);
+    assert.doesNotMatch(mounted.dialog.openedContent, /Member 1/);
+    assert.doesNotMatch(mounted.dialog.openedContent, /Full name/);
     assert.deepEqual(mounted.errors, []);
   } finally {
     mounted.unmount();
   }
 });
 
-test('adds a blank member from the active committee view without changing saved members', async () => {
+test('opens a separate member form from the active committee view', async () => {
   const mounted = mountEditor();
   const committee = {
     uuid: 'active', name: 'Evaluation committee', type: 'EVALUATION', status: 'ACTIVE', company_id: 1,
@@ -125,16 +125,17 @@ test('adds a blank member from the active committee view without changing saved 
   try {
     await mounted.editor.open(committee, true);
     const nodes = node => [node, ...node.children.flatMap(nodes)];
-    const button = nodes(mounted.dialog).find(node => node.type === 'button' && content(node).includes('Add Member'));
+    const button = nodes(mounted.dialog).find(node => node.type === 'button' && content(node).includes('Add member'));
     assert.ok(button);
     await button.props.onClick();
-    assert.match(content(mounted.dialog), /Edit committee/);
-    assert.match(content(mounted.dialog), /Member 2/);
-    assert.match(content(mounted.dialog), /Save committee/);
+    assert.match(mounted.memberDialog.openedContent, /Add committee member/);
+    assert.match(mounted.memberDialog.openedContent, /Full name/);
+    assert.match(mounted.memberDialog.openedContent, /Email address/);
+    assert.match(content(mounted.dialog), /Jane/);
     assert.equal(committee.members.length, 1);
     assert.deepEqual(mounted.errors, []);
     await mounted.editor.open({ ...committee, status: 'ARCHIVED' }, true);
-    assert.doesNotMatch(content(mounted.dialog), /Add Member/);
+    assert.doesNotMatch(content(mounted.dialog), /Add member/);
   } finally {
     mounted.unmount();
   }
