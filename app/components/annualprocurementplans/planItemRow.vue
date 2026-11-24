@@ -34,7 +34,7 @@
       </div>
       <div v-if="!activeFlags.length" class="mt-1 text-xs text-base-content/40">No procurement flags</div>
     </td>
-    <td class="sticky right-0 z-10 w-32 min-w-32 border-l border-base-200 bg-base-100 shadow-[-8px_0_14px_-12px_rgba(0,0,0,0.3)] group-hover:bg-base-200">
+    <td class="w-36 min-w-36">
       <div class="flex items-center justify-end gap-1">
         <AnnualprocurementplansItemView :item="item" />
         <AnnualprocurementplansItemAmend v-if="canEdit && canAmend" :plan-uuid="planUuid" :item="item" />

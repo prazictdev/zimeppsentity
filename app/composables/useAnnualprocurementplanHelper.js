@@ -66,6 +66,20 @@ export const useAnnualprocurementplanHelper = () => {
     }
   };
 
+  const getGroupedItems = async (planUuid, params = {}) => {
+    try {
+      const qs = new URLSearchParams();
+      for (const [k, v] of Object.entries(params)) {
+        if (v !== undefined && v !== null && v !== '') qs.set(k, v);
+      }
+      const url = `${base}/${planUuid}/items/grouped${qs.toString() ? `?${qs}` : ''}`;
+      const data = await client(url, { method: 'GET' });
+      return { data: ref(data), error: ref(null) };
+    } catch (err) {
+      return { data: ref(null), error: ref(err) };
+    }
+  };
+
   // ─── AI compliance review ───────────────────────────────────────────────
   const getComplianceAnalysis = async (planUuid) => {
     try {
@@ -1005,6 +1019,7 @@ export const useAnnualprocurementplanHelper = () => {
     updatePlan,
     deletePlan,
     getItems,
+    getGroupedItems,
     getComplianceAnalysis,
     startComplianceAnalysis,
     getClassificationMatches,

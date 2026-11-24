@@ -22,6 +22,7 @@ export const useAnnualprocurementplanStore = defineStore('annualprocurementplan'
 
   // Paginated items belonging to the currently-loaded plan.
   const planItems = ref([]);
+  const planConsolidatedItems = ref([]);
   const planItemsMeta = ref({ current_page: 1, last_page: 1, total: 0, per_page: 50 });
   const planItemsLoading = ref(false);
 
@@ -117,6 +118,7 @@ export const useAnnualprocurementplanStore = defineStore('annualprocurementplan'
     updatePlan,
     deletePlan,
     getItems,
+    getGroupedItems,
     getComplianceAnalysis,
     startComplianceAnalysis,
     getComplianceChat,
@@ -262,17 +264,20 @@ export const useAnnualprocurementplanStore = defineStore('annualprocurementplan'
     for (const k of flagKeys) {
       if (opts[k]) params[k] = 1;
     }
-    const { data, error } = await getItems(uuid, params);
+    const { data, error } = await getGroupedItems(uuid, params);
     if (!error.value) {
       const payload = data.value?.data ?? {};
-      planItems.value = payload.data ?? [];
+      const individual = payload.individual ?? {};
+      planConsolidatedItems.value = payload.consolidated ?? [];
+      planItems.value = individual.data ?? [];
       planItemsMeta.value = {
-        current_page: payload.current_page ?? 1,
-        last_page: payload.last_page ?? 1,
-        total: payload.total ?? 0,
-        per_page: payload.per_page ?? 50,
+        current_page: individual.current_page ?? 1,
+        last_page: individual.last_page ?? 1,
+        total: Number(individual.total ?? 0) + planConsolidatedItems.value.length,
+        per_page: individual.per_page ?? 50,
       };
     } else {
+      planConsolidatedItems.value = [];
       showError(error, 'Failed to fetch items.');
     }
     planItemsLoading.value = false;
@@ -1415,6 +1420,7 @@ export const useAnnualprocurementplanStore = defineStore('annualprocurementplan'
     currentPlan,
     currentPlanLoading,
     planItems,
+    planConsolidatedItems,
     planItemsMeta,
     planItemsLoading,
     itemTotals,

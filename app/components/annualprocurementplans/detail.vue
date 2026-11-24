@@ -42,7 +42,10 @@
                   <div class="min-w-0">
                     <div class="flex items-center gap-2">
                       <h2 class="text-lg font-bold">Plan items</h2>
-                      <span class="badge badge-ghost badge-sm">{{ store.planItemsMeta.total }}</span>
+                      <span class="badge badge-ghost badge-sm">{{ store.planItemsMeta.total }} lines</span>
+                      <span v-if="store.planConsolidatedItems.length" class="badge badge-success badge-soft badge-sm">
+                        {{ store.planConsolidatedItems.length }} consolidated
+                      </span>
                     </div>
                     <p class="text-xs text-base-content/50">Manage the requirements included in this procurement plan.</p>
                   </div>
@@ -100,7 +103,7 @@
 
             <div v-if="store.planItemsLoading" class="flex justify-center py-14"><span class="loading loading-spinner loading-lg" /></div>
             <template v-else>
-              <div v-if="!store.planItems.length" class="px-6 py-14 text-center text-sm text-base-content/50">
+              <div v-if="!store.planItems.length && !store.planConsolidatedItems.length" class="px-6 py-14 text-center text-sm text-base-content/50">
                 {{ (itemsSearch || activeFilterCount > 0) ? 'No items match the current search or filters.' : 'No items yet. Add an item to start building the plan.' }}
               </div>
               <div v-else class="overflow-x-auto">
@@ -114,10 +117,15 @@
                       <th class="text-right">Unit cost</th>
                       <th class="min-w-40 text-right">Budget</th>
                       <th class="min-w-52">Status and flags</th>
-                      <th class="sticky right-0 z-20 w-32 min-w-32 border-l border-base-300 bg-base-200 text-right">Actions</th>
+                      <th class="w-36 min-w-36 text-right">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
+                    <AnnualprocurementplansConsolidatedPlanItemRow
+                      v-for="group in store.planConsolidatedItems"
+                      :key="`consolidated-${group.reference_no}`"
+                      :group="group"
+                    />
                     <AnnualprocurementplansPlanItemRow
                       v-for="it in store.planItems"
                       :key="it.id"
@@ -135,7 +143,10 @@
 
               <footer class="flex flex-wrap items-center justify-between gap-3 border-t border-base-200 bg-base-200/30 px-3 py-3 sm:px-4">
                 <div class="flex flex-wrap items-center gap-3">
-                  <span class="text-xs text-base-content/60">{{ store.planItemsMeta.total }} result{{ store.planItemsMeta.total === 1 ? '' : 's' }}</span>
+                  <span class="text-xs text-base-content/60">{{ store.planItemsMeta.total }} procurement line{{ store.planItemsMeta.total === 1 ? '' : 's' }}</span>
+                  <span v-if="store.planConsolidatedItems.length" class="text-xs text-base-content/50">
+                    {{ totalItems }} underlying item{{ totalItems === 1 ? '' : 's' }}
+                  </span>
                   <select v-model.number="itemsPerPage" class="select select-sm w-32" aria-label="Items per page" @change="changePerPage">
                     <option :value="25">25 / page</option>
                     <option :value="50">50 / page</option>
