@@ -422,6 +422,19 @@
                                 <input v-model="fixPayloads[fixKey(rule, i)].bid_closing_date" type="date" class="input input-bordered input-sm" />
                               </fieldset>
                             </div>
+
+                            <div v-else-if="rule.key.startsWith('r6')" class="flex flex-wrap items-end gap-3">
+                              <fieldset class="fieldset min-w-64">
+                                <legend class="fieldset-legend">Procurement group</legend>
+                                <select v-model.number="fixPayloads[fixKey(rule, i)].procurementgroup_id" class="select select-sm">
+                                  <option :value="null">— select —</option>
+                                  <option v-for="group in store.procurementgroups" :key="group.id" :value="group.id">
+                                    {{ group.name }}<template v-if="group.code"> ({{ group.code }})</template>
+                                  </option>
+                                </select>
+                              </fieldset>
+                              <p class="pb-2 text-xs text-base-content/60">Choose the same procurement group for every APP item using reference {{ v.reference_no }}.</p>
+                            </div>
                           </td>
                         </tr>
                       </template>
@@ -774,6 +787,9 @@ const initialPayload = (rule, v) => {
       bid_notice_publication_date: v.bid_notice_publication_date ?? '',
       bid_closing_date: v.bid_closing_date ?? '',
     };
+  }
+  if (rule.key.startsWith('r6')) {
+    return { procurementgroup_id: v.procurementgroup_id ?? null };
   }
   return {};
 };
