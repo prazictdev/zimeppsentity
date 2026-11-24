@@ -95,6 +95,7 @@ export const useAnnualprocurementplanStore = defineStore('annualprocurementplan'
   // and the chronological transition history.
   const workflowActions = ref([]);
   const workflowIsCreator = ref(false);
+  const workflowContext = ref({ eligible_reviewers: [], eligible_approvers: [], approval_route: null });
   const transitions = ref([]);
 
   // Disposal committee (paginated members; no qualifications/work history).
@@ -1305,6 +1306,11 @@ export const useAnnualprocurementplanStore = defineStore('annualprocurementplan'
       const payload = data.value?.data ?? {};
       workflowActions.value = payload.actions ?? [];
       workflowIsCreator.value = !!payload.is_creator;
+      workflowContext.value = {
+        eligible_reviewers: payload.eligible_reviewers ?? [],
+        eligible_approvers: payload.eligible_approvers ?? [],
+        approval_route: payload.approval_route ?? null,
+      };
     }
   };
 
@@ -1314,8 +1320,8 @@ export const useAnnualprocurementplanStore = defineStore('annualprocurementplan'
     if (!error.value) transitions.value = data.value?.data ?? [];
   };
 
-  const runTransition = async (planUuid, action, comment = null) => {
-    const { data: response, status, error } = await transitionPlan(planUuid, { action, comment });
+  const runTransition = async (planUuid, action, comment = null, context = {}) => {
+    const { data: response, status, error } = await transitionPlan(planUuid, { action, comment, ...context });
     const res = response?.value;
     if (status?.value && res?.status === true) {
       showSuccess('Transition complete', res.message);
@@ -1473,6 +1479,7 @@ export const useAnnualprocurementplanStore = defineStore('annualprocurementplan'
     supplementIsCreator,
     workflowActions,
     workflowIsCreator,
+    workflowContext,
     transitions,
     procurementclasses,
     procurementmethods,
