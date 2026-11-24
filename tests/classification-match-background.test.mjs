@@ -54,7 +54,8 @@ test('NSPL pricing shows alternatives and follows the chosen product', async () 
   ] };
   assert.equal(vm.priceComparisons(match).length, 2);
   assert.equal(vm.productOptions(match).length, 2);
-  vm.nsplSelections.value[1] = 20;
+  vm.chooseNsplProduct(match, 20);
+  assert.deepEqual(vm.selectedIds.value, [1]);
   assert.equal(vm.priceComparisons(match)[0].code, 'B');
   assert.equal(vm.selectedProduct(match).code, 'B');
   assert.equal(vm.priceStatus(vm.priceComparisons(match)[0].analysis), 'Above +10%');

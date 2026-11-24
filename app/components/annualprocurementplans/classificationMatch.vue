@@ -6,8 +6,8 @@
       {{ scanType }} · {{ isRunning ? 'Scanning…' : scanStep?.status === 'STALE' ? 'Run again' : run?.status === 'COMPLETED' ? 'Completed · View results' : 'Start scan' }}
     </button>
 
-    <dialog ref="dialog" class="modal">
-      <div class="modal-box max-w-6xl">
+    <dialog ref="dialog" class="modal p-0">
+      <div class="modal-box h-screen max-h-none w-screen max-w-none overflow-y-auto rounded-none p-5 sm:p-6 lg:px-8">
         <div class="flex items-start justify-between gap-4">
           <div>
             <h3 class="flex items-center gap-2 text-xl font-bold">
@@ -86,48 +86,39 @@
               </div>
             </section>
 
-            <div class="mt-4 flex flex-col gap-3 rounded-xl border border-base-200 bg-base-200/30 p-3 sm:flex-row sm:items-center sm:justify-between">
-              <label v-if="canEdit && pendingMatches.length" class="flex cursor-pointer items-center gap-2 text-sm">
-                <input type="checkbox" class="checkbox checkbox-sm" aria-label="Select all available suggestions" :checked="allSelected" :disabled="!!deciding" @change="selectAll($event.target.checked)" />
-                Select all ready suggestions
-              </label>
-              <p v-else class="text-sm text-base-content/55">Review each APP item against its proposed NSPL products.</p>
-              <div v-if="canEdit && pendingMatches.length" class="flex flex-wrap gap-2">
-                <button class="btn btn-outline btn-sm" :disabled="!!deciding || !selectedIds.length" @click="acceptMany(false)">Accept selected ({{ selectedIds.length }})</button>
-                <button class="btn btn-primary btn-sm" :disabled="!!deciding" @click="acceptMany(true)">
-                  <span v-if="deciding === 'bulk'" class="loading loading-spinner loading-xs" />
-                  {{ deciding === 'bulk' ? 'Accepting suggestions' : `Accept all ready (${pendingMatches.length})` }}
-                </button>
+            <div class="mt-4 flex flex-col gap-3 rounded-xl border border-primary/20 bg-primary/5 p-4 sm:flex-row sm:items-center sm:justify-between">
+              <div class="flex items-center gap-3">
+                <div class="grid size-10 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary"><Icon name="lucide:save" class="size-5" /></div>
+                <div>
+                  <p class="font-medium">{{ selectedIds.length }} {{ selectedIds.length === 1 ? 'item' : 'items' }} matched locally</p>
+                  <p class="text-xs text-base-content/55">Your radio selections are kept in this browser until you save them.</p>
+                </div>
               </div>
+              <button v-if="canEdit" class="btn btn-primary" :disabled="!!deciding || !selectedIds.length" @click="acceptMany(false)">
+                <span v-if="deciding === 'bulk'" class="loading loading-spinner loading-xs" />
+                <Icon v-else name="lucide:cloud-upload" class="size-4" />
+                {{ deciding === 'bulk' ? 'Saving matches' : `Save matched items (${selectedIds.length})` }}
+              </button>
             </div>
 
-            <div class="mt-4 max-h-[58vh] space-y-4 overflow-y-auto pr-1">
-              <article v-for="match in visibleMatches" :key="match.id" class="card card-border overflow-hidden bg-base-100">
-                <header class="flex flex-wrap items-start justify-between gap-3 border-b border-base-200 bg-base-200/25 px-4 py-3 sm:px-5">
-                  <div class="flex min-w-0 items-start gap-3">
-                    <input
-                      v-if="canEdit && isAcceptable(match)"
-                      v-model="selectedIds"
-                      :value="match.id"
-                      type="checkbox"
-                      class="checkbox checkbox-sm mt-0.5"
-                      :aria-label="`Select suggestion for ${match.item?.reference_no || match.item?.id}`"
-                      :disabled="!!deciding"
-                    />
+            <div class="mt-4 space-y-3">
+              <details v-for="match in visibleMatches" :key="match.id" class="collapse-arrow collapse overflow-hidden border border-base-200 bg-base-100" :open="Boolean(nsplSelections[match.id])">
+                <summary class="collapse-title bg-base-200/25 px-4 py-3 pr-12 sm:px-5">
+                  <div class="flex flex-wrap items-start justify-between gap-3">
                     <div class="min-w-0">
                       <div class="flex flex-wrap items-center gap-2">
                         <h4 class="font-semibold">{{ match.item?.reference_no || `Item ${match.item?.id}` }}</h4>
-                        <span :class="['badge badge-sm', match.status === 'CONFIRMED' ? 'badge-soft badge-success' : match.status === 'REJECTED' ? 'badge-ghost' : productOptions(match).length ? 'badge-soft badge-warning' : 'badge-ghost']">
-                          {{ match.status === 'CONFIRMED' ? 'Accepted' : match.status === 'REJECTED' ? 'Rejected' : productOptions(match).length ? 'Review required' : 'No match' }}
+                        <span :class="['badge badge-sm', match.status === 'CONFIRMED' ? 'badge-soft badge-success' : match.status === 'REJECTED' ? 'badge-ghost' : nsplSelections[match.id] ? 'badge-soft badge-primary' : productOptions(match).length ? 'badge-soft badge-warning' : 'badge-ghost']">
+                          {{ match.status === 'CONFIRMED' ? 'Saved' : match.status === 'REJECTED' ? 'Rejected' : nsplSelections[match.id] ? 'Matched locally' : productOptions(match).length ? 'Select a match' : 'No match' }}
                         </span>
                       </div>
-                      <p class="mt-1 max-w-3xl text-sm text-base-content/65">{{ match.item?.description || 'No item description provided.' }}</p>
+                      <p class="mt-1 max-w-4xl text-sm text-base-content/65">{{ match.item?.description || 'No item description provided.' }}</p>
                     </div>
+                    <span class="badge badge-ghost whitespace-nowrap">{{ productOptions(match).length }} possible {{ productOptions(match).length === 1 ? 'match' : 'matches' }}</span>
                   </div>
-                  <span class="text-xs text-base-content/50">{{ productOptions(match).length }} {{ productOptions(match).length === 1 ? 'product' : 'products' }} found</span>
-                </header>
+                </summary>
 
-                <div class="grid lg:grid-cols-[minmax(0,1fr)_19rem]">
+                <div class="collapse-content grid p-0! lg:grid-cols-[minmax(0,1fr)_19rem]">
                   <div class="space-y-3 p-4 sm:p-5">
                     <div class="flex items-center justify-between gap-3">
                       <div>
@@ -143,18 +134,19 @@
                         :class="[
                           'block rounded-xl border p-4',
                           String(selectedProduct(match)?.id) === String(product.id) ? 'border-primary bg-primary/5' : 'border-base-200',
-                          match.status === 'PENDING' && canEdit && !match.suggested_nspl_product ? 'cursor-pointer hover:border-primary/40' : '',
+                          match.status === 'PENDING' && canEdit ? 'cursor-pointer hover:border-primary/40' : '',
                         ]"
                       >
                         <div class="flex items-start gap-3">
                           <input
-                            v-if="match.status === 'PENDING' && canEdit && !match.suggested_nspl_product"
-                            v-model="nsplSelections[match.id]"
+                            v-if="match.status === 'PENDING' && canEdit"
                             type="radio"
                             :name="`nspl-product-${match.id}`"
                             :value="product.id"
+                            :checked="String(nsplSelections[match.id]) === String(product.id)"
                             class="radio radio-primary radio-sm mt-0.5"
                             :disabled="!!deciding"
+                            @change="chooseNsplProduct(match, product.id)"
                           />
                           <div v-else class="grid size-5 shrink-0 place-items-center rounded-full bg-primary text-primary-content">
                             <Icon name="lucide:check" class="size-3" />
@@ -211,22 +203,18 @@
                         <p class="font-medium text-warning">Choose a product</p>
                         <p class="mt-1 text-xs text-base-content/60">Select the alternative that best matches the APP item before accepting.</p>
                       </div>
-                      <p class="mt-3 text-xs leading-5 text-base-content/55">Acceptance updates the NSPL product and related classification values. UNSPSC reviewer verification remains required.</p>
+                      <p class="mt-3 text-xs leading-5 text-base-content/55">This selection is stored locally. Use “Save matched items” when you have finished reviewing the APP items.</p>
                     </div>
 
-                    <div v-if="match.status === 'PENDING' && canEdit" class="mt-5 space-y-2">
-                      <button class="btn btn-primary btn-sm btn-block" :disabled="!!deciding || !isAcceptable(match)" @click="decide(match, 'CONFIRMED')">
-                        <span v-if="deciding === match.id" class="loading loading-spinner loading-xs" />
-                        <Icon v-else name="lucide:check" class="size-4" />Accept selected product
-                      </button>
-                      <button class="btn btn-ghost btn-sm btn-block" :disabled="!!deciding" @click="decide(match, 'REJECTED')">Reject suggestion</button>
+                    <div v-if="match.status === 'PENDING' && nsplSelections[match.id]" class="mt-5">
+                      <span class="badge badge-soft badge-primary"><Icon name="lucide:hard-drive-download" class="size-3.5" />Saved locally</span>
                     </div>
                     <div v-else class="mt-5">
                       <span :class="['badge', match.status === 'CONFIRMED' ? 'badge-soft badge-success' : 'badge-ghost']">{{ match.status }}</span>
                     </div>
                   </aside>
                 </div>
-              </article>
+              </details>
             </div>
           </template>
 
@@ -320,11 +308,17 @@ const reviewCounts = computed(() => matches.value.reduce((counts, match) => {
   else counts.unmatched++;
   return counts;
 }, { accepted: 0, rejected: 0, review: 0, unmatched: 0 }));
-const productOptions = match => match.suggested_nspl_product
-  ? [{ ...match.suggested_nspl_product, price_analysis: match.price_analysis }]
-  : match.nspl_candidates ?? [];
-const selectedProduct = match => match.suggested_nspl_product
-  ?? productOptions(match).find(product => String(product.id) === String(nsplSelections.value[match.id]));
+const productOptions = (match) => {
+  const products = match.nspl_candidates ?? [];
+  const suggested = match.suggested_nspl_product
+    ? [{ ...match.suggested_nspl_product, price_analysis: match.price_analysis }]
+    : [];
+
+  return [...new Map([...suggested, ...products].map(product => [String(product.id), product])).values()];
+};
+const selectedProduct = (match) => productOptions(match)
+  .find(product => String(product.id) === String(nsplSelections.value[match.id]))
+  ?? (match.status !== 'PENDING' ? match.suggested_nspl_product : null);
 const priceTone = analysis => ({
   WITHIN_RANGE: 'border-success/25 bg-success/5 text-success',
   ABOVE_RANGE: 'border-warning/30 bg-warning/5 text-warning',
@@ -343,6 +337,39 @@ const priceComparisons = (match) => {
 const priceStatus = (analysis) => ({ WITHIN_RANGE: 'Within ±10%', ABOVE_RANGE: 'Above +10%', BELOW_RANGE: 'Below −10%' })[analysis?.status] || 'Cannot compare';
 const formatPrice = (value, currency) => value == null ? 'Not available' : `${currency || 'Currency not set'} ${Number(value).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 4 })}`;
 const selectAll = checked => { selectedIds.value = checked ? pendingMatches.value.map(match => match.id) : []; };
+const selectionStorageKey = computed(() => `egp:nspl-selections:${props.planUuid}:${run.value?.id ?? 'latest'}`);
+const persistNsplSelections = () => {
+  if (!import.meta.client || props.scanType !== 'NSPL') return;
+  globalThis.localStorage.setItem(selectionStorageKey.value, JSON.stringify(nsplSelections.value));
+};
+const clearStoredNsplSelections = () => {
+  if (!import.meta.client || props.scanType !== 'NSPL') return;
+  globalThis.localStorage.removeItem(selectionStorageKey.value);
+};
+const restoreNsplSelections = () => {
+  if (!import.meta.client || props.scanType !== 'NSPL' || !run.value) return;
+
+  try {
+    const stored = JSON.parse(globalThis.localStorage.getItem(selectionStorageKey.value) || '{}');
+    const restored = {};
+    for (const match of matches.value) {
+      if (match.status !== 'PENDING') continue;
+      const productId = stored[match.id];
+      if (productOptions(match).some(product => String(product.id) === String(productId))) restored[match.id] = productId;
+    }
+    nsplSelections.value = restored;
+    selectedIds.value = matches.value.filter(match => restored[match.id] !== undefined).map(match => match.id);
+  } catch {
+    clearStoredNsplSelections();
+    nsplSelections.value = {};
+    selectedIds.value = [];
+  }
+};
+const chooseNsplProduct = (match, productId) => {
+  nsplSelections.value = { ...nsplSelections.value, [match.id]: productId };
+  if (!selectedIds.value.includes(match.id)) selectedIds.value = [...selectedIds.value, match.id];
+  persistNsplSelections();
+};
 const isRunning = computed(() => ['PENDING', 'PROCESSING'].includes(run.value?.status));
 const statusLabel = computed(() => {
   if (!run.value) return 'Ready to scan';
@@ -368,6 +395,7 @@ const load = async () => {
     scanStep.value = data.value?.data?.scan_steps?.steps?.[props.scanType] ?? null;
     if (previousStatus && previousStatus !== run.value?.status) store.analysisReport = null;
     errorMessage.value = '';
+    if (run.value?.status === 'COMPLETED') restoreNsplSelections();
   } else {
     errorMessage.value = error.value?.data?.message || 'Could not load classification scan progress.';
   }
@@ -391,6 +419,7 @@ const close = () => {
 
 const start = async () => {
   resultPage.value = 1;
+  clearStoredNsplSelections();
   nsplSelections.value = {};
   store.analysisReport = null;
   starting.value = true;
@@ -426,6 +455,9 @@ const decide = async (match, decision) => {
   deciding.value = null;
   if (status.value) {
     selectedIds.value = selectedIds.value.filter(id => id !== match.id);
+    const { [match.id]: _saved, ...remainingSelections } = nsplSelections.value;
+    nsplSelections.value = remainingSelections;
+    persistNsplSelections();
     await Promise.all([load(), store.fetchPlanItems(props.planUuid, { page: 1 })]);
   } else {
     errorMessage.value = error.value?.data?.message || 'Could not save the classification decision.';
@@ -443,6 +475,7 @@ const acceptMany = async (all) => {
   let accepted = 0;
   let skipped = 0;
   const failures = [];
+  const submittedIds = new Set();
   const runId = run.value.id;
   for (let offset = 0; offset < choices.length; offset += 500) {
     const batch = choices.slice(offset, offset + 500);
@@ -456,12 +489,16 @@ const acceptMany = async (all) => {
     }
     accepted += data.value.data.accepted;
     skipped += data.value.data.skipped || 0;
+    const failedIds = new Set(data.value.data.failures.map(failure => String(failure.id)));
+    batch.filter(match => !failedIds.has(String(match.id))).forEach(match => submittedIds.add(String(match.id)));
     for (const failure of data.value.data.failures) {
       const match = batch.find(row => row.id === failure.id);
       failures.push(`${match?.item?.reference_no || `Item ${match?.item?.id}`}: ${failure.message}`);
     }
     decisionSummary.value = `Processed ${Math.min(offset + 500, choices.length)} of ${choices.length} suggestions. ${accepted} accepted.`;
   }
+  nsplSelections.value = Object.fromEntries(Object.entries(nsplSelections.value).filter(([id]) => !submittedIds.has(String(id))));
+  persistNsplSelections();
   selectedIds.value = [];
   await Promise.all([load(), store.fetchPlanItems(props.planUuid, { page: 1 })]);
   deciding.value = null;
@@ -470,6 +507,6 @@ const acceptMany = async (all) => {
 };
 
 onMounted(load);
-watch(() => props.planUuid, () => { run.value = null; selectedIds.value = []; decisionSummary.value = ''; load(); });
+watch(() => props.planUuid, () => { run.value = null; nsplSelections.value = {}; selectedIds.value = []; decisionSummary.value = ''; load(); });
 onBeforeUnmount(() => { disposed = true; requestId++; stopPoll(); });
 </script>
