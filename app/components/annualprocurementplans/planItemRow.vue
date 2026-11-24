@@ -38,12 +38,12 @@
       <div class="flex items-center justify-end gap-1">
         <AnnualprocurementplansItemView :item="item" />
         <AnnualprocurementplansItemAmend v-if="canEdit && canAmend" :plan-uuid="planUuid" :item="item" />
-        <template v-if="canEdit && canEditPlan">
-          <button v-if="isApprovedExemptionItem" class="btn btn-info btn-xs" disabled title="Approved exemption items cannot be edited">
-            <Icon name="lucide:edit" />
-          </button>
-          <AnnualprocurementplansItemEdit v-else :plan-uuid="planUuid" :item="item" />
-        </template>
+        <AnnualprocurementplansItemEdit v-if="canEdit && canEditPlan && !isApprovedExemptionItem" :plan-uuid="planUuid" :item="item" />
+        <AnnualprocurementplansItemReferenceEdit
+          v-if="canEdit && canCorrectReference && (isApprovedExemptionItem || !canEditPlan)"
+          :plan-uuid="planUuid"
+          :item="item"
+        />
         <template v-if="canDelete && canEditPlan">
           <button v-if="isApprovedExemptionItem" class="btn btn-error btn-xs" disabled title="Approved exemption items cannot be deleted">
             <Icon name="lucide:trash-2" />
@@ -62,6 +62,7 @@ const props = defineProps({
   canEdit: { type: Boolean, default: false },
   canDelete: { type: Boolean, default: false },
   canEditPlan: { type: Boolean, default: false },
+  canCorrectReference: { type: Boolean, default: false },
   planStatus: { type: String, default: '' },
 });
 

@@ -126,6 +126,7 @@
                       :can-edit="canEdit"
                       :can-delete="canDelete"
                       :can-edit-plan="canEditPlan"
+                      :can-correct-reference="canCorrectReference"
                       :plan-status="plan?.status"
                     />
                   </tbody>
@@ -399,6 +400,13 @@ const isDraft = computed(() => store.isDraft(plan.value));
 const showPreparationSteps = computed(() => !!plan.value?.status && !['AUTHORIZED', 'ACTIVE', 'ARCHIVED'].includes(plan.value.status));
 // Only the creator of a draft can edit; everyone else sees a read-only view.
 const canEditPlan = computed(() => isDraft.value && store.workflowIsCreator);
+// A submitted plan remains open only for correcting item references until its
+// final approval. All other item fields continue to use the draft-only guard.
+const canCorrectReference = computed(() =>
+  !!plan.value?.status
+  && !['AUTHORIZED', 'ACTIVE', 'ARCHIVED'].includes(plan.value.status)
+  && store.workflowIsCreator,
+);
 const peTransitions = computed(() =>
   adminAuthorizationComments(store.transitions ?? []),
 );
