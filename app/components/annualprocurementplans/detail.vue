@@ -5,19 +5,15 @@
       <div class="flex min-w-max items-center border-l-4 border-primary">
         <div class="flex shrink-0 items-center gap-3 px-4 py-3">
           <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary"><Icon name="lucide:clipboard-list" class="h-4 w-4" /></span>
-          <div>
-            <h1 class="text-lg font-bold tracking-tight">{{ plan?.year ?? '…' }}</h1>
-            <p v-if="plan?.submitted_at" class="flex items-center gap-1 text-xs text-base-content/50"><Icon name="lucide:send" class="h-3 w-3" />{{ plan.submitted_by_user?.name || plan.submittedBy?.name || 'Submitted' }}</p>
-          </div>
+          <h1 class="text-lg font-bold tracking-tight">{{ plan?.year ?? '…' }}</h1>
         </div>
 
         <AnnualprocurementplansStatus :plan-uuid="planUuid" :plan="plan" />
 
         <dl class="flex shrink-0 items-stretch">
-          <div class="flex items-center gap-2 border-l border-base-200 px-4 py-3"><dt class="flex items-center gap-1.5 text-xs text-base-content/50"><Icon name="lucide:wallet" class="h-3.5 w-3.5" />Total budget</dt><dd class="font-mono text-sm font-bold" :title="formatAmount(planTotal)"><span class="mr-1 text-xs text-base-content/50">{{ currencySymbol }}</span>{{ formatAmount(planTotal) }}</dd></div>
+          <div class="flex items-center gap-2 border-l border-base-200 px-4 py-3"><dt class="flex items-center gap-1.5 text-xs text-base-content/50"><Icon name="lucide:wallet" class="h-3.5 w-3.5" />Total budget</dt><dd class="font-mono text-sm font-bold" :title="`${plan?.currency?.code || currencySymbol} ${formatAmount(planTotal)}`"><span class="mr-1 text-xs font-semibold text-base-content/55">{{ plan?.currency?.code || currencySymbol }}</span>{{ formatAmount(planTotal) }}</dd></div>
           <div class="flex items-center gap-2 border-l border-base-200 px-4 py-3"><dt class="flex items-center gap-1.5 text-xs text-base-content/50"><Icon name="lucide:list" class="h-3.5 w-3.5" />Plan items</dt><dd class="text-sm font-bold">{{ totalItems }}</dd></div>
           <div class="flex items-center gap-2 border-l border-base-200 px-4 py-3"><dt class="flex items-center gap-1.5 text-xs text-base-content/50"><Icon name="lucide:alert-triangle" class="h-3.5 w-3.5" />Issues</dt><dd class="text-sm font-bold" :class="unresolvedCount > 0 ? 'text-warning' : 'text-success'">{{ unresolvedCount }}</dd></div>
-          <div class="flex items-center gap-2 border-l border-base-200 px-4 py-3"><dt class="flex items-center gap-1.5 text-xs text-base-content/50"><Icon name="lucide:coins" class="h-3.5 w-3.5" />Currency</dt><dd class="text-sm font-bold text-primary">{{ plan?.currency?.code || 'Not specified' }}</dd></div>
         </dl>
 
         <div class="flex shrink-0 items-center gap-2 border-l border-base-200 px-4 py-2">

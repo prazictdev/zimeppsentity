@@ -17,4 +17,11 @@ test('renders plan and payment status inline with the summary metrics', () => {
   assert.match(statusSource, /class="flex shrink-0 items-center"/);
   assert.doesNotMatch(statusSource, /flex-col/);
   assert.doesNotMatch(statusSource, /border-t/);
+  assert.doesNotMatch(statusSource, />Plan status<|>Payment</);
+});
+
+test('removes submitted metadata and the standalone currency section', () => {
+  assert.doesNotMatch(detailSource, /plan\?\.submitted_at/);
+  assert.doesNotMatch(detailSource, />Currency</);
+  assert.match(detailSource, /plan\?\.currency\?\.code \|\| currencySymbol/);
 });
