@@ -64,40 +64,49 @@
       </section>
 
       <section class="overflow-hidden rounded-2xl border border-base-200 bg-base-100 shadow-sm">
-        <header class="border-b border-base-200 px-4 py-4 sm:px-5">
-          <div class="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
-            <div>
-              <h2 class="font-semibold text-base-content">Committee library</h2>
-              <p class="mt-0.5 text-sm text-base-content/55">Search, review and maintain your organisation’s reusable committees.</p>
+        <header class="border-b border-base-200 p-4 sm:p-5">
+          <div class="flex flex-wrap items-start justify-between gap-3">
+            <div class="flex min-w-0 items-start gap-3">
+              <div class="grid size-10 shrink-0 place-items-center rounded-lg bg-base-200 text-base-content/65">
+                <Icon name="lucide:list-filter" class="size-5" />
+              </div>
+              <div class="min-w-0">
+                <div class="flex flex-wrap items-center gap-2">
+                  <h2 class="text-lg font-semibold tracking-tight text-base-content">Committee library</h2>
+                  <span class="badge badge-soft badge-neutral badge-sm tabular-nums">
+                    {{ filtered.length }} of {{ store.items.length }} shown
+                  </span>
+                </div>
+                <p class="mt-1 text-sm text-base-content/55">Find and manage reusable committees for your procurement plans.</p>
+              </div>
             </div>
-            <div class="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
-              <label class="input w-full gap-2 sm:w-72">
-                <Icon name="lucide:search" class="size-4 text-base-content/45" />
-                <input v-model.trim="search" type="search" class="grow" placeholder="Search name or organisation" aria-label="Search committees" />
-                <button v-if="search" type="button" class="btn btn-ghost btn-circle btn-xs" aria-label="Clear search" @click="search = ''">
-                  <Icon name="lucide:x" class="size-3.5" />
-                </button>
-              </label>
-              <select v-model="type" class="select w-full sm:w-44" aria-label="Filter committee type">
-                <option value="">All types</option>
-                <option value="EVALUATION">Evaluation</option>
-                <option value="DISPOSAL">Disposal</option>
-                <option value="PMU">PMU</option>
-              </select>
-              <label class="flex min-h-10 cursor-pointer items-center gap-2 rounded-lg border border-base-300 px-3 text-sm hover:bg-base-200/50">
-                <input v-model="showArchived" type="checkbox" class="checkbox checkbox-primary checkbox-sm" />
-                Include archived
-              </label>
-            </div>
-          </div>
-          <div class="mt-4 flex flex-wrap items-center justify-between gap-2 border-t border-base-200 pt-3 text-sm">
-            <p class="text-base-content/60">
-              Showing <span class="font-semibold text-base-content">{{ filtered.length }}</span>
-              of <span class="font-semibold text-base-content">{{ store.items.length }}</span> committees
-            </p>
             <button v-if="hasFilters" type="button" class="btn btn-ghost btn-sm" @click="clearFilters">
               <Icon name="lucide:rotate-ccw" class="size-4" />Reset filters
             </button>
+          </div>
+
+          <div class="mt-4 grid gap-3 rounded-xl bg-base-200/55 p-3 md:grid-cols-[minmax(16rem,1fr)_13rem_auto] md:items-center">
+            <label class="input w-full bg-base-100 shadow-xs">
+              <Icon name="lucide:search" class="size-4 shrink-0 text-base-content/45" />
+              <input v-model.trim="search" type="search" class="min-w-0 grow" placeholder="Search committees, members or organisations" aria-label="Search committees" />
+              <button v-if="search" type="button" class="btn btn-ghost btn-circle btn-xs" aria-label="Clear search" @click="search = ''">
+                <Icon name="lucide:x" class="size-3.5" />
+              </button>
+            </label>
+
+            <select v-model="type" class="select w-full bg-base-100 shadow-xs" aria-label="Filter committee type">
+              <option value="">All committee types</option>
+              <option value="EVALUATION">Evaluation</option>
+              <option value="DISPOSAL">Disposal</option>
+              <option value="PMU">PMU</option>
+            </select>
+
+            <label class="flex min-h-10 cursor-pointer items-center justify-between gap-4 rounded-lg border border-base-300 bg-base-100 px-3.5 text-sm shadow-xs md:justify-start">
+              <span class="inline-flex items-center gap-2 whitespace-nowrap">
+                <Icon name="lucide:archive" class="size-4 text-base-content/45" />Archived
+              </span>
+              <input v-model="showArchived" type="checkbox" class="toggle toggle-primary toggle-sm" aria-label="Include archived committees" />
+            </label>
           </div>
         </header>
 
