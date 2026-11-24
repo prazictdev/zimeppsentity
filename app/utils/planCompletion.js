@@ -15,7 +15,6 @@ export function getPlanCompletionStages({ report, itemCount, pmuCount, unresolve
     { key: 'pmu', label: 'PMU', tab: 'pmu', complete: pmuCount > 0, message: `${pmuCount} PMU member(s) recorded.` },
     structural('disposal_committee_has_members', 'Disposal Committee', 'disposalcommittee'),
     structural('required_documents_uploaded', 'Required Attachments', 'attachments'),
-    { key: 'analysis', label: 'Item compliance', tab: 'items', complete: report?.can_submit === true, message: report?.can_submit ? 'Plan analysis passed.' : 'Use Analyze Plan to review outstanding checks.' },
     { key: 'history', label: 'Workflow History', tab: 'history', navigationOnly: true, icon: 'lucide:history', message: 'View plan workflow activity and comments.' },
   ];
 }

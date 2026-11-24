@@ -16,9 +16,13 @@
           v-for="stage in stages"
           :key="stage.key"
           type="button"
-          :class="['btn btn-ghost btn-xs h-7 gap-1.5 border border-base-200 font-normal', activeTab === stage.tab && stage.key !== 'analysis' ? 'btn-active' : '']"
+          :class="[
+            'btn btn-xs h-7 gap-1.5 border font-normal',
+            stage.complete === true ? 'btn-success btn-soft border-success/30' : 'btn-ghost border-base-200',
+            activeTab === stage.tab ? 'btn-active' : '',
+          ]"
           :title="stage.message"
-          :aria-pressed="activeTab === stage.tab && stage.key !== 'analysis'"
+          :aria-pressed="activeTab === stage.tab"
           @click="$emit('select', stage.tab)"
         >
           <Icon
