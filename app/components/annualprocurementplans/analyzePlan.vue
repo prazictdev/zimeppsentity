@@ -189,9 +189,9 @@
 
               <div
                 v-if="tier2Exemptions.count > 0"
-                class="mt-3 rounded-lg border border-info/30 bg-info/5 p-4"
+                class="mt-3 overflow-hidden rounded-lg border border-info/30 bg-base-100"
               >
-                <div class="flex flex-wrap items-start justify-between gap-3">
+                <div class="flex flex-wrap items-start justify-between gap-3 border-b border-info/20 bg-info/5 px-4 py-3">
                   <div>
                     <div class="flex items-center gap-2 font-semibold text-info">
                       <Icon name="lucide:badge-check" class="h-5 w-5" />
@@ -212,58 +212,51 @@
                   </div>
                 </div>
 
-                <div class="mt-3 grid gap-3 lg:grid-cols-2">
-                  <div
-                    v-for="group in tier2Exemptions.groups"
-                    :key="group.procurementgroup_id ?? group.procurementgroup_name"
-                    class="rounded-md border border-base-200 bg-base-100 p-3"
-                  >
-                    <div class="flex flex-wrap items-center justify-between gap-2 border-b border-base-200 pb-2">
-                      <div>
-                        <p class="font-semibold">{{ group.procurementgroup_name }}</p>
-                        <p v-if="group.procurementgroup_code" class="text-xs text-base-content/60">
-                          {{ group.procurementgroup_code }}
-                        </p>
-                      </div>
-                      <div class="text-right text-xs">
-                        <p>{{ group.count }} exempted item{{ group.count === 1 ? '' : 's' }}</p>
-                        <p class="font-mono text-base-content/70">{{ formatAmount(group.total_value) }}</p>
-                      </div>
-                    </div>
-
-                    <div class="mt-2 space-y-2">
-                      <div
-                        v-for="item in group.items"
-                        :key="item.item_id"
-                        class="rounded bg-base-200/40 p-2 text-sm"
-                      >
-                        <div class="flex flex-wrap items-start justify-between gap-2">
-                          <div class="min-w-0">
-                            <p class="font-medium">
-                              <span class="mr-2 font-mono text-xs text-base-content/60">{{ item.reference_no || '—' }}</span>
-                              {{ item.description }}
-                            </p>
-                            <p class="text-xs text-base-content/60">
-                              {{ item.procurementmethod_name || 'Method not set' }} · {{ formatAmount(item.total_cost) }}
-                            </p>
+                <div class="overflow-x-auto">
+                  <table class="table table-sm">
+                    <thead>
+                      <tr>
+                        <th>Reference</th>
+                        <th>Item</th>
+                        <th>Procurement</th>
+                        <th>Approved exemption</th>
+                        <th>Approved terms</th>
+                        <th class="text-right">Value</th>
+                        <th>Status</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr v-for="item in exemptionRows" :key="item.item_id">
+                        <td class="font-mono text-xs">{{ item.reference_no || '—' }}</td>
+                        <td class="min-w-56">
+                          <p class="font-medium">{{ item.description }}</p>
+                        </td>
+                        <td class="min-w-44 text-xs">
+                          <p class="font-medium">{{ item.procurementgroup_name }}</p>
+                          <p class="text-base-content/60">{{ item.procurementmethod_name || 'Method not set' }}</p>
+                        </td>
+                        <td class="min-w-56">
+                          <div class="flex flex-wrap gap-1">
+                            <span
+                              v-for="ground in item.grounds"
+                              :key="`${item.item_id}-${ground.behavior_handler}`"
+                              class="badge badge-info badge-outline badge-sm"
+                              :title="ground.justification || ground.name"
+                            >
+                              {{ exemptionGroundName(ground) }}
+                            </span>
                           </div>
-                        </div>
-                        <div class="mt-2 flex flex-wrap gap-1">
-                          <span
-                            v-for="ground in item.grounds"
-                            :key="`${item.item_id}-${ground.behavior_handler}`"
-                            class="badge badge-info badge-outline badge-sm"
-                            :title="ground.justification || ground.name"
-                          >
-                            {{ ground.name || ground.code || ground.behavior_handler }}
-                            <template v-if="ground.approved_terms?.requested_advertising_days">
-                              · {{ ground.approved_terms.requested_advertising_days }} days
-                            </template>
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+                        </td>
+                        <td class="min-w-48 text-xs text-base-content/70">
+                          {{ approvedTermsSummary(item.grounds) }}
+                        </td>
+                        <td class="text-right font-mono text-xs">{{ formatAmount(item.total_cost) }}</td>
+                        <td>
+                          <span class="badge badge-success badge-outline badge-sm whitespace-nowrap">Excluded from Tier 2</span>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
                 </div>
               </div>
 
@@ -614,6 +607,24 @@ const tier2Exemptions = computed(() => report.value?.tier2?.exemptions ?? ({
   total_value: 0,
   groups: [],
 }));
+const exemptionRows = computed(() => tier2Exemptions.value.groups.flatMap(group =>
+  (group.items ?? []).map(item => ({
+    ...item,
+    procurementgroup_name: group.procurementgroup_name,
+    procurementgroup_code: group.procurementgroup_code,
+  })),
+));
+const exemptionGroundName = ground => ground.name || ground.code || ground.behavior_handler || 'Approved exemption';
+const approvedTermsSummary = (grounds = []) => {
+  const summaries = grounds.map((ground) => {
+    const terms = ground.approved_terms ?? {};
+    if (terms.requested_advertising_days != null) {
+      return `${terms.requested_advertising_days} advertising days`;
+    }
+    return ground.justification || 'Approved as requested';
+  });
+  return summaries.join(' · ') || 'Approved as requested';
+};
 
 // Tier 2 export/upload state.
 const fixesFileInput = ref(null);
