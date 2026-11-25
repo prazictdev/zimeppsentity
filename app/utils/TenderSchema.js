@@ -26,7 +26,8 @@ export const TenderStep1Schema = yup.object({
     is: 'EXTERNAL_API',
     then: schema => schema.required('Select a pending external procurement request'),
   }),
-  projectname: yup.string().nullable().max(255),
+  project_id: yup.number().typeError('Select a project').required('Project is required'),
+  project_milestone_id: yup.number().typeError('Select a project milestone').required('Project milestone is required'),
   user_requisition_date: yup
     .date()
     .transform((value, originalValue) => originalValue === '' ? null : value)

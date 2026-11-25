@@ -173,19 +173,27 @@
                 Project and timing
               </h2>
               <p class="mt-1 text-sm leading-relaxed text-base-content/60">
-                Link this tender to an internal project label, delivery expectations, and an optional priority for planning.
+                Link this tender to a registered project milestone so procurement activity can be tracked against delivery.
               </p>
             </div>
           </header>
           <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <label class="fieldset sm:col-span-2">
-              <TendersFieldLegend help-key="projectname" label="Project name" />
-              <input
-                v-model="form.projectname"
-                type="text"
-                class="input input-bordered w-full"
-                placeholder="Optional — internal programme or project code"
-              />
+            <label class="fieldset">
+              <TendersFieldLegend help-key="project_id" label="Project" />
+              <select v-model="form.project_id" class="select select-bordered w-full" required>
+                <option :value="null" disabled>Select an active project</option>
+                <option v-for="project in projects" :key="project.id" :value="project.id">{{ project.title }}{{ project.location ? ` — ${project.location}` : '' }}</option>
+              </select>
+              <span v-if="errors.project_id" class="label text-error">{{ errors.project_id }}</span>
+              <NuxtLink v-if="!projects.length" to="/projects" class="link link-primary mt-1 text-xs">Register a project first</NuxtLink>
+            </label>
+            <label class="fieldset">
+              <TendersFieldLegend help-key="project_milestone_id" label="Project milestone" />
+              <select v-model="form.project_milestone_id" class="select select-bordered w-full" :disabled="!selectedProject" required>
+                <option :value="null" disabled>{{ selectedProject ? 'Select a milestone' : 'Select a project first' }}</option>
+                <option v-for="milestone in availableProjectMilestones" :key="milestone.id" :value="milestone.id">{{ milestone.title }} · {{ formatMilestoneDate(milestone.due_date) }}</option>
+              </select>
+              <span v-if="errors.project_milestone_id" class="label text-error">{{ errors.project_milestone_id }}</span>
             </label>
             <label class="fieldset">
               <TendersFieldLegend help-key="priority" label="Priority" />
@@ -716,6 +724,7 @@ const identity = useSanctumUser()
 const { getCompanyPlan } = useDashboardHelper()
 const { getProcurementGroups, getProcurementMethods } = useAnnualprocurementplanHelper()
 const { getBidOpeningTypes, getBidValidityPeriodFees, getSupplierCompanies, getAllowedSelectionMethods, getPendingExternalProcurementRequests, createManualExternalProcurementRequest, updateExternalProcurementRequest, deleteExternalProcurementRequest, createTender, updateTender, getTender, getTenderSupportingDocument } = useTenderHelper()
+const { getProjectOptions } = useProjectHelper()
 const { presignAndUpload } = useS3Upload()
 
 const procurementGroups = ref([])
@@ -727,6 +736,7 @@ const hydratingExisting = ref(false)
 let evaluationMethodRequest = 0
 const bidOpeningTypes = ref([])
 const bidValidityFees = ref([])
+const projects = ref([])
 const supplierCompanies = ref([])
 const selectedSupplierCompanies = ref([])
 const loadingSupplierCompanies = ref(false)
@@ -816,7 +826,8 @@ const form = ref({
   supporting_document_mime_type: null,
   supporting_document_size: null,
   externalprocurementrequest_id: null,
-  projectname: '',
+  project_id: null,
+  project_milestone_id: null,
   user_requisition_date: '',
   delivery: '',
   priority: null,
@@ -849,6 +860,12 @@ const localDraftStorageKey = computed(() => {
 
 const submitLabel = computed(() => props.mode === 'edit' ? 'Save changes' : 'Save & continue')
 const selectedExternalRequest = computed(() => externalRequests.value.find(request => request.id === form.value.externalprocurementrequest_id) ?? null)
+const selectedProject = computed(() => projects.value.find(project => Number(project.id) === Number(form.value.project_id)) ?? null)
+const availableProjectMilestones = computed(() => selectedProject.value?.milestones ?? [])
+const formatMilestoneDate = value => value ? new Intl.DateTimeFormat('en-ZW', { dateStyle: 'medium' }).format(new Date(value)) : 'No date'
+watch(() => form.value.project_id, (projectId, previousId) => {
+  if (!hydratingExisting.value && previousId != null && Number(projectId) !== Number(previousId)) form.value.project_milestone_id = null
+})
 const externalRequestLocked = computed(() => props.mode === 'edit')
 const filteredExternalRequests = computed(() => {
   const term = externalRequestSearch.value.toLowerCase()
@@ -966,12 +983,13 @@ watch(bidValidityOptions, (options) => {
 
 async function loadLookups() {
   loadingExternalRequests.value = true
-  const [groupsRes, methodsRes, openingRes, validityRes, externalRes] = await Promise.all([
+  const [groupsRes, methodsRes, openingRes, validityRes, externalRes, projectsRes] = await Promise.all([
     getProcurementGroups(),
     getProcurementMethods(),
     getBidOpeningTypes(),
     getBidValidityPeriodFees(),
     getPendingExternalProcurementRequests(),
+    getProjectOptions(),
   ])
 
   procurementGroups.value = groupsRes.data.value?.data ?? []
@@ -979,6 +997,7 @@ async function loadLookups() {
   bidOpeningTypes.value = openingRes.data.value?.data ?? []
   bidValidityFees.value = validityRes.data.value?.data ?? []
   externalRequests.value = externalRes.data.value?.data ?? []
+  projects.value = projectsRes.data.value?.data ?? []
   loadingExternalRequests.value = false
 }
 
@@ -1399,7 +1418,8 @@ async function loadExisting() {
     supporting_document_mime_type: t.supporting_document_mime_type ?? null,
     supporting_document_size: t.supporting_document_size ?? null,
     externalprocurementrequest_id: t.externalprocurementrequest_id ?? null,
-    projectname: t.projectname ?? '',
+    project_id: t.project_id ?? null,
+    project_milestone_id: t.project_milestone_id ?? null,
     user_requisition_date: (t.user_requisition_date ?? '').slice(0, 10),
     delivery: t.delivery ?? '',
     priority: normalizePriorityFromApi(t.priority),

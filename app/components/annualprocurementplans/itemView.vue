@@ -1,7 +1,8 @@
 <template>
   <div>
-    <button class="btn btn-ghost btn-xs" aria-label="View plan item" @click="openModal">
+    <button :class="label ? 'btn btn-outline btn-xs gap-1.5' : 'btn btn-ghost btn-xs'" aria-label="View plan item" @click="openModal">
       <Icon name="lucide:eye" />
+      <span v-if="label">{{ label }}</span>
     </button>
 
     <dialog :id="`view_apitem_modal_${item.id}`" class="modal modal-bottom sm:modal-middle">
@@ -150,6 +151,7 @@
 <script setup>
 const props = defineProps({
   item: { type: Object, required: true },
+  label: { type: String, default: '' },
 });
 
 const openModal = () =>

@@ -9,9 +9,13 @@ export const TENDER_FIELD_HELP = {
     title: 'Description',
     intro: 'A summary of what you are buying, including scope, quantities, location, or special requirements. Bidders use this to decide whether to participate.',
   },
-  projectname: {
-    title: 'Project name',
-    intro: 'Optional internal label (programme, project code, or cost centre) to link this tender to your organisation’s planning or reporting.',
+  project_id: {
+    title: 'Project',
+    intro: 'The registered running project that this procurement activity supports.',
+  },
+  project_milestone_id: {
+    title: 'Project milestone',
+    intro: 'The specific delivery milestone that this tender is intended to achieve.',
   },
   user_requisition_date: {
     title: 'User requisition date',

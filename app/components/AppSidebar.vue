@@ -94,6 +94,7 @@ const { logoutUser } = useAuthHelper()
 const { can } = useCheckPermission()
 
 const tenderManagementSubmenus = [
+  ...(can('can.access.projects') ? [{ id: 'projects', name: 'Projects', url: '/projects', icon: 'lucide:briefcase-business' }] : []),
   { id: 'my-evaluations', name: 'My Evaluations', url: '/evaluations', icon: 'lucide:clipboard-check' },
   { id: 'tender-awaiting-approval', name: 'Awaiting approval', url: '/tenders/awaiting-approval', icon: 'lucide:clock-3' },
   { id: 'tender-closed', name: 'Closed tenders', url: '/tenders/closed', icon: 'lucide:lock-keyhole' },

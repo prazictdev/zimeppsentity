@@ -34,6 +34,24 @@
         </span>
       </div>
 
+      <div v-if="timeline?.resolved" class="alert border border-primary/25 bg-primary/5 sm:alert-horizontal">
+        <Icon name="lucide:calendar-check-2" class="h-6 w-6 shrink-0 text-primary" />
+        <div class="flex-1">
+          <h3 class="font-semibold">Automatic statutory date correction</h3>
+          <p class="mt-0.5 text-sm text-base-content/65">
+            Enter the publication date, then apply the compliant closing and opening dates calculated from the configured advertising period and working-day calendar.
+          </p>
+          <p v-if="suggestedClosingDate" class="mt-2 text-sm font-medium">
+            Required closing: {{ formatDisplayDate(suggestedClosingDate) }} · Suggested opening: {{ formatDisplayDateTime(suggestedOpeningForCurrentTime) }}
+          </p>
+        </div>
+        <button type="button" class="btn btn-primary btn-sm" :disabled="!form.publication_start_date || calculatingClosing" @click="applyCompliantDates">
+          <span v-if="calculatingClosing" class="loading loading-spinner loading-xs" />
+          <Icon v-else name="lucide:wand-sparkles" class="h-4 w-4" />
+          Apply compliant dates
+        </button>
+      </div>
+
       <div v-if="explanations.length" class="card border border-base-200 bg-base-100 shadow-sm">
         <div class="card-body gap-3 p-4 sm:p-6">
           <h3 class="text-sm font-semibold">How dates are determined</h3>
@@ -158,6 +176,8 @@ const calculatingClosing = ref(false);
 const errorMessage = ref('');
 const timeline = ref(null);
 const explanations = ref([]);
+const suggestedClosingDate = ref('');
+const suggestedOpeningAt = ref('');
 const errors = reactive({});
 
 const form = reactive({
@@ -165,6 +185,13 @@ const form = reactive({
   closing_date: '',
   closing_time: '10:00',
   opening_at: '',
+});
+const suggestedOpeningForCurrentTime = computed(() => {
+  if (!suggestedClosingDate.value) return suggestedOpeningAt.value;
+  const closing = new Date(`${suggestedClosingDate.value}T${form.closing_time || '10:00'}:00`);
+  if (Number.isNaN(closing.getTime())) return suggestedOpeningAt.value;
+  closing.setMinutes(closing.getMinutes() + 30);
+  return closing.toISOString();
 });
 const { clearDraft, restoreDraft, schedulePersist, start: startDrafting } = useTenderStepDraft({
   tenderUuid: toRef(props, 'tenderUuid'),
@@ -218,9 +245,29 @@ async function recalculateClosing() {
   if (requestId !== closingCalculationRequest) return;
 
   if (!error.value) {
-    form.closing_date = data.value?.data?.suggested_closing_date ?? '';
+    suggestedClosingDate.value = data.value?.data?.suggested_closing_date ?? '';
+    suggestedOpeningAt.value = data.value?.data?.suggested_opening_at ?? '';
+    form.closing_date = suggestedClosingDate.value;
   }
   calculatingClosing.value = false;
+}
+
+async function applyCompliantDates() {
+  await recalculateClosing();
+  if (!suggestedClosingDate.value) return;
+  form.closing_date = suggestedClosingDate.value;
+  form.opening_at = toDatetimeLocal(suggestedOpeningForCurrentTime.value);
+  toast.success({ title: 'Dates corrected', message: 'The statutory closing and opening dates have been applied. Save to persist them.', position: 'topRight', layout: 2 });
+}
+
+function formatDisplayDate(value) {
+  if (!value) return '—';
+  return new Intl.DateTimeFormat('en-ZW', { dateStyle: 'medium' }).format(new Date(`${value}T00:00:00`));
+}
+
+function formatDisplayDateTime(value) {
+  if (!value) return '—';
+  return new Intl.DateTimeFormat('en-ZW', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(value));
 }
 
 function clearErrors() {
@@ -312,6 +359,8 @@ function applyPayload(payload) {
   form.opening_at = toDatetimeLocal(dates.opening_at);
   timeline.value = payload?.timeline ?? null;
   explanations.value = payload?.explanations ?? [];
+  suggestedClosingDate.value = payload?.suggested_closing_date ?? dates.closing_date ?? '';
+  suggestedOpeningAt.value = payload?.suggested_opening_at ?? '';
   if (!form.closing_date && form.publication_start_date) {
     recalculateClosing();
   }

@@ -81,6 +81,7 @@
               <div class="font-mono text-sm font-semibold tabular-nums">{{ formatAmount(item.total_cost) }}</div>
             </div>
             <span v-if="item.exemption_request_item_id != null" class="badge badge-outline badge-xs">Exemption</span>
+            <AnnualprocurementplansItemView :item="item" label="View details" />
           </li>
         </ul>
       </section>
