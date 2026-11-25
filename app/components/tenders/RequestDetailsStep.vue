@@ -430,8 +430,8 @@
               <div class="flex items-start gap-3">
                 <Icon name="lucide:route" class="mt-0.5 h-5 w-5 shrink-0 text-info" />
                 <div>
-                  <p class="font-medium">APP scope: {{ plannedCompetitionLabel }}</p>
-                  <p class="mt-1 text-xs text-base-content/60">This value was inherited from the selected APP item. Changing it is recorded as a planning variance and recalculates the tender dates.</p>
+                  <p class="font-medium">Calculated package scope: {{ plannedCompetitionLabel }}</p>
+                  <p class="mt-1 text-xs text-base-content/60">The system aggregates the full value of the APP items selected for this tender. Above the configured legal threshold, international bidding is mandatory and cannot be overridden; other changes are recorded as planning variances and recalculate the dates.</p>
                 </div>
               </div>
             </div>

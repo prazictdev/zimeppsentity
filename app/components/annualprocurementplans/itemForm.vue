@@ -46,12 +46,12 @@
     </label>
 
     <label class="fieldset">
-      <span class="fieldset-legend">Competition scope</span>
+      <span class="fieldset-legend">Preferred competition scope</span>
       <select v-model="form.competition_scope" class="select select-bordered w-full">
         <option value="DOMESTIC">Domestic</option>
         <option value="INTERNATIONAL">International</option>
       </select>
-      <span class="label text-xs text-base-content/55">Determines the minimum statutory advertising period.</span>
+      <span class="label text-xs text-base-content/55">The system recalculates this from the combined value of every APP line sharing the reference. International bidding is enforced above the legal threshold.</span>
     </label>
 
     <label class="fieldset">

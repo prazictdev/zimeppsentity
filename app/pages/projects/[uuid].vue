@@ -26,9 +26,69 @@
       </section>
     </template>
 
-    <dialog ref="milestoneDialog" class="modal"><div class="modal-box max-w-xl"><form method="dialog"><button class="btn btn-sm btn-circle btn-ghost absolute right-3 top-3">✕</button></form><h3 class="text-xl font-bold">{{ milestoneForm.uuid ? 'Edit milestone' : 'Add milestone' }}</h3>
-      <form class="mt-6 space-y-4" @submit.prevent="saveMilestone"><label class="form-control"><span class="label-text mb-1 font-medium">Milestone title</span><input v-model.trim="milestoneForm.title" class="input input-bordered w-full" required /></label><label class="form-control"><span class="label-text mb-1 font-medium">Description</span><textarea v-model.trim="milestoneForm.description" class="textarea textarea-bordered min-h-24" /></label><div class="grid gap-4 sm:grid-cols-2"><label class="form-control"><span class="label-text mb-1 font-medium">Due date</span><input v-model="milestoneForm.due_date" type="date" class="input input-bordered w-full" :min="project.start_date?.slice(0,10)" :max="project.expected_end_date?.slice(0,10)" required /></label><label class="form-control"><span class="label-text mb-1 font-medium">Status</span><select v-model="milestoneForm.status" class="select select-bordered w-full"><option value="PENDING">Pending</option><option value="IN_PROGRESS">In progress</option><option value="COMPLETED">Completed</option></select></label></div><p v-if="error" class="text-sm text-error">{{ error }}</p><div class="modal-action"><button type="button" class="btn btn-ghost" @click="milestoneDialog.close()">Cancel</button><button class="btn btn-primary" :disabled="saving"><span v-if="saving" class="loading loading-spinner loading-sm" />Save milestone</button></div></form>
-    </div><form method="dialog" class="modal-backdrop"><button>close</button></form></dialog>
+    <dialog ref="milestoneDialog" class="modal">
+      <div class="modal-box max-w-3xl overflow-hidden p-0">
+        <header class="flex items-start gap-4 border-b border-base-200 px-6 py-5 sm:px-7">
+          <div class="grid size-11 shrink-0 place-items-center rounded-box bg-primary/10 text-primary">
+            <Icon name="lucide:flag" class="size-5" />
+          </div>
+          <div class="min-w-0 flex-1">
+            <h3 class="text-xl font-bold">{{ milestoneForm.uuid ? 'Edit milestone' : 'Add milestone' }}</h3>
+            <p class="mt-1 max-w-2xl text-sm text-base-content/60">Define a measurable delivery point for {{ project?.title }}. This milestone will be available when linking tenders to the project.</p>
+          </div>
+          <form method="dialog">
+            <button class="btn btn-ghost btn-circle btn-sm" aria-label="Close milestone dialog">
+              <Icon name="lucide:x" class="size-4" />
+            </button>
+          </form>
+        </header>
+
+        <form @submit.prevent="saveMilestone">
+          <div class="grid gap-x-5 gap-y-4 px-6 py-5 sm:grid-cols-2 sm:px-7">
+            <fieldset class="fieldset sm:col-span-2">
+              <legend class="fieldset-legend">Milestone title</legend>
+              <input v-model.trim="milestoneForm.title" class="input w-full" placeholder="e.g. Site preparation completed" required />
+              <p class="label">Use a clear outcome that can be confirmed when work is delivered.</p>
+            </fieldset>
+
+            <fieldset class="fieldset sm:col-span-2">
+              <legend class="fieldset-legend">Description <span class="font-normal text-base-content/45">(optional)</span></legend>
+              <textarea v-model.trim="milestoneForm.description" class="textarea min-h-28 w-full resize-y" placeholder="Describe the expected deliverable, acceptance criteria, or dependencies." />
+            </fieldset>
+
+            <fieldset class="fieldset">
+              <legend class="fieldset-legend">Due date</legend>
+              <input v-model="milestoneForm.due_date" type="date" class="input w-full" :min="project.start_date?.slice(0,10)" :max="project.expected_end_date?.slice(0,10)" required />
+              <p class="label">Must fall within {{ date(project.start_date) }} – {{ date(project.expected_end_date) }}.</p>
+            </fieldset>
+
+            <fieldset class="fieldset">
+              <legend class="fieldset-legend">Status</legend>
+              <select v-model="milestoneForm.status" class="select w-full">
+                <option value="PENDING">Pending</option>
+                <option value="IN_PROGRESS">In progress</option>
+                <option value="COMPLETED">Completed</option>
+              </select>
+              <p class="label">Update this as delivery progresses.</p>
+            </fieldset>
+
+            <div v-if="error" role="alert" class="alert alert-error alert-soft sm:col-span-2">
+              <Icon name="lucide:circle-alert" class="size-5" />
+              <span>{{ error }}</span>
+            </div>
+          </div>
+
+          <footer class="flex flex-col-reverse gap-2 border-t border-base-200 bg-base-200/45 px-6 py-4 sm:flex-row sm:items-center sm:justify-end sm:px-7">
+            <button type="button" class="btn btn-ghost" @click="milestoneDialog.close()">Cancel</button>
+            <button type="submit" class="btn btn-primary sm:min-w-36" :disabled="saving">
+              <span v-if="saving" class="loading loading-spinner loading-sm" />
+              {{ milestoneForm.uuid ? 'Save changes' : 'Add milestone' }}
+            </button>
+          </footer>
+        </form>
+      </div>
+      <form method="dialog" class="modal-backdrop"><button>close</button></form>
+    </dialog>
   </div>
 </template>
 
