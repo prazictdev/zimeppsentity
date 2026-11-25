@@ -80,9 +80,7 @@
                     </td>
                     <td class="text-right">
                       <div class="flex justify-end gap-1">
-                        <button class="btn btn-ghost btn-xs" @click="toggleExpanded(v.uuid)">
-                          <Icon :name="expanded === v.uuid ? 'lucide:chevron-up' : 'lucide:chevron-down'" />
-                        </button>
+                        <VirementsView :plan-uuid="v.plan?.uuid" :virement="v" :can-approve="canApproveVirement" @decided="reload" />
                         <button
                           v-if="v.status === 'DRAFT' && canSubmit(v)"
                           class="btn btn-info btn-xs"
@@ -99,49 +97,6 @@
                         >
                           <Icon name="lucide:trash-2" />
                         </button>
-                        <VirementsDecide
-                          v-if="v.status === 'PENDING' && canApproveVirement"
-                          :plan-uuid="v.plan?.uuid"
-                          :virement="v"
-                          decision="approve"
-                        />
-                        <VirementsDecide
-                          v-if="v.status === 'PENDING' && canApproveVirement"
-                          :plan-uuid="v.plan?.uuid"
-                          :virement="v"
-                          decision="reject"
-                        />
-                      </div>
-                    </td>
-                  </tr>
-                  <tr v-if="expanded === v.uuid" class="bg-base-200/35">
-                    <td colspan="9">
-                      <div class="p-3">
-                        <p class="text-sm font-semibold">Line items</p>
-                        <table class="table table-sm mt-2 w-full bg-white">
-                          <thead>
-                            <tr class="text-left">
-                              <th>From</th>
-                              <th>To</th>
-                              <th class="text-right">Amount</th>
-                              <th>Reason</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            <tr v-for="(line, j) in v.items ?? []" :key="line.id ?? j">
-                              <td>
-                                <p class="text-xs font-mono">{{ line.source_item?.reference_no || '—' }}</p>
-                                <p class="max-w-xs truncate text-xs text-base-content/60" :title="line.source_item?.description">{{ line.source_item?.description }}</p>
-                              </td>
-                              <td>
-                                <p class="text-xs font-mono">{{ line.destination_item?.reference_no || '—' }}</p>
-                                <p class="max-w-xs truncate text-xs text-base-content/60" :title="line.destination_item?.description">{{ line.destination_item?.description }}</p>
-                              </td>
-                              <td class="text-right font-mono">{{ formatAmount(line.amount) }}</td>
-                              <td class="text-xs">{{ line.reason || '—' }}</td>
-                            </tr>
-                          </tbody>
-                        </table>
                       </div>
                     </td>
                   </tr>
@@ -180,7 +135,6 @@ const meta = ref({ current_page: 1, last_page: 1, total: 0, per_page: 25 });
 const loading = ref(false);
 const planFilter = ref('');
 const statusFilter = ref('');
-const expanded = ref(null);
 const submittingId = ref(null);
 
 const planOptions = computed(() => store.items ?? []);
@@ -223,10 +177,6 @@ const rowNumber = (i) => ((meta.value.current_page - 1) * meta.value.per_page) +
 const canSubmit = (v) => v.requested_by === currentUserId.value;
 
 const totalAmount = (v) => (v.items ?? []).reduce((s, line) => s + Number(line.amount || 0), 0);
-
-const toggleExpanded = (uuid) => {
-  expanded.value = expanded.value === uuid ? null : uuid;
-};
 
 const submit = async (v) => {
   submittingId.value = v.uuid;

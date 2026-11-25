@@ -1,7 +1,8 @@
 <template>
   <div>
-    <button class="btn btn-ghost btn-xs" title="Request an amendment" aria-label="Request an amendment" @click="open">
+    <button :class="buttonClass" title="Request an amendment" aria-label="Request an amendment" @click="open">
       <Icon name="lucide:file-pen-line" />
+      <span v-if="buttonLabel">{{ buttonLabel }}</span>
     </button>
 
     <dialog ref="dialog" class="modal">
@@ -14,13 +15,22 @@
           <button type="button" class="btn btn-circle btn-ghost btn-sm" aria-label="Close" @click="close"><Icon name="lucide:x" /></button>
         </div>
 
-        <div class="mt-4 grid gap-3 sm:grid-cols-3">
+        <div class="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <div class="rounded-box bg-base-200/60 p-3"><div class="text-xs text-base-content/55">Approved method</div><div class="mt-1 font-semibold">{{ methodLabel(item.procurementmethod_id) }}</div></div>
           <div class="rounded-box bg-base-200/60 p-3"><div class="text-xs text-base-content/55">Approved quantity</div><div class="mt-1 font-mono font-bold">{{ money(item.quantity) }}</div></div>
           <div class="rounded-box bg-base-200/60 p-3"><div class="text-xs text-base-content/55">Approved unit cost</div><div class="mt-1 font-mono font-bold">{{ money(item.unit_cost) }}</div></div>
           <div class="rounded-box bg-base-200/60 p-3"><div class="text-xs text-base-content/55">Approved total</div><div class="mt-1 font-mono font-bold">{{ money(item.total_cost) }}</div></div>
         </div>
 
         <form class="mt-4 space-y-4" @submit.prevent="submit">
+          <fieldset class="fieldset">
+            <legend class="fieldset-legend">Proposed procurement method</legend>
+            <select v-model.number="form.procurementmethod_id" class="select w-full" required>
+              <option disabled :value="null">Select procurement method</option>
+              <option v-for="method in store.procurementmethods" :key="method.id" :value="method.id">{{ method.name }}<template v-if="method.code"> ({{ method.code }})</template></option>
+            </select>
+            <p class="label text-xs text-base-content/55">Only methods permitted for the item’s procurement group can be approved.</p>
+          </fieldset>
           <div class="grid gap-3 sm:grid-cols-2">
             <fieldset class="fieldset">
               <legend class="fieldset-legend">Proposed quantity</legend>
@@ -58,16 +68,21 @@
 const props = defineProps({
   planUuid: { type: String, required: true },
   item: { type: Object, required: true },
+  buttonLabel: { type: String, default: '' },
+  buttonClass: { type: String, default: 'btn btn-ghost btn-xs' },
 });
 
+const store = useAnnualprocurementplanStore();
 const client = useSanctumClient();
 const dialog = ref(null);
 const saving = ref(false);
 const errorMessage = ref('');
-const form = reactive({ quantity: 0, unit_cost: 0, reason: '' });
+const form = reactive({ procurementmethod_id: null, quantity: 0, unit_cost: 0, reason: '' });
 const proposedTotal = computed(() => Number(form.quantity || 0) * Number(form.unit_cost || 0));
 
-const open = () => {
+const open = async () => {
+  await store.fetchItemLookups();
+  form.procurementmethod_id = props.item.procurementmethod_id ?? null;
   form.quantity = Number(props.item.quantity || 0);
   form.unit_cost = Number(props.item.unit_cost || 0);
   form.reason = '';
@@ -76,6 +91,7 @@ const open = () => {
 };
 const close = () => dialog.value?.close();
 const money = value => Number(value || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const methodLabel = id => store.procurementmethods.find(method => Number(method.id) === Number(id))?.name || props.item.procurementmethod?.name || 'Not set';
 
 const submit = async () => {
   saving.value = true;

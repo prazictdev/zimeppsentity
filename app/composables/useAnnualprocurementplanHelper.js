@@ -314,6 +314,15 @@ export const useAnnualprocurementplanHelper = () => {
     }
   };
 
+  const getVirement = async (planUuid, uuid) => {
+    try {
+      const data = await client(`${base}/${planUuid}/virements/${uuid}`, { method: 'GET' });
+      return { data: ref(data), error: ref(null) };
+    } catch (err) {
+      return { data: ref(null), error: ref(err) };
+    }
+  };
+
   const submitVirement = async (planUuid, uuid) => {
     try {
       const data = await client(`${base}/${planUuid}/virements/${uuid}/submit`, { method: 'POST' });
@@ -1103,6 +1112,7 @@ export const useAnnualprocurementplanHelper = () => {
     recordInvoiceRtgs,
     listVirements,
     listAllVirements,
+    getVirement,
     listAllSupplements,
     listAllInvoices,
     createVirement,

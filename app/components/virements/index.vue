@@ -59,9 +59,7 @@
               </td>
               <td class="text-right">
                 <div class="flex justify-end gap-1">
-                  <button class="btn btn-ghost btn-xs" @click="toggleExpanded(v.uuid)">
-                    <Icon :name="expanded === v.uuid ? 'lucide:chevron-up' : 'lucide:chevron-down'" />
-                  </button>
+                  <VirementsView :plan-uuid="planUuid" :virement="v" :can-approve="canApprove" />
                   <button
                     v-if="v.status === 'DRAFT' && canSubmit(v)"
                     class="btn btn-info btn-xs"
@@ -78,49 +76,6 @@
                   >
                     <Icon name="lucide:trash-2" />
                   </button>
-                  <VirementsDecide
-                    v-if="v.status === 'PENDING' && canApprove"
-                    :plan-uuid="planUuid"
-                    :virement="v"
-                    decision="approve"
-                  />
-                  <VirementsDecide
-                    v-if="v.status === 'PENDING' && canApprove"
-                    :plan-uuid="planUuid"
-                    :virement="v"
-                    decision="reject"
-                  />
-                </div>
-              </td>
-            </tr>
-            <tr v-if="expanded && expandedVirement" class="bg-base-200/40">
-              <td colspan="8">
-                <div class="p-3">
-                  <p class="text-sm font-semibold">Line items</p>
-                  <table class="table table-sm mt-2 w-full">
-                    <thead>
-                      <tr class="text-left">
-                        <th>From</th>
-                        <th>To</th>
-                        <th class="text-right">Amount</th>
-                        <th>Reason</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <tr v-for="(line, j) in expandedVirement.items" :key="line.id">
-                        <td>
-                          <p class="text-xs font-mono">{{ line.source_item?.reference_no || '—' }}</p>
-                          <p class="text-xs text-base-content/60 max-w-xs truncate" :title="line.source_item?.description">{{ line.source_item?.description }}</p>
-                        </td>
-                        <td>
-                          <p class="text-xs font-mono">{{ line.destination_item?.reference_no || '—' }}</p>
-                          <p class="text-xs text-base-content/60 max-w-xs truncate" :title="line.destination_item?.description">{{ line.destination_item?.description }}</p>
-                        </td>
-                        <td class="text-right font-mono">{{ formatAmount(line.amount) }}</td>
-                        <td class="text-xs">{{ line.reason || '—' }}</td>
-                      </tr>
-                    </tbody>
-                  </table>
                 </div>
               </td>
             </tr>
@@ -153,12 +108,7 @@ const props = defineProps({
 
 const store = useAnnualprocurementplanStore();
 const statusFilter = ref('');
-const expanded = ref(null);
 const submittingId = ref(null);
-
-const expandedVirement = computed(() =>
-  expanded.value ? store.virements.find((v) => v.uuid === expanded.value) : null,
-);
 
 const canSubmit = (v) => store.workflowIsCreator && v.requested_by === currentUserId.value;
 
@@ -171,10 +121,6 @@ const rowNumber = (i) => ((store.virementsMeta.current_page - 1) * store.viremen
 
 const reload = () => store.fetchVirements(props.planUuid, 1, statusFilter.value);
 const goTo = (p) => store.fetchVirements(props.planUuid, p, statusFilter.value);
-
-const toggleExpanded = (uuid) => {
-  expanded.value = expanded.value === uuid ? null : uuid;
-};
 
 const submit = async (v) => {
   submittingId.value = v.uuid;
