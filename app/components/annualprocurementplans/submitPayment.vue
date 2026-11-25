@@ -2,48 +2,79 @@
   <div class="inline-flex">
     <button class="btn btn-success btn-sm" @click="openModal"><Icon name="lucide:upload" />Submit Payment Proof</button>
     <dialog ref="paymentDialog" class="modal" aria-label="Submit RTGS Payment" @cancel="preventBusyClose">
-      <div class="modal-box max-w-3xl overflow-y-auto rounded-2xl p-0">
-        <header class="flex items-start justify-between gap-4 border-b border-base-300 bg-base-200/40 p-5 sm:p-6">
+      <div class="modal-box max-h-[92vh] max-w-5xl overflow-y-auto p-0">
+        <header class="flex items-start justify-between gap-4 border-b border-base-200 px-5 py-4 sm:px-7 sm:py-5">
           <div class="flex items-start gap-3">
-            <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary"><Icon name="lucide:landmark" class="h-6 w-6" /></span>
-            <div><p class="text-xs font-semibold uppercase tracking-wide text-base-content/50">Plan authorization payment</p><h2 class="mt-1 text-xl font-bold">Submit RTGS Payment</h2><p class="mt-1 text-sm text-base-content/60">Record your completed bank transfer for verification.</p></div>
+            <span class="grid size-11 shrink-0 place-items-center rounded-box bg-primary/10 text-primary"><Icon name="lucide:landmark" class="size-5" /></span>
+            <div><h2 class="text-xl font-bold">Submit RTGS payment proof</h2><p class="mt-1 text-sm text-base-content/60">Record the sending account and attach the receipt from your completed bank transfer.</p></div>
           </div>
-          <button type="button" class="btn btn-ghost btn-circle btn-sm shrink-0" aria-label="Close payment form" :disabled="busy" @click="closeModal"><Icon name="lucide:x" class="h-5 w-5" /></button>
+          <button type="button" class="btn btn-ghost btn-circle btn-sm shrink-0" aria-label="Close payment form" :disabled="busy" @click="closeModal"><Icon name="lucide:x" class="size-4" /></button>
         </header>
         <form @submit.prevent="submit">
-          <div class="space-y-6 p-5 sm:p-6">
-            <div class="flex items-start gap-3 rounded-xl border border-info/20 bg-info/5 p-4 text-sm"><Icon name="lucide:info" class="mt-0.5 h-5 w-5 shrink-0 text-info" /><p>Submit this form after making your bank transfer. Your payment will await verification before the invoice is marked as paid.</p></div>
-            <fieldset :disabled="busy" class="space-y-4">
-              <legend class="mb-3 flex items-center gap-2 font-semibold"><span class="flex h-6 w-6 items-center justify-center rounded-full bg-primary/10 text-xs text-primary">1</span>Transfer details</legend>
-              <p class="text-xs text-base-content/60">All fields are required. Use the details shown on your bank transfer.</p>
-              <div class="grid gap-4 sm:grid-cols-2">
-                <label class="flex flex-col gap-1.5 text-sm font-medium">Source bank<input v-model="form.source_bank" required type="text" class="input input-bordered w-full font-normal" placeholder="e.g. CBZ Bank" /></label>
-                <label class="flex flex-col gap-1.5 text-sm font-medium">Account holder name<input v-model="form.account_name" required type="text" class="input input-bordered w-full font-normal" placeholder="Name on the sending account" /></label>
-                <label class="flex flex-col gap-1.5 text-sm font-medium">Source account number<input v-model="form.account_number" required type="text" class="input input-bordered w-full font-normal" placeholder="Account used for the transfer" /></label>
-                <label class="flex flex-col gap-1.5 text-sm font-medium">Payment date<input v-model="form.payment_date" required type="date" class="input input-bordered w-full font-normal" /></label>
-                <label class="flex flex-col gap-1.5 text-sm font-medium sm:col-span-2">Transfer reference<input v-model="form.source_reference" required type="text" class="input input-bordered w-full font-normal" placeholder="Reference or narration on your transfer" /><span class="text-xs font-normal text-base-content/60">Enter the reference exactly as it appears on your proof of payment.</span></label>
+          <div class="grid lg:grid-cols-[minmax(0,1fr)_22rem]">
+            <fieldset :disabled="busy" class="border-b border-base-200 px-5 py-5 text-left sm:px-7 lg:border-r lg:border-b-0">
+              <div class="mb-4">
+                <h3 class="font-semibold">Transfer details</h3>
+                <p class="mt-1 text-sm text-base-content/55">Copy these details exactly from the sending bank account.</p>
+              </div>
+              <div class="grid gap-x-4 gap-y-3 sm:grid-cols-2">
+                <fieldset class="fieldset">
+                  <legend class="fieldset-legend">Source bank</legend>
+                  <input v-model="form.source_bank" required type="text" class="input w-full" placeholder="e.g. CBZ Bank" />
+                </fieldset>
+                <fieldset class="fieldset">
+                  <legend class="fieldset-legend">Account holder name</legend>
+                  <input v-model="form.account_name" required type="text" class="input w-full" placeholder="Name on the sending account" />
+                </fieldset>
+                <fieldset class="fieldset">
+                  <legend class="fieldset-legend">Source account number</legend>
+                  <input v-model="form.account_number" required type="text" class="input w-full" placeholder="Account used for the transfer" />
+                </fieldset>
+                <fieldset class="fieldset">
+                  <legend class="fieldset-legend">Payment date</legend>
+                  <input v-model="form.payment_date" required type="date" class="input w-full" />
+                </fieldset>
+                <fieldset class="fieldset sm:col-span-2">
+                  <legend class="fieldset-legend">Transfer reference</legend>
+                  <input v-model="form.source_reference" required type="text" class="input w-full" placeholder="Reference or narration on the transfer" />
+                  <p class="label">Enter the reference exactly as it appears on the receipt.</p>
+                </fieldset>
               </div>
             </fieldset>
-            <section aria-label="Proof of payment" class="space-y-3">
-              <h3 class="flex items-center gap-2 font-semibold"><span class="flex h-6 w-6 items-center justify-center rounded-full bg-primary/10 text-xs text-primary">2</span>Proof of payment</h3>
-              <div class="rounded-xl border-2 border-dashed p-4 sm:p-5" :class="form.proof_key ? 'border-success/40 bg-success/5' : 'border-base-300 bg-base-200/30'">
-                <div class="flex items-start gap-3">
-                  <Icon :name="form.proof_key ? 'lucide:file-check-2' : 'lucide:file-up'" class="mt-1 h-7 w-7 shrink-0" :class="form.proof_key ? 'text-success' : 'text-base-content/40'" />
-                  <div class="min-w-0 flex-1"><p class="break-words text-sm font-semibold">{{ form.file_name || 'Attach your bank transfer receipt' }}</p><p class="mt-1 text-xs text-base-content/60">{{ form.proof_key ? 'Uploaded. Choose another file below to replace it.' : 'Choose a PDF or image showing the transfer details.' }}</p></div>
+
+            <aside class="space-y-4 bg-base-200/35 px-5 py-5 sm:px-7 lg:px-5">
+              <section aria-label="Proof of payment">
+                <h3 class="font-semibold">Bank transfer receipt</h3>
+                <p class="mt-1 text-sm text-base-content/55">Attach a PDF or clear image that shows the reference and amount.</p>
+                <div class="mt-3 rounded-box border-2 border-dashed p-4" :class="form.proof_key ? 'border-success/40 bg-success/5' : 'border-base-300 bg-base-100'">
+                  <div class="flex items-start gap-3">
+                    <Icon :name="form.proof_key ? 'lucide:file-check-2' : 'lucide:file-up'" class="mt-0.5 size-6 shrink-0" :class="form.proof_key ? 'text-success' : 'text-base-content/40'" />
+                    <div class="min-w-0 flex-1"><p class="break-words text-sm font-semibold">{{ form.file_name || 'No receipt attached' }}</p><p class="mt-1 text-xs text-base-content/55">{{ form.proof_key ? 'Ready to submit. Choose another file to replace it.' : 'PDF, JPG or PNG' }}</p></div>
+                  </div>
+                  <input type="file" accept="application/pdf,image/*" aria-label="Choose proof of payment" class="file-input file-input-sm mt-4 w-full" :disabled="busy" @change="onProofChange" />
+                  <p v-if="uploading" role="status" class="mt-3 flex items-center gap-2 text-sm text-primary"><span class="loading loading-spinner loading-xs" />Uploading receipt…</p>
+                  <p v-else-if="form.proof_key" role="status" class="mt-3 flex items-center gap-2 text-xs font-medium text-success"><Icon name="lucide:check" class="size-4" />Receipt attached</p>
                 </div>
-                <input type="file" accept="application/pdf,image/*" aria-label="Choose proof of payment" class="file-input file-input-bordered mt-4 w-full" :disabled="busy" @change="onProofChange" />
-                <p v-if="uploading" role="status" class="mt-3 flex items-center gap-2 text-sm text-primary"><span class="loading loading-spinner loading-xs" />Uploading proof of payment…</p>
-                <p v-else-if="form.proof_key" role="status" class="mt-3 flex items-center gap-2 text-xs font-medium text-success"><Icon name="lucide:check" />Proof of payment attached</p>
+              </section>
+
+              <div role="note" class="alert alert-info alert-soft text-sm">
+                <Icon name="lucide:shield-check" class="size-5" />
+                <span>The invoice remains pending until finance verifies the transfer.</span>
               </div>
-            </section>
-            <div v-if="error" role="alert" class="flex items-start gap-2 rounded-xl border border-error/20 bg-error/10 p-4 text-sm text-error"><Icon name="lucide:circle-alert" class="mt-0.5 h-5 w-5 shrink-0" /><span>{{ error }}</span></div>
+
+              <div v-if="error" role="alert" class="alert alert-error alert-soft text-sm">
+                <Icon name="lucide:circle-alert" class="size-5" />
+                <span>{{ error }}</span>
+              </div>
+            </aside>
           </div>
-          <footer class="flex flex-wrap items-center justify-between gap-3 border-t border-base-300 bg-base-200/40 p-5 sm:px-6">
-            <p class="text-xs text-base-content/60">Your payment is subject to verification.</p>
-            <div class="flex w-full gap-2 sm:w-auto"><button type="button" class="btn btn-ghost flex-1 sm:flex-none" :disabled="busy" @click="closeModal">Cancel</button><button type="submit" class="btn btn-success flex-1 sm:flex-none" :disabled="!canSubmit || busy"><span v-if="submitting" class="loading loading-spinner loading-xs" /><Icon v-else name="lucide:send" />{{ submitting ? 'Submitting…' : 'Submit payment proof' }}</button></div>
+          <footer class="flex flex-col-reverse gap-2 border-t border-base-200 px-5 py-4 sm:flex-row sm:items-center sm:justify-end sm:px-7">
+            <button type="button" class="btn btn-ghost" :disabled="busy" @click="closeModal">Cancel</button>
+            <button type="submit" class="btn btn-success sm:min-w-48" :disabled="!canSubmit || busy"><span v-if="submitting" class="loading loading-spinner loading-xs" /><Icon v-else name="lucide:send" />{{ submitting ? 'Submitting…' : 'Submit for verification' }}</button>
           </footer>
         </form>
       </div>
+      <form method="dialog" class="modal-backdrop"><button>close</button></form>
     </dialog>
   </div>
 </template>
