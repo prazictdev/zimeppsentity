@@ -4,7 +4,7 @@ export const supplementGridDraftKey = (userId, supplementUuid) => `supplement-it
 export function newGridRow(uuid) {
   return {
     uuid, reference_no: '', description: '', unspsc_id: null, unspsc_label: '',
-    procurementgroup_id: null, procurementmethod_id: null, sourceoffunds_id: null, unitofmeasure_id: null,
+    procurementgroup_id: null, procurementmethod_id: null, competition_scope: 'DOMESTIC', sourceoffunds_id: null, unitofmeasure_id: null,
     quantity: 0, unit_cost: 0, expensecategory: 'MOOE', award_type: 'AWARD', quarter: null,
     pre_qualification: false, eoi: false, sustainable_procurement: false, affirmative_procurement: false,
     eoi_publication_date: '', eoi_closing_date: '',

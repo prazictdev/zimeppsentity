@@ -294,6 +294,7 @@
                 <span class="label-text-alt text-error">{{ errors.expensecategory }}</span>
               </label>
             </label>
+
             <label class="fieldset">
               <TendersFieldLegend help-key="bidopeningtype_id" label="Bid opening type" />
               <select v-model="form.bidopeningtype_id" class="select select-bordered w-full">
@@ -423,6 +424,22 @@
               <label v-if="errors.allowed_participants" class="label">
                 <span class="label-text-alt text-error">{{ errors.allowed_participants }}</span>
               </label>
+            </label>
+
+            <div v-if="form.planned_competition_scope" class="sm:col-span-2 rounded-box border border-info/25 bg-info/5 p-4">
+              <div class="flex items-start gap-3">
+                <Icon name="lucide:route" class="mt-0.5 h-5 w-5 shrink-0 text-info" />
+                <div>
+                  <p class="font-medium">APP scope: {{ plannedCompetitionLabel }}</p>
+                  <p class="mt-1 text-xs text-base-content/60">This value was inherited from the selected APP item. Changing it is recorded as a planning variance and recalculates the tender dates.</p>
+                </div>
+              </div>
+            </div>
+
+            <label v-if="competitionScopeIsVariance" class="fieldset sm:col-span-2">
+              <span class="fieldset-legend">Reason for changing the APP competition scope</span>
+              <textarea v-model="form.competition_scope_variance_reason" class="textarea textarea-bordered min-h-24 w-full" :class="errors.competition_scope_variance_reason ? 'textarea-error' : ''" maxlength="5000" placeholder="Explain why the planned domestic/international market has changed." />
+              <span v-if="errors.competition_scope_variance_reason" class="label text-xs text-error">{{ errors.competition_scope_variance_reason }}</span>
             </label>
 
             <div v-if="isRfpMethod && form.eoi_evidence_reference" class="fieldset sm:col-span-2">
@@ -842,6 +859,8 @@ const form = ref({
   response_rules: '',
   tendernumber: '',
   allowed_participants: '',
+  planned_competition_scope: null,
+  competition_scope_variance_reason: '',
   required_bid_bond: null,
   bid_validity_period: null,
   bidevaluationmethod_id: null,
@@ -878,6 +897,9 @@ const filteredExternalRequests = computed(() => {
 })
 
 const selectedMethod = computed(() => procurementMethods.value.find(m => m.id === form.value.procurementmethod_id) ?? null)
+const plannedCompetitionLabel = computed(() => form.value.planned_competition_scope === 'INTERNATIONAL' ? 'International' : 'Domestic')
+const competitionScopeIsVariance = computed(() => Boolean(form.value.planned_competition_scope)
+  && form.value.allowed_participants !== plannedCompetitionLabel.value)
 const selectedGroup = computed(() => procurementGroups.value.find(group => group.id === form.value.procurementgroup_id) ?? null)
 const isConsultancyGroup = computed(() => selectedGroup.value?.code === 'CONSULTANCY')
 const configuredGroupMethods = computed(() => selectedGroup.value?.procurement_methods ?? [])
@@ -1434,6 +1456,8 @@ async function loadExisting() {
     response_rules: t.response_rules ?? '',
     tendernumber: t.tendernumber ?? '',
     allowed_participants: t.allowed_participants ?? '',
+    planned_competition_scope: t.planned_competition_scope ?? null,
+    competition_scope_variance_reason: t.competition_scope_variance_reason ?? '',
     required_bid_bond: t.required_bid_bond === 'Y' || t.required_bid_bond === 'N' ? t.required_bid_bond : null,
     bid_validity_period: t.bid_validity_period ?? null,
     bidevaluationmethod_id: t.bidevaluationmethod_id ?? null,

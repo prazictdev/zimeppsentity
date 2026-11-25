@@ -66,7 +66,7 @@
           </div>
         <fieldset :disabled="submitting" :class="['mt-3 min-h-0 min-w-0 flex-1 overflow-auto rounded-xl border border-base-300', fullscreenOpen ? 'h-full' : 'max-h-[65vh]']">
           <table class="item-grid table table-sm">
-            <thead><tr><th>Row</th><th>Description *</th><th v-if="showUnspscStep">UNSPSC *</th><th>Reference</th><th v-for="column in lookupColumns" :key="column.key">{{ column.label }}</th><th v-if="exemptionMode">Exemption grounds *</th><th v-if="exemptionMode">Evidence document key</th><th>Quantity</th><th>Unit cost</th><th>Quarter</th><th>Expense</th><th>Award type</th><th v-for="column in dayColumns" :key="column.key">{{ column.label }}</th><th v-if="showPrequalificationColumn">Pre-qualification</th><th v-if="showEoiColumns">EOI</th><th v-for="column in flagColumns" :key="column.key">{{ column.label }}</th><th v-for="column in displayedDateColumns" :key="column.key">{{ column.label }}</th><th>Minimum service delivery standard</th><th>Comments</th></tr></thead>
+            <thead><tr><th>Row</th><th>Description *</th><th v-if="showUnspscStep">UNSPSC *</th><th>Reference</th><th v-for="column in lookupColumns" :key="column.key">{{ column.label }}</th><th>Competition scope *</th><th v-if="exemptionMode">Exemption grounds *</th><th v-if="exemptionMode">Evidence document key</th><th>Quantity</th><th>Unit cost</th><th>Quarter</th><th>Expense</th><th>Award type</th><th v-for="column in dayColumns" :key="column.key">{{ column.label }}</th><th v-if="showPrequalificationColumn">Pre-qualification</th><th v-if="showEoiColumns">EOI</th><th v-for="column in flagColumns" :key="column.key">{{ column.label }}</th><th v-for="column in displayedDateColumns" :key="column.key">{{ column.label }}</th><th>Minimum service delivery standard</th><th>Comments</th></tr></thead>
             <tbody><template v-for="row in visibleRows" :key="row.uuid">
               <tr :class="['align-top', showUnspscStep && !row.unspsc_id ? 'bg-warning/10' : '']">
                 <td><span class="block mb-2">{{ rowNumber(row) }}</span><button type="button" class="btn btn-error btn-outline btn-xs btn-square" aria-label="Delete row" title="Delete row" :disabled="row._sent || submitting" @click="removeRow(row)"><Icon name="lucide:trash-2" /></button></td>
@@ -74,6 +74,7 @@
                 <td v-if="showUnspscStep" class="min-w-60"><div class="mb-1 max-w-64 text-xs">{{ row.unspsc_label || 'Select a commodity' }}</div><p v-if="row.imported_object_code && !row.unspsc_id" class="mb-1 text-xs text-warning">Imported code: {{ row.imported_object_code }}. Find the closest commodity from the catalogue.</p><button class="btn btn-outline btn-xs" :disabled="row._sent" @click="openSearch(row)"><Icon name="lucide:search" />Search UNSPSC</button></td>
                 <td><input v-model="row.reference_no" class="input input-sm w-36" :disabled="row._sent" aria-label="Reference" maxlength="100" /></td>
                 <td v-for="column in lookupColumns" :key="column.key"><select v-model="row[column.key]" class="select select-sm w-44" :disabled="row._sent" :aria-label="column.label"><option :value="null">Select</option><option v-for="option in store[column.list]" :key="option.id" :value="option.id">{{ option.name }}</option></select></td>
+                <td class="min-w-48"><select v-model="row.competition_scope" class="select select-sm w-44" :disabled="row._sent" aria-label="Competition scope"><option value="DOMESTIC">Domestic</option><option value="INTERNATIONAL">International</option></select><p class="mt-1 max-w-44 text-xs text-base-content/55">Controls the statutory advertising window.</p></td>
                 <td v-if="exemptionMode" class="min-w-64"><div class="mb-2 flex max-w-64 flex-wrap gap-1"><span v-for="ground in row.grounds || []" :key="ground.exemption_type_id" class="badge badge-outline badge-sm">{{ typeName(ground.exemption_type_id) }}</span><span v-if="!row.grounds?.length" class="text-xs text-warning">No grounds selected</span></div><button type="button" class="btn btn-outline btn-xs" :disabled="row._sent" @click="openGrounds(row)"><Icon name="lucide:tags" />Configure grounds</button></td>
                 <td v-if="exemptionMode"><input v-model.trim="row.evidence_document_key" class="input input-sm w-56" :disabled="row._sent" placeholder="Optional Docman key" /></td>
                 <td v-for="field in ['quantity', 'unit_cost']" :key="field"><input v-model.number="row[field]" type="number" min="0" step="0.01" class="input input-sm w-28" :disabled="row._sent" :aria-label="field === 'quantity' ? 'Quantity' : 'Unit cost'" /></td>
@@ -88,7 +89,7 @@
                 <td><select v-model="row.minimum_service_delivery_standard_id" class="select select-sm w-72" :disabled="row._sent" aria-label="Minimum service delivery standard"><option :value="null">Not applicable</option><option v-for="standard in serviceDeliveryStandards" :key="standard.id" :value="standard.id">{{ standard.name }}</option></select></td>
                 <td><textarea v-model="row.comments" rows="2" class="textarea w-72" :disabled="row._sent" aria-label="Optional comments" maxlength="5000" placeholder="Optional" /></td>
               </tr>
-            </template><tr v-if="!visibleRows.length"><td :colspan="14 + dayColumns.length + flagColumns.length + displayedDateColumns.length + Number(showPrequalificationColumn) + Number(showEoiColumns) + Number(showUnspscStep) + (exemptionMode ? 2 : 0)" class="empty-grid py-16 text-base-content/50">{{ emptyGridMessage }}</td></tr></tbody>
+            </template><tr v-if="!visibleRows.length"><td :colspan="15 + dayColumns.length + flagColumns.length + displayedDateColumns.length + Number(showPrequalificationColumn) + Number(showEoiColumns) + Number(showUnspscStep) + (exemptionMode ? 2 : 0)" class="empty-grid py-16 text-base-content/50">{{ emptyGridMessage }}</td></tr></tbody>
           </table>
         </fieldset>
         <div class="mt-3 flex items-center justify-between gap-3"><div class="flex items-center gap-2 text-xs text-base-content/60" role="status"><span v-if="ready" class="status status-success status-xs" />{{ catalogueStatus || saveStatus || 'Preparing your draft…' }}</div><div class="flex items-center gap-2"><button class="btn btn-sm" :disabled="page <= 1 || submitting" @click="page--">Previous</button><span class="text-sm">{{ page }} / {{ lastPage }}</span><button class="btn btn-sm" :disabled="page >= lastPage || submitting" @click="page++">Next</button></div></div>
@@ -179,7 +180,7 @@ const matchedRows = computed(() => rows.value.length - unclassifiedRows.value);
 const detailIncompleteRows = computed(() => rows.value.filter(row => {
   const hasPricing = [row.quantity, row.unit_cost].every(value => value !== '' && Number.isFinite(Number(value)) && Number(value) >= 0);
   const missingEoiDates = row.eoi && (!row.eoi_publication_date || !row.eoi_closing_date);
-  return !row.description?.trim() || !row.expected_delivery_date || !hasPricing || missingEoiDates || (exemptionMode.value && Boolean(groundsValidationError(row)));
+  return !row.description?.trim() || !row.competition_scope || !row.expected_delivery_date || !hasPricing || missingEoiDates || (exemptionMode.value && Boolean(groundsValidationError(row)));
 }).length);
 const nsplReadinessSignature = row => JSON.stringify([
   row.description?.trim() || '', row.unspsc_id || null, row.quantity ?? null, row.unit_cost ?? null,
@@ -392,6 +393,7 @@ async function upload() {
   rowErrors.value = {}; errorMessage.value = ''; notice.value = '';
   for (const row of rows.value) {
     if (!row.description.trim() || !row.unspsc_id) rowErrors.value[row.uuid] = 'Enter a description and select a UNSPSC commodity.';
+    else if (!['DOMESTIC', 'INTERNATIONAL'].includes(row.competition_scope)) rowErrors.value[row.uuid] = 'Select whether competition is domestic or international.';
     else if (!row.expected_delivery_date) rowErrors.value[row.uuid] = 'Select the expected delivery / completion date. Lead time will be calculated automatically.';
     else if (![row.quantity, row.unit_cost].every(value => value !== '' && Number.isFinite(Number(value)) && Number(value) >= 0)) rowErrors.value[row.uuid] = 'Quantity and unit cost must be zero or greater.';
     else if (row.eoi && (!row.eoi_publication_date || !row.eoi_closing_date)) rowErrors.value[row.uuid] = 'Enter the EOI publication and closing dates required for this consultancy item.';

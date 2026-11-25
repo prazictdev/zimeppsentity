@@ -65,6 +65,7 @@ const toFormShape = (it) => ({
   description: it.description ?? '',
   procurementgroup_id: it.procurementgroup_id ?? null,
   procurementmethod_id: it.procurementmethod_id ?? null,
+  competition_scope: it.competition_scope ?? 'DOMESTIC',
   pre_qualification: !!it.pre_qualification,
   eoi: !!it.eoi,
   spoc: !!it.spoc,

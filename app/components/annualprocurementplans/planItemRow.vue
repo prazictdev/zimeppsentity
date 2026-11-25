@@ -14,6 +14,7 @@
     <td>
       <div :class="['font-medium', groupWarn ? 'text-warning' : '']">{{ groupLabel }}</div>
       <div :class="['mt-1 text-xs', methodWarn ? 'text-warning' : 'text-base-content/55']">{{ methodLabel }}</div>
+      <span class="badge badge-outline badge-xs mt-1">{{ item.competition_scope === 'INTERNATIONAL' ? 'International' : 'Domestic' }}</span>
     </td>
     <td>
       <div class="flex items-center gap-2">

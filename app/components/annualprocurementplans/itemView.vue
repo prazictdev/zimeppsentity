@@ -214,6 +214,7 @@ const timelineFields = computed(() => [
     { label: 'EOI publication', value: formatDate(props.item.eoi_publication_date) || '—' },
     { label: 'EOI closing', value: formatDate(props.item.eoi_closing_date) || '—' },
   ] : []),
+  { label: 'Competition scope', value: props.item.competition_scope === 'INTERNATIONAL' ? 'International' : 'Domestic' },
   { label: 'Bid notice publication', value: formatDate(props.item.bid_notice_publication_date) || '—' },
   { label: 'Bid closing', value: formatDate(props.item.bid_closing_date) || '—' },
   { label: 'Award notice', value: formatDate(props.item.publish_award_notice) || '—' },

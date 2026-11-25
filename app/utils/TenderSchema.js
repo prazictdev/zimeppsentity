@@ -49,6 +49,12 @@ export const TenderStep1Schema = yup.object({
   response_rules: yup.string().oneOf(['ALL ITEMS', 'SELECTED']).required('Response rules is required'),
   tendernumber: yup.string().nullable().max(100),
   allowed_participants: yup.string().oneOf(['Domestic', 'International']).required('Allowed participants is required'),
+  planned_competition_scope: yup.string().nullable().oneOf(['DOMESTIC', 'INTERNATIONAL']),
+  competition_scope_variance_reason: yup.string().nullable().max(5000).when(['allowed_participants', 'planned_competition_scope'], {
+    is: (participants, plannedScope) => Boolean(plannedScope)
+      && participants !== (plannedScope === 'INTERNATIONAL' ? 'International' : 'Domestic'),
+    then: schema => schema.trim().min(10, 'Explain the reason for changing the APP competition scope').required('A variance reason is required'),
+  }),
   required_bid_bond: yup.string().nullable().oneOf(['Y', 'N'], 'Select whether you require a bid bond'),
   bid_validity_period: yup.number().nullable().oneOf([30, 60, 90, 120], 'Select a valid bid validity period'),
   bidevaluationmethod_id: yup.number().nullable(),

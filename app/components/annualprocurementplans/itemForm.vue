@@ -46,6 +46,15 @@
     </label>
 
     <label class="fieldset">
+      <span class="fieldset-legend">Competition scope</span>
+      <select v-model="form.competition_scope" class="select select-bordered w-full">
+        <option value="DOMESTIC">Domestic</option>
+        <option value="INTERNATIONAL">International</option>
+      </select>
+      <span class="label text-xs text-base-content/55">Determines the minimum statutory advertising period.</span>
+    </label>
+
+    <label class="fieldset">
       <span class="fieldset-legend">Source of Funds</span>
       <select v-model.number="form.sourceoffunds_id" class="select select-bordered w-full">
         <option :value="null">—</option>
