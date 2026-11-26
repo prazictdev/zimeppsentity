@@ -29,6 +29,49 @@ async function render(frontend, report) {
 }
 
 for (const frontend of ['peclient', 'adminclient']) {
+  test(`${frontend} saves an individual override on a locked item with insufficient detail`, async () => {
+    const url = new URL(`../../${frontend}/app/components/planClassificationValidation.vue`, import.meta.url);
+    const { descriptor } = parse(fs.readFileSync(url, 'utf8'));
+    const script = compileScript(descriptor, { id: 'manual-save' }).content;
+    const code = `import { ref, reactive, computed } from '${import.meta.resolve('vue')}';
+      const watch = () => {}, onMounted = () => {}, onBeforeUnmount = () => {};
+      export const requests = [];
+      export const queries = [];
+      const usePeClient = () => async (url, options) => {
+        if (options.method === 'PATCH') {
+          requests.push(options.body);
+          if (requests.length === 1) throw { data: { errors: { fingerprint: ['Refresh and try again.'] } } };
+        }
+        if (options.query) queries.push(options.query);
+        return { data: { can_change_code: false } };
+      };
+      const useSanctumClient = usePeClient;
+      ${script}`;
+    const { default: component, requests, queries } = await import(`data:text/javascript;base64,${Buffer.from(code).toString('base64')}`);
+    const state = component.setup({ planUuid: 'plan' }, { expose() {}, emit() {} });
+    state.page.value = 3;
+    await state.showStatus('ATTENTION');
+    assert.deepEqual(queries[0], { page: 1, status: 'ATTENTION' });
+    state.begin({
+      id: 1, status: 'INSUFFICIENT_DETAIL', fingerprint: 'current', unspsc: { code: '25121503' },
+      description_warning: 'Describe the actual product.',
+    });
+    assert.equal(state.form.status, 'INSUFFICIENT_DETAIL');
+    assert.equal(state.verificationBlocker.value, '');
+    state.form.status = 'VERIFIED';
+    state.form.reason = 'too short';
+    await state.save();
+    assert.match(state.reviewError.value, /10 characters/);
+    assert.equal(requests.length, 0);
+    state.form.reason = 'Reviewed the signed requisition and confirmed the selected commodity.';
+    await state.save();
+    assert.equal(state.reviewError.value, 'Refresh and try again.');
+    assert.equal(state.selected.value.id, 1);
+    assert.deepEqual(requests[0], { status: 'VERIFIED', reason: state.form.reason, fingerprint: 'current' });
+    await state.save();
+    assert.equal(state.selected.value, null);
+    assert.equal(state.resultMessage.value, 'Classification review saved.');
+  });
   test(`${frontend} shows validation status, candidates and permitted review controls`, async () => {
     const html = await render(frontend, sample);
     for (const value of ['UNSPSC validation', '25% of plan value', '43211503', 'Computers', 'Confirm all eligible classifications', '3 identical classifications']) assert.ok(html.includes(value), value);
@@ -43,10 +86,18 @@ for (const frontend of ['peclient', 'adminclient']) {
       eligible_items: 0,
       eligible_groups: 0,
       attention_items: 1,
-      items: [{ ...sample.items[0], bulk_eligible: false, bulk_exception: 'Multiple catalogue candidates require an individual decision.' }],
+      can_change_code: false,
+      items: [{
+        ...sample.items[0],
+        bulk_eligible: false,
+        bulk_exception: 'Resolve this flagged classification individually.',
+        status: 'INSUFFICIENT_DETAIL',
+        description_warning: 'Describe the actual product.',
+      }],
     });
     assert.ok(exceptionHtml.includes('Review exception'));
-    assert.ok(exceptionHtml.includes('Multiple catalogue candidates require an individual decision.'));
+    assert.ok(exceptionHtml.includes('Show the flagged item'));
+    assert.ok(exceptionHtml.includes('you can verify it in the individual review'));
   });
   test(`${frontend} hides mutation controls from viewers`, async () => {
     const html = await render(frontend, { ...sample, can_review: false, can_scan: false, can_set_code: false });
