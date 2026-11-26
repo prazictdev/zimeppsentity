@@ -399,10 +399,10 @@
 
                             <div v-else-if="rule.key.startsWith('r4')" class="flex flex-wrap items-end gap-3">
                               <fieldset class="fieldset">
-                                <legend class="fieldset-legend">Expected delivery / completion date</legend>
-                                <input v-model="fixPayloads[fixKey(rule, i)].expected_delivery_date" type="date" :min="v.contract_signing || undefined" class="input input-bordered input-sm" />
+                                <legend class="fieldset-legend">Expected delivery / completion time (days)</legend>
+                                <input v-model.number="fixPayloads[fixKey(rule, i)].lead_time_days" type="number" min="0" max="5000" step="1" class="input input-bordered input-sm" />
                               </fieldset>
-                              <p class="pb-2 text-xs text-base-content/60">Contract signing: {{ v.contract_signing || '—' }}. The system recalculates lead time (minimum {{ v.minimum ?? '—' }} days).</p>
+                              <p class="pb-2 text-xs text-base-content/60">Contract signing: {{ v.contract_signing || '—' }}. The system calculates the expected date (minimum {{ v.minimum ?? '—' }} days).</p>
                             </div>
 
                             <div v-else-if="rule.key.startsWith('r5')" class="flex flex-wrap items-end gap-3">
@@ -791,7 +791,7 @@ const initialPayload = (rule, v) => {
     return { cycle_days: v.cycle_days ?? v.actual ?? null };
   }
   if (rule.key.startsWith('r4')) {
-    return { expected_delivery_date: v.expected_delivery_date ?? '' };
+    return { lead_time_days: v.lead_time_days ?? v.actual ?? null };
   }
   if (rule.key.startsWith('r5')) {
     return {

@@ -227,21 +227,24 @@
     </label>
 
     <label class="fieldset">
-      <span class="fieldset-legend">Expected Delivery / Completion Date</span>
+      <span class="fieldset-legend">Expected Delivery / Completion Time (days)</span>
       <input
-        v-model="form.expected_delivery_date"
-        type="date"
-        :min="dateOnly(form.contract_signing) || undefined"
-        :class="['input input-bordered w-full', errors.expected_delivery_date ? 'input-error' : '']"
+        v-model.number="form.lead_time_days"
+        type="number"
+        min="0"
+        max="5000"
+        step="1"
+        placeholder="e.g. 30"
+        :class="['input input-bordered w-full', errors.lead_time_days ? 'input-error' : '']"
       />
-      <span v-if="errors.expected_delivery_date" class="mt-1 text-xs text-error">{{ errors.expected_delivery_date }}</span>
-      <span v-else class="mt-1 text-xs text-base-content/60">Lead time is calculated from contract signing to this date.</span>
+      <span v-if="errors.lead_time_days" class="mt-1 text-xs text-error">{{ errors.lead_time_days }}</span>
+      <span v-else class="mt-1 text-xs text-base-content/60">Calendar days from contract signing to delivery or completion.</span>
     </label>
 
     <label class="fieldset">
-      <span class="fieldset-legend">Delivery Lead Time <span class="text-xs text-base-content/50">(auto)</span></span>
+      <span class="fieldset-legend">Expected Delivery / Completion Date <span class="text-xs text-base-content/50">(auto)</span></span>
       <div class="input input-bordered flex w-full items-center bg-base-200" aria-live="polite">
-        {{ deliveryLeadTime === null ? 'Calculated after dates are available' : `${deliveryLeadTime} days` }}
+        {{ calculatedDeliveryDate || 'Calculated after contract signing is available' }}
       </div>
     </label>
 
@@ -311,11 +314,12 @@ watch(itemApplicability, applicability => {
 }, { immediate: true });
 
 const dateOnly = value => value ? String(value).slice(0, 10) : '';
-const deliveryLeadTime = computed(() => {
+const calculatedDeliveryDate = computed(() => {
   const signing = dateOnly(form.value.contract_signing);
-  const delivery = dateOnly(form.value.expected_delivery_date);
-  if (!signing || !delivery) return null;
-  const days = Math.round((Date.parse(`${delivery}T00:00:00Z`) - Date.parse(`${signing}T00:00:00Z`)) / 86400000);
-  return Number.isFinite(days) && days >= 0 ? days : null;
+  const days = Number(form.value.lead_time_days);
+  if (!signing || !Number.isInteger(days) || days < 0) return '';
+  const delivery = new Date(`${signing}T00:00:00Z`);
+  delivery.setUTCDate(delivery.getUTCDate() + days);
+  return delivery.toISOString().slice(0, 10);
 });
 </script>

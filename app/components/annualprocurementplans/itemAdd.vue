@@ -180,7 +180,9 @@ const matchedRows = computed(() => rows.value.length - unclassifiedRows.value);
 const detailIncompleteRows = computed(() => rows.value.filter(row => {
   const hasPricing = [row.quantity, row.unit_cost].every(value => value !== '' && Number.isFinite(Number(value)) && Number(value) >= 0);
   const missingEoiDates = row.eoi && (!row.eoi_publication_date || !row.eoi_closing_date);
-  return !row.description?.trim() || !row.competition_scope || !row.expected_delivery_date || !hasPricing || missingEoiDates || (exemptionMode.value && Boolean(groundsValidationError(row)));
+  const hasDeliveryTime = row.lead_time_days !== '' && row.lead_time_days !== null
+    && Number.isInteger(Number(row.lead_time_days)) && Number(row.lead_time_days) >= 0;
+  return !row.description?.trim() || !row.competition_scope || !hasDeliveryTime || !hasPricing || missingEoiDates || (exemptionMode.value && Boolean(groundsValidationError(row)));
 }).length);
 const nsplReadinessSignature = row => JSON.stringify([
   row.description?.trim() || '', row.unspsc_id || null, row.quantity ?? null, row.unit_cost ?? null,
@@ -207,6 +209,7 @@ const lookupColumns = [
 ];
 const dayColumns = [
   { key: 'estimated_contract_negotiation_days', label: 'Contract negotiation days (est.)', max: 365 },
+  { key: 'lead_time_days', label: 'Expected delivery / completion time (days)', max: 5000 },
 ];
 const flagColumns = [
   { key: 'sustainable_procurement', label: 'Sustainable' },
@@ -244,7 +247,6 @@ const dateColumns = [
   { key: 'eoi_publication_date', label: 'EOI publication date', eoiOnly: true },
   { key: 'eoi_closing_date', label: 'EOI closing date', eoiOnly: true },
   { key: 'bid_notice_publication_date', label: 'Bid notice publication date' },
-  { key: 'expected_delivery_date', label: 'Expected delivery / completion date' },
 ];
 const fallbackTermFields = {
   SHORT_BIDDING_PERIOD: [{ key: 'normal_advertising_days', label: 'Normal advertising days', type: 'number', required: false }, { key: 'requested_advertising_days', label: 'Requested advertising days', type: 'number', required: true, minimum: 1 }],
@@ -394,7 +396,7 @@ async function upload() {
   for (const row of rows.value) {
     if (!row.description.trim() || !row.unspsc_id) rowErrors.value[row.uuid] = 'Enter a description and select a UNSPSC commodity.';
     else if (!['DOMESTIC', 'INTERNATIONAL'].includes(row.competition_scope)) rowErrors.value[row.uuid] = 'Select whether competition is domestic or international.';
-    else if (!row.expected_delivery_date) rowErrors.value[row.uuid] = 'Select the expected delivery / completion date. Lead time will be calculated automatically.';
+    else if (row.lead_time_days === '' || row.lead_time_days === null || !Number.isInteger(Number(row.lead_time_days)) || Number(row.lead_time_days) < 0) rowErrors.value[row.uuid] = 'Enter the expected delivery / completion time as a whole number of days.';
     else if (![row.quantity, row.unit_cost].every(value => value !== '' && Number.isFinite(Number(value)) && Number(value) >= 0)) rowErrors.value[row.uuid] = 'Quantity and unit cost must be zero or greater.';
     else if (row.eoi && (!row.eoi_publication_date || !row.eoi_closing_date)) rowErrors.value[row.uuid] = 'Enter the EOI publication and closing dates required for this consultancy item.';
     else if (exemptionMode.value && groundsValidationError(row)) rowErrors.value[row.uuid] = groundsValidationError(row);

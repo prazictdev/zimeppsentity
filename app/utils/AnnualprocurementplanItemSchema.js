@@ -30,12 +30,17 @@ export const AnnualprocurementplanItemSchema = yup.object({
   eoi_publication_date: optionalDate,
   eoi_closing_date: optionalDate,
   bid_notice_publication_date: optionalDate,
-  bid_closing_date: optionalDate,
-  publish_award_notice: optionalDate,
-  contract_signing: optionalDate,
-  expected_delivery_date: optionalDate.required('Expected delivery / completion date is required'),
+  bid_closing_date: optionalDate.strip(),
+  publish_award_notice: optionalDate.strip(),
+  contract_signing: optionalDate.strip(),
+  expected_delivery_date: optionalDate.strip(),
 
-  cycle_days: optionalInt,
+  cycle_days: optionalInt.strip(),
+  lead_time_days: optionalInt
+    .required('Expected delivery / completion time is required')
+    .integer('Expected delivery / completion time must be a whole number of days')
+    .min(0, 'Expected delivery / completion time must be 0 days or more')
+    .max(5000, 'Expected delivery / completion time cannot exceed 5000 days'),
   estimated_contract_negotiation_days: optionalInt,
 
   sourceoffunds_id: optionalId,

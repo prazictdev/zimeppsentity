@@ -57,7 +57,7 @@ const planningRules = ref({ prequalification: { method_codes: ['CMB'] }, eoi: { 
 const serviceDeliveryStandards = ref([]);
 
 const form = ref({});
-const errors = reactive({ description: '', quantity: '', unit_cost: '', award_type: '' });
+const errors = reactive({ description: '', quantity: '', unit_cost: '', award_type: '', lead_time_days: '' });
 const submitting = ref(false);
 
 const toFormShape = (it) => ({
@@ -78,6 +78,7 @@ const toFormShape = (it) => ({
   publish_award_notice: it.publish_award_notice ?? '',
   contract_signing: it.contract_signing ?? '',
   expected_delivery_date: it.expected_delivery_date ?? '',
+  lead_time_days: it.lead_time_days ?? null,
   cycle_days: it.cycle_days ?? null,
   estimated_contract_negotiation_days: it.estimated_contract_negotiation_days ?? null,
   sourceoffunds_id: it.sourceoffunds_id ?? null,
@@ -109,6 +110,7 @@ const handleSubmit = async () => {
   errors.quantity = '';
   errors.unit_cost = '';
   errors.award_type = '';
+  errors.lead_time_days = '';
   try {
     submitting.value = true;
     const valid = await AnnualprocurementplanItemSchema.validate(form.value, { abortEarly: false });

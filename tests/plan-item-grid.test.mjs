@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import fs from 'node:fs';
 import { parse, compileScript, compileTemplate } from '@vue/compiler-sfc';
+import { AnnualprocurementplanItemSchema } from '../app/utils/AnnualprocurementplanItemSchema.js';
 import { gridDraftKey, newGridRow, gridPayload, loadGridDraft, saveGridDraft, uploadGridRows } from '../app/utils/planItemGrid.js';
 
 function storage() {
@@ -9,6 +10,28 @@ function storage() {
   return { getItem: key => values.get(key), setItem: (key, value) => values.set(key, value) };
 }
 const row = id => ({ ...newGridRow(`row-${id}`), description: 'Office laptop', unspsc_id: 9 });
+
+test('editing the publication date sends inputs without stale calculated milestones', async () => {
+  const fields = {
+    description: 'Office laptop',
+    quantity: 1,
+    unit_cost: 10,
+    bid_notice_publication_date: '2027-02-01',
+    bid_closing_date: '2027-01-15',
+    publish_award_notice: '2027-01-25',
+    contract_signing: '2027-02-09',
+    expected_delivery_date: '2027-02-14',
+    cycle_days: 27,
+    lead_time_days: 5,
+  };
+
+  const payload = await AnnualprocurementplanItemSchema.validate(fields);
+  assert.equal(payload.bid_notice_publication_date, '2027-02-01');
+  assert.equal(payload.lead_time_days, 5);
+  for (const key of ['bid_closing_date', 'publish_award_notice', 'contract_signing', 'expected_delivery_date', 'cycle_days']) {
+    assert.equal(Object.hasOwn(payload, key), false);
+  }
+});
 
 test('restores local rows and UNSPSC selections only for their user and plan', () => {
   const local = storage(), key = gridDraftKey(1, 'plan1');
@@ -122,7 +145,7 @@ test('grid component compiles and adds local rows, selects UNSPSC, and restores 
   assert.equal(vm.workflowStep.value, 1);
   vm.rows.value.forEach((draftRow, index) => {
     draftRow.description = `Office laptop ${index + 1}`;
-    draftRow.expected_delivery_date = '2027-01-15';
+    draftRow.lead_time_days = 30;
   });
   assert.equal(vm.workflowStep.value, 2);
   vm.rows.value.forEach(draftRow => { draftRow.unspsc_id = 9; });
