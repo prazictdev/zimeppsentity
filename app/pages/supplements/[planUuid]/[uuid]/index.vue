@@ -108,7 +108,7 @@
       <div class="modal-box h-screen max-h-none w-screen max-w-none rounded-none">
         <div class="flex items-center justify-between"><h3 class="text-lg font-bold">Edit supplement item</h3><button class="btn btn-ghost btn-circle" @click="closeItemForm"><Icon name="lucide:x" /></button></div>
         <form class="mt-3" @submit.prevent="saveItem">
-          <AnnualprocurementplansItemForm v-model="itemForm" :errors="itemErrors" :procurementmethods="store.procurementmethods" :procurementgroups="store.procurementgroups" :sourceoffunds="store.sourceoffunds" :unitofmeasures="store.unitofmeasures" :minimum-service-delivery-standards="serviceDeliveryStandards" />
+          <AnnualprocurementplansItemForm v-model="itemForm" :errors="itemErrors" :procurementmethods="store.procurementmethods" :procurementgroups="store.procurementgroups" :sourceoffunds="store.sourceoffunds" :unitofmeasures="store.unitofmeasures" :minimum-service-delivery-standards="serviceDeliveryStandards" :planning-rules="planningRules" />
           <div class="modal-action"><button type="button" class="btn" @click="closeItemForm">Cancel</button><button type="submit" class="btn btn-primary" :disabled="itemSaving">{{ itemSaving ? 'Saving…' : 'Save' }}</button></div>
         </form>
       </div>
@@ -141,27 +141,49 @@ const loadError = ref('');
 const itemDialog = ref(null);
 const editingItem = ref(null);
 const itemForm = ref({});
-const itemErrors = reactive({ description: '', quantity: '', unit_cost: '', award_type: '' });
+const itemErrors = reactive({});
 const itemSaving = ref(false);
 const serviceDeliveryStandards = ref([]);
+const planningRules = ref(undefined);
 const client = usePeClient();
 
 useHead({ title: computed(() => `${supplement.value?.title || 'Supplement'} · Supplements`) });
 
 const openItemForm = async (item) => {
   editingItem.value = item;
-  itemForm.value = { ...item, minimum_service_delivery_standard_id: item.minimum_service_delivery_standard_id ?? null, comments: item.comments ?? '' };
-  const [, response] = await Promise.all([store.fetchItemLookups(), client('/api/v1/minimum-service-delivery-standards/list')]);
-  serviceDeliveryStandards.value = response?.data ?? response ?? [];
+  const [, standards, rules] = await Promise.all([
+    store.fetchItemLookups(),
+    client('/api/v1/minimum-service-delivery-standards/list'),
+    client('/api/v1/annual-procurement-plans/items/planning-rules'),
+  ]);
+  serviceDeliveryStandards.value = standards?.data ?? standards ?? [];
+  planningRules.value = rules?.data;
+  itemForm.value = {
+    ...item,
+    competition_scope: item.competition_scope ?? 'DOMESTIC',
+    eoi_publication_date: item.eoi_publication_date?.slice(0, 10) ?? '',
+    eoi_closing_date: item.eoi_closing_date?.slice(0, 10) ?? '',
+    bid_notice_publication_date: item.bid_notice_publication_date?.slice(0, 10) ?? '',
+    minimum_service_delivery_standard_id: item.minimum_service_delivery_standard_id ?? null,
+    comments: item.comments ?? '',
+  };
   itemDialog.value?.showModal();
 };
 const closeItemForm = () => { itemDialog.value?.close(); editingItem.value = null; };
 const saveItem = async () => {
-  if (!editingItem.value) return;
+  if (!editingItem.value || itemSaving.value) return;
+  Object.keys(itemErrors).forEach(key => delete itemErrors[key]);
   itemSaving.value = true;
-  const ok = await store.updateSupplementItemAction(planUuid.value, supplementUuid.value, editingItem.value.id, itemForm.value);
-  itemSaving.value = false;
-  if (ok) closeItemForm();
+  try {
+    const payload = await AnnualprocurementplanItemSchema.validate(itemForm.value, { abortEarly: false, stripUnknown: true });
+    if (await store.updateSupplementItemAction(planUuid.value, supplementUuid.value, editingItem.value.id, payload)) closeItemForm();
+  } catch (error) {
+    for (const issue of error.inner?.length ? error.inner : [error]) {
+      if (issue.path) itemErrors[issue.path] = issue.message;
+    }
+  } finally {
+    itemSaving.value = false;
+  }
 };
 const removeItem = async (item) => { if (window.confirm('Remove this item from the supplement?')) await store.deleteSupplementItemAction(planUuid.value, supplementUuid.value, item.id); };
 const formatStatus = value => value ? value.split('_').map(part => part.charAt(0) + part.slice(1).toLowerCase()).join(' ') : '—';

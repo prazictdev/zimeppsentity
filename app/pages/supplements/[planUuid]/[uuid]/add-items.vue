@@ -19,7 +19,8 @@ const planUuid = computed(() => String(route.params.planUuid));
 const supplementUuid = computed(() => String(route.params.uuid));
 const detailPath = computed(() => `/supplements/${planUuid.value}/${supplementUuid.value}`);
 const supplement = computed(() => store.currentSupplement);
-const canAddItems = computed(() => supplement.value?.status === 'DRAFT' && store.supplementIsCreator);
+const canAddItems = computed(() => supplement.value?.status === 'DRAFT'
+  && supplement.value.request_type !== 'ITEM_AMENDMENT' && store.supplementIsCreator);
 const loading = ref(true);
 const loadError = ref('');
 

@@ -21,6 +21,7 @@ export const AnnualprocurementplanItemSchema = yup.object({
   description: yup.string().required('Description is required'),
   procurementmethod_id: optionalId,
   procurementgroup_id: optionalId,
+  competition_scope: yup.string().oneOf(['DOMESTIC', 'INTERNATIONAL']).default('DOMESTIC'),
 
   pre_qualification: yup.boolean().default(false),
   eoi: yup.boolean().default(false),

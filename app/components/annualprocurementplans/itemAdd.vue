@@ -424,14 +424,7 @@ async function upload() {
           return { data: { uploaded_uuids } };
         }
       : supplementMode.value
-        ? async items => {
-            const uploaded_uuids = [];
-            for (let offset = 0; offset < items.length; offset += 5) {
-              const group = items.slice(offset, offset + 5);
-              await Promise.all(group.map(item => client(`/api/v1/annual-procurement-plans/${uploadPlan}/supplements/${props.supplementUuid}/items`, { method: 'POST', body: item }).then(() => uploaded_uuids.push(item.uuid))));
-            }
-            return { data: { uploaded_uuids } };
-          }
+        ? items => client(`/api/v1/annual-procurement-plans/${uploadPlan}/supplements/${props.supplementUuid}/items/grid`, { method: 'POST', body: { items } })
         : items => client(`/api/v1/annual-procurement-plans/${uploadPlan}/items/grid`, { method: 'POST', body: { items } });
     await uploadGridRows(rows.value, send, uploaded => { persist(); if (uploaded) notice.value = `${uploaded} of ${total} rows uploaded.`; }, exemptionMode.value ? exemptionGridPayload : undefined);
     notice.value = `${total} rows uploaded. Your local draft is now empty.`; page.value = 1;
