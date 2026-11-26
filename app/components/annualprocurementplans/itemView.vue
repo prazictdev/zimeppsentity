@@ -51,7 +51,7 @@
             </div>
           </section>
 
-          <div class="grid gap-4 lg:grid-cols-[1.08fr_0.92fr]">
+          <div class="grid min-w-0 grid-cols-1 gap-4">
             <section class="card card-border bg-base-100 shadow-none">
               <div class="card-body gap-0 p-0">
                 <div class="flex items-center gap-2 border-b border-base-200 px-4 py-3">
@@ -75,18 +75,40 @@
                   <Icon name="lucide:calendar-range" class="h-4 w-4 text-primary" />
                   <h4 class="font-bold">Procurement schedule</h4>
                 </div>
-                <dl class="grid grid-cols-2 gap-px bg-base-200">
-                  <div v-for="field in timelineFields" :key="field.label" class="min-w-0 bg-base-100 px-4 py-3">
-                    <dt class="text-xs text-base-content/55">{{ field.label }}</dt>
-                    <dd class="mt-1 text-sm font-semibold">{{ field.value }}</dd>
-                  </div>
-                </dl>
-                <dl class="grid grid-cols-3 border-t border-base-200">
-                  <div v-for="metric in durationFields" :key="metric.label" class="px-3 py-3 text-center [&:not(:last-child)]:border-r [&:not(:last-child)]:border-base-200">
-                    <dd class="font-mono text-lg font-bold">{{ metric.value }}</dd>
-                    <dt class="mt-0.5 text-xs text-base-content/55">{{ metric.label }}</dt>
-                  </div>
-                </dl>
+                <div class="overflow-x-auto" tabindex="0" role="region" aria-label="Procurement schedule">
+                  <table class="table table-sm min-w-[32rem]">
+                    <thead class="bg-base-200/50">
+                      <tr>
+                        <th scope="col">Stage</th>
+                        <th scope="col">Start date</th>
+                        <th scope="col">End date / milestone</th>
+                        <th scope="col" class="text-right">Duration</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr v-for="stage in scheduleRows" :key="stage.label">
+                        <th scope="row" class="font-medium">
+                          {{ stage.label }}
+                          <span v-if="stage.note" class="block text-xs font-normal text-base-content/70">{{ stage.note }}</span>
+                        </th>
+                        <td class="whitespace-nowrap tabular-nums">{{ formatDate(stage.start) }}</td>
+                        <td class="whitespace-nowrap tabular-nums">{{ formatDate(stage.end) }}</td>
+                        <td class="whitespace-nowrap text-right tabular-nums">
+                          {{ stage.days == null ? '—' : formatDays(stage.days, stage.unit ?? 'calendar day') }}
+                        </td>
+                      </tr>
+                    </tbody>
+                    <tfoot class="border-t border-base-200 bg-base-200/50">
+                      <tr>
+                        <th scope="row" colspan="3">
+                          Procurement cycle
+                          <span class="block font-normal text-base-content/70">Excludes negotiation and delivery</span>
+                        </th>
+                        <td class="text-right font-semibold tabular-nums">{{ item.cycle_days == null ? '—' : formatDays(item.cycle_days) }}</td>
+                      </tr>
+                    </tfoot>
+                  </table>
+                </div>
               </div>
             </section>
           </div>
@@ -207,25 +229,64 @@ const classificationFields = computed(() => [
   { label: 'Quarter', value: props.item.quarter || '—' },
   { label: 'Expense category', value: props.item.expensecategory || '—' },
   { label: 'Award type', value: props.item.award_type === 'FRAMEWORK' ? 'Framework agreement' : 'Award' },
-]);
-
-const timelineFields = computed(() => [
-  ...(props.item.eoi ? [
-    { label: 'EOI publication', value: formatDate(props.item.eoi_publication_date) || '—' },
-    { label: 'EOI closing', value: formatDate(props.item.eoi_closing_date) || '—' },
-  ] : []),
   { label: 'Competition scope', value: props.item.competition_scope === 'INTERNATIONAL' ? 'International' : 'Domestic' },
-  { label: 'Bid notice publication', value: formatDate(props.item.bid_notice_publication_date) || '—' },
-  { label: 'Bid closing', value: formatDate(props.item.bid_closing_date) || '—' },
-  { label: 'Award notice', value: formatDate(props.item.publish_award_notice) || '—' },
-  { label: 'Contract signing', value: formatDate(props.item.contract_signing) || '—' },
 ]);
 
-const durationFields = computed(() => [
-  { label: 'Cycle days', value: props.item.cycle_days ?? '—' },
-  { label: 'Lead time', value: props.item.lead_time_days ?? '—' },
-  { label: 'Negotiation', value: props.item.estimated_contract_negotiation_days ?? '—' },
-]);
+const scheduleRows = computed(() => {
+  const item = props.item;
+  const requirements = item.schedule_requirements;
+  const allowances = requirements?.allowance_days;
+  const plannedDays = key => requirements?.stages?.find(stage => stage.key === key)?.planned;
+  const hasSpocReview = allowances ? allowances.spoc != null : item.spoc;
+  const evaluationNote = [
+    allowances?.evaluation != null && `Evaluation: ${formatDays(allowances.evaluation)}`,
+    allowances?.spoc != null && `SPOC allowance: ${formatDays(allowances.spoc)}`,
+  ].filter(Boolean).join(' · ');
+  const negotiation = allowances?.negotiation ?? item.estimated_contract_negotiation_days;
+  const contractNote = [
+    allowances?.standstill != null && `Standstill: ${formatDays(allowances.standstill)}`,
+    negotiation != null && `Negotiation: ${formatDays(negotiation)}`,
+  ].filter(Boolean).join(' · ');
+
+  return [
+    ...(item.eoi ? [{
+      label: 'Expression of interest (EOI)',
+      start: item.eoi_publication_date,
+      end: item.eoi_closing_date,
+      days: calendarDaysBetween(item.eoi_publication_date, item.eoi_closing_date),
+    }] : []),
+    {
+      label: 'Advertising period',
+      note: 'Bid notice publication to bid closing',
+      start: item.bid_notice_publication_date,
+      end: item.bid_closing_date,
+      days: plannedDays('advertising'),
+      unit: 'working day',
+    },
+    {
+      label: hasSpocReview ? 'Evaluation and SPOC review' : 'Evaluation',
+      note: evaluationNote,
+      start: item.bid_closing_date,
+      end: item.publish_award_notice,
+      days: plannedDays('evaluation') ?? calendarDaysBetween(item.bid_closing_date, item.publish_award_notice),
+    },
+    { label: 'Award notice', end: item.publish_award_notice },
+    {
+      label: 'Standstill and negotiation',
+      note: contractNote,
+      start: item.publish_award_notice,
+      end: item.contract_signing,
+      days: plannedDays('award_to_contract') ?? calendarDaysBetween(item.publish_award_notice, item.contract_signing),
+    },
+    { label: 'Contract signing', end: item.contract_signing },
+    {
+      label: 'Delivery or completion',
+      start: item.contract_signing,
+      end: item.expected_delivery_date,
+      days: item.lead_time_days,
+    },
+  ];
+});
 
 const flags = computed(() => [
   { label: 'Pre-Qualification', value: !!props.item.pre_qualification },
@@ -242,11 +303,18 @@ const formatAmount = (v) => {
   return n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 };
 
-const formatDate = (v) => {
-  if (!v) return null;
-  const d = new Date(v);
-  return Number.isNaN(d.getTime()) ? v : d.toLocaleDateString();
+const dateOnly = value => /^\d{4}-\d{2}-\d{2}/.exec(String(value ?? ''))?.[0];
+const dateFormatter = new Intl.DateTimeFormat('en-ZW', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
+const formatDate = value => {
+  const date = dateOnly(value);
+  return date ? dateFormatter.format(new Date(`${date}T00:00:00Z`)) : '—';
 };
+const calendarDaysBetween = (start, end) => {
+  const first = dateOnly(start);
+  const last = dateOnly(end);
+  return first && last ? (Date.parse(last) - Date.parse(first)) / 86_400_000 : null;
+};
+const formatDays = (days, unit = 'day') => `${days} ${unit}${Number(days) === 1 ? '' : 's'}`;
 
 const readable = value => String(value || '').replaceAll('_', ' ').toLowerCase().replace(/^\w/, char => char.toUpperCase());
 </script>
