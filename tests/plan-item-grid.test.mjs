@@ -122,7 +122,7 @@ test('grid component compiles and adds local rows, selects UNSPSC, and restores 
     const useSanctumUser = () => session;
     const useAnnualprocurementplanStore = () => ({
       fetchItemLookups: async () => {},
-      procurementmethods: [{ id: 11, code: 'RFP', name: 'Request for proposals' }],
+      procurementmethods: [{ id: 11, code: 'RFP', name: 'Request for proposals' }, { id: 12, code: 'DP', name: 'Direct Procurement' }],
       procurementgroups: [{ id: 22, code: 'CONSULTANCY', name: 'Consultancy' }],
     });
     const useExemptionStore = () => ({});
@@ -147,6 +147,11 @@ test('grid component compiles and adds local rows, selects UNSPSC, and restores 
     draftRow.description = `Office laptop ${index + 1}`;
     draftRow.lead_time_days = 30;
   });
+  assert.equal(vm.workflowStep.value, 2);
+  vm.rows.value[0].procurementmethod_id = 12;
+  vm.rows.value[0].award_type = 'FRAMEWORK';
+  assert.equal(vm.workflowStep.value, 1);
+  vm.rows.value[0].award_type = 'AWARD';
   assert.equal(vm.workflowStep.value, 2);
   vm.rows.value.forEach(draftRow => { draftRow.unspsc_id = 9; });
   assert.equal(vm.workflowStep.value, 3);

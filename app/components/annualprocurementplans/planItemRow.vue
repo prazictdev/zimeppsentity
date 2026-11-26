@@ -37,7 +37,7 @@
     </td>
     <td class="w-36 min-w-36">
       <div class="flex items-center justify-end gap-1">
-        <AnnualprocurementplansItemView :item="item" />
+        <AnnualprocurementplansItemView :item="item" :plan-uuid="planUuid" :can-edit-schedule="canEdit && canEditPlan" />
         <AnnualprocurementplansItemAmend v-if="canEdit && canAmend" :plan-uuid="planUuid" :item="item" />
         <AnnualprocurementplansItemEdit v-if="canEdit && canEditPlan && !isApprovedExemptionItem" :plan-uuid="planUuid" :item="item" />
         <AnnualprocurementplansItemReferenceEdit

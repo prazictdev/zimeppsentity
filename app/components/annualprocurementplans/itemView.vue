@@ -91,8 +91,24 @@
                           {{ stage.label }}
                           <span v-if="stage.note" class="block text-xs font-normal text-base-content/70">{{ stage.note }}</span>
                         </th>
-                        <td class="whitespace-nowrap tabular-nums">{{ formatDate(stage.start) }}</td>
-                        <td class="whitespace-nowrap tabular-nums">{{ formatDate(stage.end) }}</td>
+                        <td v-for="endpoint in dateCells(stage)" :key="endpoint.position" class="whitespace-nowrap tabular-nums">
+                          <form v-if="endpoint.field && editingDate === endpoint.field" class="space-y-1 whitespace-normal" @submit.prevent="saveScheduleDate">
+                            <input v-model="draftDate" type="date" class="input input-sm w-36" :aria-label="endpoint.label" :min="endpoint.field === 'bid_closing_date' ? minimumClosingDate : undefined" :disabled="savingDate" required />
+                            <button v-if="endpoint.field === 'bid_closing_date' && minimumClosingDate" type="button" class="btn btn-ghost btn-xs" :disabled="savingDate" @click="draftDate = minimumClosingDate">
+                              Use earliest date · {{ formatDate(minimumClosingDate) }}
+                            </button>
+                            <div class="flex gap-1">
+                              <button type="submit" class="btn btn-primary btn-xs" :disabled="savingDate || !draftDate">Save</button>
+                              <button type="button" class="btn btn-ghost btn-xs" :disabled="savingDate" @click="editingDate = null">Cancel</button>
+                            </div>
+                            <p v-if="scheduleError" role="alert" class="text-xs text-error">{{ scheduleError }}</p>
+                          </form>
+                          <button v-else-if="scheduleEditable && endpoint.field" type="button" class="btn btn-ghost btn-xs gap-1" :aria-label="`Edit ${endpoint.label}`" :disabled="savingDate" @click="editScheduleDate(endpoint)">
+                            {{ formatDate(endpoint.value) }}
+                            <Icon name="lucide:pencil" class="h-3 w-3" />
+                          </button>
+                          <template v-else>{{ formatDate(endpoint.value) }}</template>
+                        </td>
                         <td class="whitespace-nowrap text-right tabular-nums">
                           {{ stage.days == null ? '—' : formatDays(stage.days, stage.unit ?? 'calendar day') }}
                         </td>
@@ -104,7 +120,7 @@
                           Procurement cycle
                           <span class="block font-normal text-base-content/70">Excludes negotiation and delivery</span>
                         </th>
-                        <td class="text-right font-semibold tabular-nums">{{ item.cycle_days == null ? '—' : formatDays(item.cycle_days) }}</td>
+                        <td class="text-right font-semibold tabular-nums">{{ scheduleItem.cycle_days == null ? '—' : formatDays(scheduleItem.cycle_days) }}</td>
                       </tr>
                     </tfoot>
                   </table>
@@ -174,10 +190,60 @@
 const props = defineProps({
   item: { type: Object, required: true },
   label: { type: String, default: '' },
+  planUuid: { type: String, default: '' },
+  canEditSchedule: { type: Boolean, default: false },
 });
 
-const openModal = () =>
+const client = usePeClient();
+const store = useAnnualprocurementplanStore();
+const scheduleUpdate = ref(null);
+const editingDate = ref(null);
+const draftDate = ref('');
+const scheduleError = ref('');
+const savingDate = ref(false);
+const scheduleItem = computed(() => scheduleUpdate.value ?? props.item);
+const minimumClosingDate = computed(() => scheduleItem.value.schedule_requirements?.minimum_bid_closing_date);
+const scheduleEditable = computed(() => props.planUuid && props.canEditSchedule
+  && !props.item.exemption_request_item_id && !props.item.is_locked && !props.item.is_utilized);
+
+const openModal = () => {
+  editingDate.value = null;
+  scheduleUpdate.value = null;
   document.getElementById(`view_apitem_modal_${props.item.id}`).showModal();
+};
+
+const editScheduleDate = endpoint => {
+  editingDate.value = endpoint.field;
+  scheduleError.value = '';
+  const current = dateOnly(endpoint.value);
+  const minimum = endpoint.field === 'bid_closing_date' ? minimumClosingDate.value : null;
+  draftDate.value = minimum && (!current || current < minimum) ? minimum : (current ?? '');
+};
+
+const saveScheduleDate = async () => {
+  if (!scheduleEditable.value || !editingDate.value || !draftDate.value || savingDate.value) return;
+  savingDate.value = true;
+  scheduleError.value = '';
+  try {
+    const response = await client(`/api/v1/annual-procurement-plans/${props.planUuid}/items/${props.item.id}/schedule`, {
+      method: 'PUT',
+      body: { field: editingDate.value, date: draftDate.value },
+    });
+    scheduleUpdate.value = response.data;
+    editingDate.value = null;
+    store.analysisReport = null;
+    await store.refreshItemViews(props.planUuid);
+  } catch (error) {
+    scheduleError.value = error.data?.errors?.date?.[0] || error.data?.message || 'Could not save the schedule date.';
+  } finally {
+    savingDate.value = false;
+  }
+};
+
+const dateCells = stage => [
+  { position: 'start', value: stage.start, ...stage.startEditor },
+  { position: 'end', value: stage.end, ...stage.endEditor },
+];
 
 const methodLabel = computed(() => {
   const m = props.item.procurementmethod;
@@ -228,12 +294,19 @@ const classificationFields = computed(() => [
   },
   { label: 'Quarter', value: props.item.quarter || '—' },
   { label: 'Expense category', value: props.item.expensecategory || '—' },
-  { label: 'Award type', value: props.item.award_type === 'FRAMEWORK' ? 'Framework agreement' : 'Award' },
+  {
+    label: 'Award type',
+    value: props.item.award_type === 'FRAMEWORK'
+      ? (String(props.item.procurementmethod?.code ?? '').trim().toUpperCase() === 'DP'
+          ? 'Invalid combination: Direct Procurement with Framework agreement'
+          : 'Framework agreement')
+      : 'Award',
+  },
   { label: 'Competition scope', value: props.item.competition_scope === 'INTERNATIONAL' ? 'International' : 'Domestic' },
 ]);
 
 const scheduleRows = computed(() => {
-  const item = props.item;
+  const item = scheduleItem.value;
   const requirements = item.schedule_requirements;
   const allowances = requirements?.allowance_days;
   const plannedDays = key => requirements?.stages?.find(stage => stage.key === key)?.planned;
@@ -253,6 +326,8 @@ const scheduleRows = computed(() => {
       label: 'Expression of interest (EOI)',
       start: item.eoi_publication_date,
       end: item.eoi_closing_date,
+      startEditor: { field: 'eoi_publication_date', label: 'EOI publication date' },
+      endEditor: { field: 'eoi_closing_date', label: 'EOI closing date' },
       days: calendarDaysBetween(item.eoi_publication_date, item.eoi_closing_date),
     }] : []),
     {
@@ -260,6 +335,8 @@ const scheduleRows = computed(() => {
       note: 'Bid notice publication to bid closing',
       start: item.bid_notice_publication_date,
       end: item.bid_closing_date,
+      startEditor: { field: 'bid_notice_publication_date', label: 'Bid notice publication date' },
+      endEditor: { field: 'bid_closing_date', label: 'Bid closing date' },
       days: plannedDays('advertising'),
       unit: 'working day',
     },
@@ -270,7 +347,7 @@ const scheduleRows = computed(() => {
       end: item.publish_award_notice,
       days: plannedDays('evaluation') ?? calendarDaysBetween(item.bid_closing_date, item.publish_award_notice),
     },
-    { label: 'Award notice', end: item.publish_award_notice },
+    { label: 'Award notice', end: item.publish_award_notice, endEditor: { field: 'publish_award_notice', label: 'Award notice date' } },
     {
       label: 'Standstill and negotiation',
       note: contractNote,
@@ -278,11 +355,12 @@ const scheduleRows = computed(() => {
       end: item.contract_signing,
       days: plannedDays('award_to_contract') ?? calendarDaysBetween(item.publish_award_notice, item.contract_signing),
     },
-    { label: 'Contract signing', end: item.contract_signing },
+    { label: 'Contract signing', end: item.contract_signing, endEditor: { field: 'contract_signing', label: 'Contract signing date' } },
     {
       label: 'Delivery or completion',
       start: item.contract_signing,
       end: item.expected_delivery_date,
+      endEditor: { field: 'expected_delivery_date', label: 'Expected delivery date' },
       days: item.lead_time_days,
     },
   ];

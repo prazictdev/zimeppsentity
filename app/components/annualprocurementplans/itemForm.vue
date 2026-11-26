@@ -119,11 +119,12 @@
       <span class="fieldset-legend">Award Type</span>
       <select v-model="form.award_type" class="select select-bordered w-full">
         <option value="AWARD">Award</option>
-        <option value="FRAMEWORK">Framework</option>
+        <option value="FRAMEWORK" :disabled="!itemApplicability.frameworkAllowed">Framework</option>
       </select>
       <label v-if="errors.award_type" class="label">
         <span class="label-text-alt text-red-600">{{ errors.award_type }}</span>
       </label>
+      <span v-else-if="form.award_type === 'FRAMEWORK' && !itemApplicability.frameworkAllowed" class="text-xs text-error">Select Award for Direct Procurement.</span>
     </label>
 
     <label class="fieldset">
@@ -290,7 +291,7 @@ const totalCost = computed(() => {
 });
 
 const itemApplicability = computed(() => {
-  const methodCode = String(props.procurementmethods.find(item => Number(item.id) === Number(form.value.procurementmethod_id))?.code || '').toUpperCase();
+  const methodCode = String(props.procurementmethods.find(item => Number(item.id) === Number(form.value.procurementmethod_id))?.code || '').trim().toUpperCase();
   const groupCode = String(props.procurementgroups.find(item => Number(item.id) === Number(form.value.procurementgroup_id))?.code || '').toUpperCase();
   const prequalificationAllowed = (props.planningRules.prequalification?.method_codes || ['CMB']).includes(methodCode);
   const eoiRule = props.planningRules.eoi || {};
@@ -298,6 +299,7 @@ const itemApplicability = computed(() => {
     && methodCode === String(eoiRule.procurement_method_code || 'RFP').toUpperCase();
   const required = applicable && Number(totalCost.value) >= Number(eoiRule.amount || 50000);
   return {
+    frameworkAllowed: methodCode !== 'DP',
     prequalificationAllowed,
     eoiRequired: required,
     eoiLabel: required ? 'required automatically' : (applicable ? 'direct shortlist; below threshold' : 'not applicable'),

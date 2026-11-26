@@ -80,7 +80,13 @@
                 <td v-for="field in ['quantity', 'unit_cost']" :key="field"><input v-model.number="row[field]" type="number" min="0" step="0.01" class="input input-sm w-28" :disabled="row._sent" :aria-label="field === 'quantity' ? 'Quantity' : 'Unit cost'" /></td>
                 <td><select v-model="row.quarter" class="select select-sm w-24" :disabled="row._sent" aria-label="Quarter"><option :value="null">Select</option><option v-for="q in ['Q1','Q2','Q3','Q4']" :key="q">{{ q }}</option></select></td>
                 <td><select v-model="row.expensecategory" class="select select-sm w-28" :disabled="row._sent" aria-label="Expense"><option>MOOE</option><option>CapEx</option></select></td>
-                <td><select v-model="row.award_type" class="select select-sm w-36" :disabled="row._sent" aria-label="Award type"><option value="AWARD">Award</option><option value="FRAMEWORK">Framework</option></select></td>
+                <td>
+                  <select v-model="row.award_type" class="select select-sm w-36" :disabled="row._sent" aria-label="Award type">
+                    <option value="AWARD">Award</option>
+                    <option value="FRAMEWORK" :disabled="!planningApplicability(row).frameworkAllowed">Framework</option>
+                  </select>
+                  <p v-if="invalidFrameworkAward(row)" class="mt-1 text-xs text-error">Select Award for Direct Procurement.</p>
+                </td>
                 <td v-for="column in dayColumns" :key="column.key"><input v-model.number="row[column.key]" type="number" min="0" :max="column.max" :disabled="row._sent" :aria-label="column.label" class="input input-sm w-36" /></td>
                 <td v-if="showPrequalificationColumn" class="min-w-32 text-center"><input v-if="planningApplicability(row).prequalificationAllowed" v-model="row.pre_qualification" type="checkbox" class="checkbox checkbox-sm" :disabled="row._sent" aria-label="Pre-qualification" /></td>
                 <td v-if="showEoiColumns" class="min-w-24 text-center"><span v-if="planningApplicability(row).eoiRequired" class="badge badge-success badge-soft badge-sm">Required</span></td>
@@ -182,7 +188,7 @@ const detailIncompleteRows = computed(() => rows.value.filter(row => {
   const missingEoiDates = row.eoi && (!row.eoi_publication_date || !row.eoi_closing_date);
   const hasDeliveryTime = row.lead_time_days !== '' && row.lead_time_days !== null
     && Number.isInteger(Number(row.lead_time_days)) && Number(row.lead_time_days) >= 0;
-  return !row.description?.trim() || !row.competition_scope || !hasDeliveryTime || !hasPricing || missingEoiDates || (exemptionMode.value && Boolean(groundsValidationError(row)));
+  return !row.description?.trim() || !row.competition_scope || !hasDeliveryTime || !hasPricing || missingEoiDates || invalidFrameworkAward(row) || (exemptionMode.value && Boolean(groundsValidationError(row)));
 }).length);
 const nsplReadinessSignature = row => JSON.stringify([
   row.description?.trim() || '', row.unspsc_id || null, row.quantity ?? null, row.unit_cost ?? null,
@@ -217,7 +223,7 @@ const flagColumns = [
 ];
 const lookupById = (items, id) => items.find(item => Number(item.id) === Number(id));
 function planningApplicability(row) {
-  const methodCode = String(lookupById(store.procurementmethods, row.procurementmethod_id)?.code || '').toUpperCase();
+  const methodCode = String(lookupById(store.procurementmethods, row.procurementmethod_id)?.code || '').trim().toUpperCase();
   const groupCode = String(lookupById(store.procurementgroups, row.procurementgroup_id)?.code || '').toUpperCase();
   const prequalificationAllowed = (planningRules.value.prequalification?.method_codes || ['CMB']).includes(methodCode);
   const eoiRule = planningRules.value.eoi || {};
@@ -226,11 +232,13 @@ function planningApplicability(row) {
   const estimatedValue = Number(row.quantity || 0) * Number(row.unit_cost || 0);
   const eoiRequired = eoiApplicable && estimatedValue >= Number(eoiRule.amount || 50000);
   return {
+    frameworkAllowed: methodCode !== 'DP',
     prequalificationAllowed,
     eoiRequired,
     eoiLabel: eoiRequired ? 'Required automatically' : (eoiApplicable ? `Not required below ${eoiRule.currency_code || 'USD'} ${Number(eoiRule.amount || 50000).toLocaleString()}` : 'Not applicable'),
   };
 }
+const invalidFrameworkAward = row => row.award_type === 'FRAMEWORK' && !planningApplicability(row).frameworkAllowed;
 const showPrequalificationColumn = computed(() => rows.value.some(row => planningApplicability(row).prequalificationAllowed));
 const showEoiColumns = computed(() => rows.value.some(row => planningApplicability(row).eoiRequired));
 const displayedDateColumns = computed(() => dateColumns.filter(column => !column.eoiOnly || showEoiColumns.value));
@@ -396,6 +404,7 @@ async function upload() {
   for (const row of rows.value) {
     if (!row.description.trim() || !row.unspsc_id) rowErrors.value[row.uuid] = 'Enter a description and select a UNSPSC commodity.';
     else if (!['DOMESTIC', 'INTERNATIONAL'].includes(row.competition_scope)) rowErrors.value[row.uuid] = 'Select whether competition is domestic or international.';
+    else if (invalidFrameworkAward(row)) rowErrors.value[row.uuid] = 'Select Award for Direct Procurement.';
     else if (row.lead_time_days === '' || row.lead_time_days === null || !Number.isInteger(Number(row.lead_time_days)) || Number(row.lead_time_days) < 0) rowErrors.value[row.uuid] = 'Enter the expected delivery / completion time as a whole number of days.';
     else if (![row.quantity, row.unit_cost].every(value => value !== '' && Number.isFinite(Number(value)) && Number(value) >= 0)) rowErrors.value[row.uuid] = 'Quantity and unit cost must be zero or greater.';
     else if (row.eoi && (!row.eoi_publication_date || !row.eoi_closing_date)) rowErrors.value[row.uuid] = 'Enter the EOI publication and closing dates required for this consultancy item.';

@@ -113,7 +113,7 @@
               <Icon name="lucide:x" />
               Cancel all
             </button>
-            <button class="btn btn-sm btn-primary" :disabled="saving" @click="saveAllFixes">
+            <button class="btn btn-sm btn-primary" :disabled="saving || !allFixesReady" @click="saveAllFixes()">
               <span v-if="saving">Saving {{ pendingFixCount }}...</span>
               <span v-else>
                 <Icon name="lucide:save" class="mr-1" />
@@ -336,13 +336,14 @@
                             <template v-else>{{ v.actual }}</template>
                           </td>
                           <td class="text-right">
-                            <template v-if="canEdit">
+                            <template v-if="canEdit && canOpenFix(rule, v)">
                               <span v-if="isSaved(rule, i)" class="badge badge-success badge-sm gap-1">
                                 <Icon name="lucide:check" />
                                 Saved
                               </span>
                               <button
                                 v-else-if="!isFixOpen(rule, i)"
+                                type="button"
                                 class="btn btn-xs btn-outline"
                                 @click="openFix(rule, i, v)"
                               >
@@ -427,6 +428,42 @@
                                 </select>
                               </fieldset>
                               <p class="pb-2 text-xs text-base-content/60">Choose the same procurement group for every APP item using reference {{ v.reference_no }}.</p>
+                            </div>
+
+                            <div v-else-if="rule.key.startsWith('r7')" class="flex flex-wrap items-end gap-3">
+                              <fieldset v-if="'bid_notice_publication_date' in fixPayloads[fixKey(rule, i)]" class="fieldset">
+                                <legend class="fieldset-legend">Bid notice publication date</legend>
+                                <input v-model="fixPayloads[fixKey(rule, i)].bid_notice_publication_date" aria-label="Bid notice publication date" type="date" class="input input-sm" />
+                              </fieldset>
+                              <fieldset v-if="'lead_time_days' in fixPayloads[fixKey(rule, i)]" class="fieldset">
+                                <legend class="fieldset-legend">Expected delivery / completion time (days)</legend>
+                                <input v-model.number="fixPayloads[fixKey(rule, i)].lead_time_days" aria-label="Expected delivery or completion time in days" type="number" min="0" max="5000" step="1" class="input input-sm" />
+                                <template v-if="v.contract_signing && !('bid_notice_publication_date' in fixPayloads[fixKey(rule, i)])">
+                                  <p class="text-xs text-base-content/70">Possible delivery dates from contract signing on {{ deliveryDateFromSigning(v.contract_signing, 0) }}</p>
+                                  <div class="flex flex-wrap gap-2">
+                                    <button
+                                      v-for="days in deliveryOptions"
+                                      :key="days"
+                                      type="button"
+                                      class="btn btn-outline btn-sm"
+                                      :aria-pressed="fixPayloads[fixKey(rule, i)].lead_time_days === days"
+                                      :class="{ 'btn-active': fixPayloads[fixKey(rule, i)].lead_time_days === days }"
+                                      :disabled="saving"
+                                      @click="fixPayloads[fixKey(rule, i)].lead_time_days = days"
+                                    >
+                                      {{ days }} days · {{ deliveryDateFromSigning(v.contract_signing, days) }}
+                                    </button>
+                                  </div>
+                                  <p aria-live="polite" class="text-xs font-medium">
+                                    Expected delivery: {{ deliveryDateFromSigning(v.contract_signing, fixPayloads[fixKey(rule, i)].lead_time_days) || 'Choose an option or enter a duration' }}
+                                  </p>
+                                </template>
+                                <p v-else class="text-xs text-base-content/70">The delivery date will be calculated once the contract signing date is available.</p>
+                              </fieldset>
+                              <button type="button" class="btn btn-sm btn-primary" :disabled="saving || !isFixReady(fixPayloads[fixKey(rule, i)])" @click="saveAllFixes(fixKey(rule, i))">
+                                Save schedule
+                              </button>
+                              <p class="self-center text-xs text-base-content/60">Saving recalculates the schedule. Delivery time counts from contract signing.</p>
                             </div>
                           </td>
                         </tr>
@@ -773,6 +810,24 @@ const isFixOpen = (rule, i) => Object.prototype.hasOwnProperty.call(fixPayloads,
 const isSaved = (rule, i) => savedKeys.value.has(fixKey(rule, i));
 const pendingFixCount = computed(() => Object.keys(fixPayloads).length);
 const pendingReanalyse = computed(() => savedKeys.value.size > 0);
+const canOpenFix = (rule, violation) => /^r[1-6]_/.test(rule.key)
+  || (rule.key.startsWith('r7') && Boolean(violation.missing_schedule_fields?.length));
+const deliveryOptions = [7, 14, 30];
+const isValidLeadTime = days => Number.isInteger(days) && days >= 0 && days <= 5000;
+const deliveryDateFormatter = new Intl.DateTimeFormat('en-ZW', {
+  day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC',
+});
+const deliveryDateFromSigning = (signing, days) => {
+  if (!signing || !isValidLeadTime(days)) return null;
+  const date = new Date(`${signing.slice(0, 10)}T00:00:00Z`);
+  if (Number.isNaN(date.getTime())) return null;
+  date.setUTCDate(date.getUTCDate() + days);
+  return deliveryDateFormatter.format(date);
+};
+const isFixReady = payload => Object.keys(payload).length > 0
+  && (!('lead_time_days' in payload) || isValidLeadTime(payload.lead_time_days))
+  && (!('bid_notice_publication_date' in payload) || Boolean(payload.bid_notice_publication_date));
+const allFixesReady = computed(() => Object.values(fixPayloads).every(isFixReady));
 
 const initialPayload = (rule, v) => {
   if (rule.key.startsWith('r1')) {
@@ -802,14 +857,24 @@ const initialPayload = (rule, v) => {
   if (rule.key.startsWith('r6')) {
     return { procurementgroup_id: v.procurementgroup_id ?? null };
   }
+  if (rule.key.startsWith('r7')) {
+    if (!v.bid_notice_publication_date) {
+      return { bid_notice_publication_date: '', lead_time_days: v.lead_time_days ?? null };
+    }
+    if (v.lead_time_days == null || !v.expected_delivery_date) {
+      return { lead_time_days: v.lead_time_days ?? null };
+    }
+    return { bid_notice_publication_date: v.bid_notice_publication_date };
+  }
   return {};
 };
 
 const openFix = async (rule, i, v) => {
-  await store.fetchItemLookups();
+  if (!props.canEdit || !canOpenFix(rule, v)) return;
   const key = fixKey(rule, i);
   fixPayloads[key] = initialPayload(rule, v);
   fixItemIds[key] = v.item_id;
+  if (/^r[126]_/.test(rule.key)) await store.fetchItemLookups();
 };
 
 const closeFix = (rule, i) => {
@@ -845,9 +910,9 @@ const applySpocFixes = async (violations) => {
   }
 };
 
-const saveAllFixes = async () => {
-  const entries = Object.entries(fixPayloads);
-  if (entries.length === 0) return;
+const saveAllFixes = async (onlyKey = null) => {
+  const entries = Object.entries(fixPayloads).filter(([key]) => onlyKey === null || key === onlyKey);
+  if (saving.value || entries.length === 0 || entries.some(([, payload]) => !isFixReady(payload))) return;
 
   saving.value = true;
 
@@ -855,9 +920,12 @@ const saveAllFixes = async () => {
     item_id: fixItemIds[key],
     ...payload,
   }));
-  const result = await store.bulkEditItems(props.planUuid, updates);
-
-  saving.value = false;
+  let result;
+  try {
+    result = await store.bulkEditItems(props.planUuid, updates);
+  } finally {
+    saving.value = false;
+  }
 
   if (!result.ok) return;
 
@@ -872,5 +940,8 @@ const saveAllFixes = async () => {
     }
   }
   savedKeys.value = next;
+  if (entries.some(([key]) => key.startsWith('r7') && next.has(key)) && pendingFixCount.value === 0) {
+    await rerun();
+  }
 };
 </script>

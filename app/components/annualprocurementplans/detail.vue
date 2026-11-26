@@ -124,6 +124,8 @@
                       v-for="group in store.planConsolidatedItems"
                       :key="`consolidated-${group.reference_no}`"
                       :group="group"
+                      :plan-uuid="planUuid"
+                      :can-edit-schedule="canEdit && canEditPlan"
                     />
                     <AnnualprocurementplansPlanItemRow
                       v-for="it in store.planItems"
